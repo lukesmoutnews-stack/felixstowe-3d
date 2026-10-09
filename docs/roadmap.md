@@ -14,6 +14,10 @@
 | 8 Expand the town | Ready | Data workflow covers the whole extent; streaming loads 1 km tiles and terrain chunks |
 | 9 Production readiness | Not started | Browser matrix, accessibility, hosting |
 
+## Done: Hamilton Road shops (9 October 2026)
+
+- Named fascia boards for every OSM shop/amenity in a building; Hamilton Road businesses verified against licensing, hygiene and store-locator records (4 corrections, 5 additions); researched brand fascia colours for chains; generated (flagged) styles for independents; no logos. Shopfronts now also on single-storey shops.
+
 ## Done in the real-data round (9 October 2026)
 
 - Ran the data workflow on GitHub Actions four times; real Felixstowe data on the `data` branch.
@@ -35,10 +39,11 @@
 ## Next actions, in order
 
 1. Performance: the real town is about 1,400–1,700 draw calls and 2.6–2.8 M triangles near the pier on SwiftShader. Merge per-tile materials further, simplify distant buildings, and measure on real GPUs.
-2. Review the 43 road/building crossings and the pier HER offset; compare key views against openly licensed photographs.
-3. Tune estimated defaults to Felixstowe's stock (storey heights, roof shares, facade mix); OSM tags heights on <2% of buildings.
-4. Model landmarks from openly licensed references: pier building, Spa Pavilion, Landguard Fort earthworks, crane orientation per quay.
-5. Narrative content, clearly labelled as fiction, built on the sourced history.
+2. Hamilton Road: check fascia colours against openly licensed photographs; projecting signs, awnings, shop window displays.
+3. Review the 43 road/building crossings and the pier HER offset; compare key views against openly licensed photographs.
+4. Tune estimated defaults to Felixstowe's stock (storey heights, roof shares, facade mix); OSM tags heights on <2% of buildings.
+5. Model landmarks from openly licensed references: pier building, Spa Pavilion, Landguard Fort earthworks, crane orientation per quay.
+6. Narrative content, clearly labelled as fiction, built on the sourced history.
 
 ## Known limitations
 

@@ -153,8 +153,9 @@ export function addBuilding(b, ctx) {
   const roofKey = `roof:${style.roof}`;
   const wallAcc = ctx.acc.get(cx, cz, facadeKey, true);
   const plainAcc = ctx.acc.get(cx, cz, plainKey, true);
-  const shopAcc = style.windows && b.shop && !b.minHeight && wallTop > SHOP_H + 1.5 ? ctx.acc.get(cx, cz, shopKey) : null;
+  const shopAcc = style.windows && b.shop && !b.minHeight && wallTop > (b.shopSource === 'osm:business-point' ? 3.0 : SHOP_H + 1.5) ? ctx.acc.get(cx, cz, shopKey) : null;
   const roofAcc = ctx.acc.get(cx, cz, roofKey, true);
+  const shopH = Math.min(SHOP_H, wallTop - 0.3);
   const tint = style.tint;
 
   let planes = [];
@@ -173,9 +174,9 @@ export function addBuilding(b, ctx) {
       let y0 = baseBottom;
       const vOf = (y, ref, h) => (y - ref) / h;
       if (shopAcc && ring === outer) {
-        const ys = base + SHOP_H;
+        const ys = base + shopH;
         shopAcc.quad([a[0], y0, a[1]], [c[0], y0, c[1]], [c[0], ys, c[1]], [a[0], ys, a[1]],
-          [u0, vOf(y0, base, SHOP_H)], [u1, vOf(y0, base, SHOP_H)], [u1, 1], [u0, 1]);
+          [u0, vOf(y0, base, SHOP_H)], [u1, vOf(y0, base, SHOP_H)], [u1, shopH / SHOP_H], [u0, shopH / SHOP_H]);
         y0 = ys;
         const v0 = 0.0;
         wallAcc.quad([a[0], y0, a[1]], [c[0], y0, c[1]], [c[0], top, c[1]], [a[0], top, a[1]],
@@ -265,6 +266,7 @@ export function addBuilding(b, ctx) {
       }
     }
   }
+  b.geom = { base, wallTop: top, shopTop: shopAcc ? base + shopH : null }; // used by shop signs
   return { id: b.id, outer, holes, base: baseBottom, top: top + roofH, name: b.name, extraRings };
 }
 

@@ -269,6 +269,7 @@ export class UI {
           h('dt', {}, 'Height estimated'), h('dd', {}, pct(T.heightEstimated)),
           h('dt', {}, 'Roof shape from OSM'), h('dd', {}, pct(T.roofShapeFromOsm)),
           h('dt', {}, 'Facade material from OSM'), h('dd', {}, pct(T.materialFromOsm)),
+          h('dt', {}, 'Shop signs'), h('dd', {}, `${T.shopSigns || 0}: names from OSM${T.shopSignsCorrectedOrAdded ? `, ${T.shopSignsCorrectedOrAdded} corrected or added from 2024–26 records` : ''}; fascia colours researched for ${T.shopSignsResearchedStyle || 0} chains, generated for ${T.shopSignsGeneratedStyle || 0} others. No logos.`),
           h('dt', {}, 'Terrain'), h('dd', {}, this.app.terrain.hasTerrain ? `Environment Agency LiDAR DTM (${this.app.terrain.meta?.source || 'local file'})` : 'Flat – no LiDAR terrain file found (see docs/setup.md)'),
           h('dt', {}, 'Coordinate frame'), h('dd', {}, `ETRS89 → National Grid TM, origin ${this.app.frame.originLat}, ${this.app.frame.originLon}; OSGB shift ${this.app.frame.osgbShift.source}`)),
         h('h3', {}, 'Licences'),

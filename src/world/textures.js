@@ -216,8 +216,7 @@ function shopfrontTexture(fascia, seed) {
   const fasciaH = 0.65 * pxm, riser = 0.45 * pxm;
   // fascia moulding
   P.rect(0, 0, P.w, 8, '#e8e4dc', 180); P.rect(0, fasciaH - 8, P.w, 8, '#e8e4dc', 170);
-  // simple sign panel lettering hint (abstract – no real shop names are reproduced)
-  for (let i = 0; i < 6; i++) P.rect(80 + i * 58 + P.rand() * 6, fasciaH * 0.38, 34, fasciaH * 0.28, 'rgba(245,240,225,0.85)', 140);
+  // the fascia is left plain: named sign boards are added per shop unit (src/world/shopfronts.js)
   // glazing
   const g = P.ctx.createLinearGradient(0, fasciaH, P.w * 0.7, P.h);
   g.addColorStop(0, '#7d93a1'); g.addColorStop(0.4, '#3b4d5a'); g.addColorStop(1, '#25313a');

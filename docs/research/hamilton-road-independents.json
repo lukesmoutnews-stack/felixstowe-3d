@@ -1,0 +1,1329 @@
+{
+ "businesses": [
+  {
+   "id": "n1957116491",
+   "name": "Felixstowe Fishmongers Wholesalers",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": "No 2025-26 evidence found."
+  },
+  {
+   "id": "w354182171",
+   "name": "Palace Cinema",
+   "status": "trading",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": "1937 Art Deco former Ritz cinema; colours unknown",
+   "confidence": "medium",
+   "sources": [
+    "https://felixstowe.gov.uk/felixstowe-town-council-decision-on-the-palace-cinema/",
+    "https://www.madcornishprojectionist.co.uk/felixstowe-town-council-considers-acquiring-cinema-up-for-sale-bbc-news/",
+    "https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/1514",
+    "https://cinematreasures.org/theaters/14396"
+   ],
+   "notes": "Put up for sale in Aug 2025 (guide £700k). Town council decided on 3 Sep 2025 not to buy it. 'Palace Bingo Hall and Cinema' premises licence from Feb 2024. No closure notice found, but whether it still operates in 2026 is unconfirmed."
+  },
+  {
+   "id": "n6859083270",
+   "name": "Felixstowe Fishmongers & Fine Foods",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [
+    "https://visitfelixstowe.org.uk/business-directory/felixstowe-fishmongers-and-fine-foods"
+   ],
+   "notes": "Undated BID directory listing only."
+  },
+  {
+   "id": "n6865114916",
+   "name": "Glow Studios",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6865114917",
+   "name": "Blue Naan",
+   "status": "trading",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "high",
+   "sources": [
+    "https://ratings.food.gov.uk/api/download-data/xml/establishments/1104816",
+    "https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/105"
+   ],
+   "notes": "FHRS record for 7-9 Hamilton Road rated 3 Jan 2025. Premises licence PREM0296 current (indefinite)."
+  },
+  {
+   "id": "n6865114920",
+   "name": "The Basic Life Charity",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [
+    "https://felixstowe.gov.uk/community_group/the-basic-life-charity"
+   ],
+   "notes": "Charity is active. No evidence found that confirms the shop at no. 17."
+  },
+  {
+   "id": "n6865114921",
+   "name": "Scott Beckett",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6865114918",
+   "name": "Saigon",
+   "status": "replaced",
+   "replacedBy": {
+    "name": "China Palace",
+    "kind": "amenity=restaurant (Chinese)"
+   },
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "medium",
+   "sources": [
+    "https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/170",
+    "https://wanderlog.com/place/details/2718731/saigon-restaurant"
+   ],
+   "notes": "New premises licence PREM0536 for 'China Palace Restaurant', 11 Hamilton Road, from 7 Apr 2026. The Wanderlog listing for Saigon at 11 Hamilton Rd now captions its photos 'China Palace'."
+  },
+  {
+   "id": "n6865114919",
+   "name": "Greyfriars",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [
+    "https://www.visitfelixstowe.org.uk/business-directory/greyfriars-carpets-and-beds"
+   ],
+   "notes": "Undated directory listing ('Greyfriars Carpets and Beds', beds on the first floor)."
+  },
+  {
+   "id": "n3910851751",
+   "name": "Scissor-Trix",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "w733112150",
+   "name": "The Sandwich Shop",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [
+    "https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/5208"
+   ],
+   "notes": "Only evidence is a TEN at 41b Hamilton Road in Dec 2023."
+  },
+  {
+   "id": "n6865114932",
+   "name": "Livias Boutique",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6865114931",
+   "name": "Nutshells by the Sea",
+   "status": "trading",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [
+    "https://wanderlog.com/list/geoCategory/284458/cafes"
+   ],
+   "notes": "Listed at 1B Hamilton Rd on Wanderlog's Felixstowe cafes list and not flagged as closed. Weak evidence."
+  },
+  {
+   "id": "n6865114885",
+   "name": "Russell Smith",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6859083269",
+   "name": "The Oaks Tearoom",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6859083267",
+   "name": "Treasure Chest Books",
+   "status": "trading",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": "Book boxes on the pavement outside and changing window displays; fascia colours unknown",
+   "confidence": "low",
+   "sources": [
+    "https://visitfelixstowe.org.uk/shop/treasure-chest-books"
+   ],
+   "notes": "BID directory: run by Helen and Martin Bott, about 66,000 books, overlooks the Triangle on Cobbold Road. Undated."
+  },
+  {
+   "id": "n3910851753",
+   "name": "The Leather Shop",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": "'The Leather Shop Limited' (02698501) was dissolved in 2015 but is a Poole company, probably unrelated."
+  },
+  {
+   "id": "n6865112067",
+   "name": "Phone Galaxy",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": "No. 65 was formerly Adnams (licence 2017-18)."
+  },
+  {
+   "id": "n3910851752",
+   "name": "Ruby's",
+   "status": "trading",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "high",
+   "sources": [
+    "https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/1064",
+    "https://wanderlog.com/place/details/2718597/rubys-kitchen"
+   ],
+   "notes": "Premises licence from Jul 2024, TEN Dec 2024, Google reviews up to Apr 2026. Also called Ruby's Kitchen."
+  },
+  {
+   "id": "n6865114968",
+   "name": "Sam Moi Oriental",
+   "status": "replaced",
+   "replacedBy": {
+    "name": "China China",
+    "kind": "amenity=restaurant (Chinese)"
+   },
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "medium",
+   "sources": [
+    "https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/115",
+    "https://wanderlog.com/place/details/2718572"
+   ],
+   "notes": "New premises licence for 'China China Restaurant', 8 Hamilton Road, from 30 Dec 2024. Google reviews as 'China China' Oct 2025 to Apr 2026. Could be a rename of the same operator."
+  },
+  {
+   "id": "n6865114969",
+   "name": "Tony's Nails & Spa",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6865114964",
+   "name": "The Card Centre",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [
+    "https://visitfelixstowe.org.uk/business-directory/category/shopping"
+   ],
+   "notes": "Appears in the current BID shopping directory (undated)."
+  },
+  {
+   "id": "n6865114970",
+   "name": "The Thrifty Thistle",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n10944119641",
+   "name": "Suffolk Living",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6865114971",
+   "name": "Vogue",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6865114978",
+   "name": "The Cafe on the Corner",
+   "status": "trading",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "high",
+   "sources": [
+    "https://ratings.food.gov.uk/api/download-data/xml/establishments/659882"
+   ],
+   "notes": "FHRS for 16 Hamilton Road rated 5 Mar 2026."
+  },
+  {
+   "id": "n6865114990",
+   "name": "T27 Barbers",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "w732472280",
+   "name": "Abbeygate Lighting",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6865115000",
+   "name": "Nailpro",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [
+    "https://www.barnettross.co.uk/property.php?id=4871533"
+   ],
+   "notes": "34 Hamilton Road freehold was sold at auction in Feb 2019 (tenant not stated). No current evidence."
+  },
+  {
+   "id": "n6865115001",
+   "name": "Stillwater Books",
+   "status": "trading",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [
+    "https://uk.bookshop.org/shop/StillwaterBooksFelixstowe",
+    "https://visitfelixstowe.org.uk/business-directory/stillwater-books"
+   ],
+   "notes": "Bookshop.org storefront still live. Not tied to a date."
+  },
+  {
+   "id": "n6865115003",
+   "name": "The Kiosk",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6859083264",
+   "name": "Gotelee Solicitors",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6865112060",
+   "name": "All Things Nice Cafe",
+   "status": "trading",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "high",
+   "sources": [
+    "https://ratings.food.gov.uk/api/download-data/xml/establishments/1728583",
+    "https://wanderlog.com/place/details/2875197/all-things-nice-cafe-felixstowe"
+   ],
+   "notes": "FHRS for 79 Hamilton Road rated 7 May 2026. Google reviews to Apr 2026."
+  },
+  {
+   "id": "n6865115002",
+   "name": "Boreham Christopher",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6865115006",
+   "name": "Coes",
+   "status": "trading",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "high",
+   "sources": [
+    "https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/5398"
+   ],
+   "notes": "Temporary Event Notices at 46 Hamilton Road on 30 Nov 2024 and 29 Nov 2025."
+  },
+  {
+   "id": "n6865115007",
+   "name": "Ruby & Scarlet",
+   "status": "replaced",
+   "replacedBy": {
+    "name": "CookieBarista",
+    "kind": "amenity=cafe (cookies, cakes, bubble tea)"
+   },
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [
+    "https://ratings.food.gov.uk/api/download-data/xml/establishments/1684381",
+    "https://theresecoffey.co.uk/node/3329",
+    "https://visitfelixstowe.org.uk/business-directory/ruby-scarlet",
+    "https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/4520"
+   ],
+   "notes": "CookieBarista is at 50 Hamilton Road (opened Feb 2024; FHRS rated 4 Jun 2026). OSM puts Ruby & Scarlet at 48-50, so it may have shrunk to no. 48 or closed. Unconfirmed."
+  },
+  {
+   "id": "n1957118151",
+   "name": "Fruits & Flowers",
+   "status": "trading",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "medium",
+   "sources": [
+    "https://find-and-update.company-information.service.gov.uk/company/08901543",
+    "https://ratings.food.gov.uk/api/download-data/xml/establishments/660005"
+   ],
+   "notes": "Fruit & Flowers Ltd is active, registered office 101 Hamilton Road. The FHRS rating is old (2010)."
+  },
+  {
+   "id": "n2678564732",
+   "name": "Felixstowe Mobiles",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6859083257",
+   "name": "Blue & Berry",
+   "status": "trading",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "high",
+   "sources": [
+    "https://ratings.food.gov.uk/api/download-data/xml/establishments/1687220",
+    "https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/624"
+   ],
+   "notes": "FHRS for 103-105 Hamilton Road rated 18 Mar 2026."
+  },
+  {
+   "id": "w618245250",
+   "name": "The Triangle",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": "Public space/leisure feature, not a business."
+  },
+  {
+   "id": "n6859083250",
+   "name": "Arcadian Casino",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6859083249",
+   "name": "Morgan's",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6859083247",
+   "name": "The Vaping Emporium",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6859083246",
+   "name": "Vikings",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": "No. 115 next door is The Deben Butcher (FHRS Oct 2025)."
+  },
+  {
+   "id": "n6865115034",
+   "name": "Coffee Link",
+   "status": "closed",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "medium",
+   "sources": [
+    "https://wanderlog.com/place/details/2875387",
+    "https://wanderlog.com/list/geoCategory/284458/cafes"
+   ],
+   "notes": "Wanderlog/Google lists 'Coffeelink Ltd, 82 Hamilton Rd' as Permanently closed. Current occupant of no. 82 unknown (Subway is at no. 80)."
+  },
+  {
+   "id": "n6859083240",
+   "name": "Diamond Mills & Co",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6859083233",
+   "name": "GSK News & Booze",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [
+    "https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/1691"
+   ],
+   "notes": "Licence-holder change Feb 2023. The register shows that licence period ending 21 Apr 2026, so its current status is unclear."
+  },
+  {
+   "id": "n6859083232",
+   "name": "127 Vintage",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6859083227",
+   "name": "Hado Pharmacy",
+   "status": "trading",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "high",
+   "sources": [
+    "https://www.nhs.uk/services/pharmacy/hado-pharmacy/FNT26"
+   ],
+   "notes": "Current NHS listing at 135 Hamilton Road."
+  },
+  {
+   "id": "n6859083225",
+   "name": "Jenny Riddell-Carpenter MP",
+   "status": "trading",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": "Sitting MP since 2024. Constituency office address not checked."
+  },
+  {
+   "id": "n6859083226",
+   "name": "Wine Boutique",
+   "status": "trading",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "high",
+   "sources": [
+    "https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/1709",
+    "https://www.visitfelixstowe.org.uk/business-directory/wine-boutique"
+   ],
+   "notes": "Premises licence at 141 Hamilton Road, latest application May 2026. Free parking behind the shop."
+  },
+  {
+   "id": "n9002236402",
+   "name": "Level Two Youth Project",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n1957116490",
+   "name": "Underwoods",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6859058955",
+   "name": "Phillips Mobility",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [
+    "https://visitfelixstowe.org.uk/business-directory/phillips-mobility-ltd"
+   ],
+   "notes": "Undated BID directory listing."
+  },
+  {
+   "id": "n6859058956",
+   "name": "Phoenix Fruiterers",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [
+    "https://ratings.food.gov.uk/api/download-data/xml/establishments/659259"
+   ],
+   "notes": "FHRS 'Phoenix Fruitiers', 159 Hamilton Road, last rated 2010. No recent evidence."
+  },
+  {
+   "id": "n1957124142",
+   "name": "EACH",
+   "status": "trading",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "high",
+   "sources": [
+    "https://www.each.org.uk/each-is-on-the-move-in-felixstowe",
+    "https://www.each.org.uk/each-is-celebrating-the-first-anniversary-of-its-new-bigger-shop-in-felixstowe"
+   ],
+   "notes": "Moved in June 2024 into the former NatWest bank on the corner of Hamilton Road and York Road, across the road from its old shop. Anniversary article June 2025. Check that the OSM node is at the new site."
+  },
+  {
+   "id": "n6859083192",
+   "name": "King's",
+   "status": "trading",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "high",
+   "sources": [
+    "https://ratings.food.gov.uk/business/1893558"
+   ],
+   "notes": "FHRS 'King's Of Felixstowe', 114 Hamilton Road, inspected 22 Jan 2026."
+  },
+  {
+   "id": "n6859083194",
+   "name": "The Bakery",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [
+    "https://visitfelixstowe.org.uk/shop/the-bakery"
+   ],
+   "notes": "Undated directory listing (scratch bakery with a small cafe)."
+  },
+  {
+   "id": "n6859083193",
+   "name": "Spud Hut",
+   "status": "trading",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [
+    "https://wanderlog.com/list/geoCategory/284458/cafes"
+   ],
+   "notes": "On the Wanderlog cafes list at 118 Hamilton Rd and not flagged as closed. Weak evidence."
+  },
+  {
+   "id": "n6872881342",
+   "name": "Cake Away",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6859058947",
+   "name": "Nicholas Estates",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6859083198",
+   "name": "Fenn Wright",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6859083208",
+   "name": "Fred Olsen Travel Agents",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6859058964",
+   "name": "Hamilton Fish & Chips",
+   "status": "trading",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "medium",
+   "sources": [
+    "https://www.eastsuffolk.gov.uk/business/licensing/pavement-licences/hamilton-fish-and-chips"
+   ],
+   "notes": "Applied for a pavement licence in May 2025 (public notice, plan and photos on the council site)."
+  },
+  {
+   "id": "n6859058963",
+   "name": "Maharaja",
+   "status": "trading",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [
+    "https://www.visitfelixstowe.org.uk/discover-felixstowe/food-and-drink"
+   ],
+   "notes": "'Maharaja Indian Takeaway' on the BID food & drink page."
+  },
+  {
+   "id": "n6859083213",
+   "name": "Café Bencotto",
+   "status": "trading",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "high",
+   "sources": [
+    "https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/103",
+    "https://visitfelixstowe.org.uk/bijou"
+   ],
+   "notes": "New premises licence at 128 Hamilton Road from 5 Jun 2026."
+  },
+  {
+   "id": "n6859058962",
+   "name": "Armstrong & North",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [
+    "https://visitfelixstowe.org.uk/shop/armstrong-north-opticians"
+   ],
+   "notes": "Undated directory listing."
+  },
+  {
+   "id": "n6859083219",
+   "name": "New Barber Shop",
+   "status": "trading",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [
+    "https://visitfelixstowe.org.uk/business-directory/category/shopping"
+   ],
+   "notes": "In the current BID shopping directory."
+  },
+  {
+   "id": "n1957116265",
+   "name": "Conkers Pets & Plants",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6859083220",
+   "name": "P and K Home Interiors",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6859083221",
+   "name": "Le Richè",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "w358426686",
+   "name": "Great Eastern Square",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": "Marketplace/square, not a business."
+  },
+  {
+   "id": "n6859058959",
+   "name": "St Elizabeth Hospice",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [
+    "https://visitfelixstowe.org.uk/business-directory/st-elizabeth-hospice"
+   ],
+   "notes": "Undated directory listing."
+  },
+  {
+   "id": "n13063380375",
+   "name": "142",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [
+    "https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/629"
+   ],
+   "notes": "142 Hamilton Road was Wine Boutique's earlier licensed address (2011-2018). The current '142' business was not identified."
+  },
+  {
+   "id": "n6859058958",
+   "name": "Beijing",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [
+    "https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/152"
+   ],
+   "notes": "The 'New Beijing Chinese Takeaway' licence at 150 Hamilton Road ran to 25 Nov 2020, with no later licence. Possibly closed."
+  },
+  {
+   "id": "n9382096920",
+   "name": "Nick Barber Auctions",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6859058953",
+   "name": "Pierrot",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [],
+   "notes": null
+  },
+  {
+   "id": "n6859058949",
+   "name": "Wainwrights",
+   "status": "trading",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "high",
+   "sources": [
+    "https://www.getagent.co.uk/branch/wainwrights-ip11/42574"
+   ],
+   "notes": "Branch at 156-158 Hamilton Road with customer reviews up to Oct 2026."
+  },
+  {
+   "id": "n5842316485",
+   "name": "Favourite Chicken & Ribs",
+   "status": "trading",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "high",
+   "sources": [
+    "https://ratings.food.gov.uk/api/download-data/xml/establishments/659823"
+   ],
+   "notes": "FHRS for 164 Hamilton Road rated 25 May 2026."
+  },
+  {
+   "id": "n6859058937",
+   "name": "Saxon Upholstery & Interiors",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [
+    "https://visitfelixstowe.org.uk/business-directory/saxon-upholstery-and-interiors"
+   ],
+   "notes": "Undated directory listing."
+  },
+  {
+   "id": "n6859058936",
+   "name": "Look Sharp",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [
+    "https://visitfelixstowe.org.uk/business-directory/saxon-upholstery-and-interiors"
+   ],
+   "notes": "Directory describes it as a traditional Turkish barbershop. Undated."
+  },
+  {
+   "id": "n6859058935",
+   "name": "Fairstep",
+   "status": "unverified",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "low",
+   "sources": [
+    "https://fairstep-solicitors.evance.me/about"
+   ],
+   "notes": "Firm website showed 'currently unavailable'. Status unclear."
+  },
+  {
+   "id": "w207299775",
+   "name": "The Orwell Hotel",
+   "status": "trading",
+   "replacedBy": null,
+   "signText": null,
+   "fascia": null,
+   "text": null,
+   "style": null,
+   "confidence": "high",
+   "sources": [
+    "https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/142"
+   ],
+   "notes": "Premises licence from Feb 2025 and a TEN for 10-12 Jul 2026."
+  }
+ ],
+ "newBusinesses": [
+  {
+   "name": "China Palace",
+   "kind": "amenity=restaurant (Chinese)",
+   "address": "11 Hamilton Road (ex-Saigon)",
+   "evidence": "https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/170"
+  },
+  {
+   "name": "China China",
+   "kind": "amenity=restaurant (Chinese)",
+   "address": "8 Hamilton Road (ex-Sam Moi Oriental)",
+   "evidence": "https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/115"
+  },
+  {
+   "name": "Sweets Reunited",
+   "kind": "shop=confectionery",
+   "address": "30 Hamilton Road (ex-Clouds of Felixstowe Cafe)",
+   "evidence": "https://ratings.food.gov.uk/business/1844676"
+  },
+  {
+   "name": "CookieBarista",
+   "kind": "amenity=cafe (cookies/bubble tea)",
+   "address": "50 Hamilton Road",
+   "evidence": "https://ratings.food.gov.uk/api/download-data/xml/establishments/1684381"
+  },
+  {
+   "name": "Evolved Cake & Desserts",
+   "kind": "shop=bakery/dessert",
+   "address": "92 Hamilton Road (FHRS Jan 2025; unit to let again in 2026, so may have closed)",
+   "evidence": "https://ratings.food.gov.uk/api/download-data/xml/establishments/1779485"
+  },
+  {
+   "name": "Sainsbury's",
+   "kind": "shop=supermarket",
+   "address": "189 Hamilton Road (ex-East of England Co-op, 2025)",
+   "evidence": "https://ratings.food.gov.uk/api/download-data/xml/establishments/1836461"
+  },
+  {
+   "name": "Savers",
+   "kind": "shop=chemist",
+   "address": "89 Hamilton Road (licence Jul 2025)",
+   "evidence": "https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/936"
+  },
+  {
+   "name": "Wimpy",
+   "kind": "amenity=fast_food",
+   "address": "77 Hamilton Road (FHRS Feb 2026)",
+   "evidence": "https://ratings.food.gov.uk/api/download-data/xml/establishments/659600"
+  },
+  {
+   "name": "The Deben Butcher",
+   "kind": "shop=butcher",
+   "address": "115 Hamilton Road (FHRS Oct 2025)",
+   "evidence": "https://ratings.food.gov.uk/api/download-data/xml/establishments/1357554"
+  },
+  {
+   "name": "Creatdinteriors",
+   "kind": "shop=interior_decoration/gift",
+   "address": "130 Hamilton Road (opened May 2023, next to Bencotto)",
+   "evidence": "https://visitfelixstowe.org.uk/bijou"
+  },
+  {
+   "name": "The Little Wine Bar and Cafe",
+   "kind": "amenity=bar/cafe",
+   "address": "187 Hamilton Road (licence Dec 2023)",
+   "evidence": "https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/5189"
+  },
+  {
+   "name": "The Wool Baa",
+   "kind": "shop=wool/craft cafe",
+   "address": "145 Hamilton Road (FHRS Dec 2021)",
+   "evidence": "https://ratings.food.gov.uk/api/download-data/xml/establishments/1434947"
+  }
+ ],
+ "closures": [
+  {
+   "name": "Coffee Link (Coffeelink Ltd)",
+   "address": "82 Hamilton Road",
+   "evidence": "https://wanderlog.com/place/details/2875387"
+  },
+  {
+   "name": "Clouds of Felixstowe Cafe",
+   "address": "30 Hamilton Road",
+   "evidence": "https://wanderlog.com/list/geoCategory/284458/cafes"
+  },
+  {
+   "name": "Saigon",
+   "address": "11 Hamilton Road",
+   "evidence": "https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/170"
+  },
+  {
+   "name": "Sam Moi Oriental",
+   "address": "8 Hamilton Road",
+   "evidence": "https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/115"
+  },
+  {
+   "name": "Mini Town Express (convenience store)",
+   "address": "92 Hamilton Road (licence lapsed Jul 2025; unit to let 2026)",
+   "evidence": "https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/4869"
+  },
+  {
+   "name": "92 Hamilton Road retail unit vacant/to let (2026)",
+   "address": "92 Hamilton Road",
+   "evidence": "https://www.rightmove.co.uk/properties/766351038319233"
+  },
+  {
+   "name": "East of England Co-op Food (became Sainsbury's)",
+   "address": "189 Hamilton Road",
+   "evidence": "https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/172"
+  },
+  {
+   "name": "Crescent Cafe",
+   "address": "Unit 4, 23 Crescent Road",
+   "evidence": "https://wanderlog.com/place/details/2718611"
+  },
+  {
+   "name": "Former bank, vacant/for sale",
+   "address": "33 Hamilton Road (corner of Orwell Road)",
+   "evidence": "https://www.rightmove.co.uk/properties/760549521140592"
+  },
+  {
+   "name": "Former bank, 18-20 Hamilton Road (approved for 8 flats + a ground-floor commercial unit, 2025)",
+   "address": "18-20 Hamilton Road / 1-3 Victoria Street",
+   "evidence": "https://images.loopnet.fr/d2/23unjkJ5V-l4y7mmlazwWJRS202sq_e0LuMLk4Ci-SI/Brochure.pdf"
+  },
+  {
+   "name": "Simone's Hairdressers",
+   "address": "Hamilton Road (north side; unit to let since Mar 2023)",
+   "evidence": "https://rightmove.co.uk/properties/132930833"
+  }
+ ]
+}

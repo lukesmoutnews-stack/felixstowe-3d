@@ -25,6 +25,7 @@ Real Felixstowe data has been downloaded, processed and rendered. The GitHub Act
 | Geographic checks | Listed-building control points for Landguard Fort and the station fall inside the matching OSM footprints; 15/16 expected streets found; OSM–LiDAR alignment offset 2.25 m. See [docs/data-report.md](docs/data-report.md) |
 | 3D town | Rendered and checked by eye: seafront, pier, beach, cliff terrain, Hamilton Road, Landguard Fort, port crane rows and LiDAR container stacks |
 | Browser checks on the real data | 13/13 after a test-harness fix for diagonal piers (see [docs/validation.md](docs/validation.md)) |
+| Shop signs | 268 named fascia boards across the town; on Hamilton Road, OSM names corrected/added from 2024–26 licensing and hygiene records, chain colours researched; see [docs/hamilton-road.md](docs/hamilton-road.md) |
 | Still estimated | 98% of building heights in OSM are untagged (LiDAR measures 8,453 of them); roof shapes, facades, doors and container colours are generated |
 
 The app never substitutes test data silently: synthetic and other-region data sets are labelled on screen.
@@ -36,6 +37,7 @@ The app never substitutes test data silently: synthetic and other-region data se
 - [Licensing and attribution register](docs/licensing.md)
 - [Architecture decision record](docs/architecture.md)
 - [Validation, visual QA and performance log](docs/validation.md)
+- [Hamilton Road shops: sources, corrections, sign styles](docs/hamilton-road.md)
 - [Roadmap and known limitations](docs/roadmap.md)
 - [Setup and deployment](docs/setup.md)
 

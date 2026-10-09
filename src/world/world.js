@@ -13,6 +13,7 @@ import { buildRoads, buildRail } from './roads.js';
 import { buildGround, buildAreas } from './landcover.js';
 import { placeTrees, buildTreeMeshes } from './vegetation.js';
 import { buildProps, buildBarriers, buildPiers } from './furniture.js';
+import { collectBusinesses, markShopBuildings, buildSigns } from './shopfronts.js';
 import { facadeMaterial, shopMaterial, doorMaterial, rollerMaterial, roofMaterial, groundMaterial, waterMaterial, plainMaterial, LAYER } from './materials.js';
 import { matchLandmark } from '../content/landmarks.js';
 import { Textures } from './textures.js';
@@ -32,6 +33,7 @@ export class World extends EventTarget {
     this.areaGrid = new SpatialGrid(100);     // water / beach / walkable extras
     this.pois = new Map();
     this.surfaces = [];                        // pier decks
+    this._signMats = new Map();                // per-tile shop sign atlases
     this.lidarTrees = [];
     this.lidarHeights = null;
     this.yardRuns = null; this.yardVersion = 1;                      // LiDAR-measured container stack blocks (OSGB)                  // OSM id -> [median, p90] height from EA DSM-DTM
@@ -206,6 +208,8 @@ export class World extends EventTarget {
       return lm && lm.style ? lm.style : null;
     };
     for (const b of ownBuildings) if (!b.shop && shopPts.some((p) => pointInRing(p.x, p.z, b.outer))) { b.shop = true; b.shopSource = 'osm:shop-node'; }
+    const businesses = collectBusinesses(f.pois, this.frame, inTile);
+    markShopBuildings(businesses, ownBuildings);
     for (const b of ownBuildings) if ((b.name && matchLandmark({ name: b.name, tags: {} })) || lmAreas.some((p) => pointInRing(b.cx, b.cz, p.ring))) b.landmark = true;
 
     const ctx = { acc, ground: this.ground, terrain: this.terrain, hasTerrain: this.terrain.hasTerrain, landmarkStyle, settings: this.settings,
@@ -266,6 +270,10 @@ export class World extends EventTarget {
       }
       if (++nb % 400 === 0) await yieldFrame();
     }
+    // --- shop signs (after buildings: they need each host building's ground and shopfront height) ---
+    const signs = buildSigns(businesses, ownBuildings, ctx, tile.key);
+    tile.signMaterials = signs.materials; tile.signs = signs.signs; tile.signStats = signs.stats;
+    for (const [k, m] of signs.materials) this._signMats.set(k, m);
     await yieldFrame();
     // --- barriers, props, trees ---
     const barrierCols = buildBarriers(f.lines, tile, ctx);
@@ -298,7 +306,7 @@ export class World extends EventTarget {
     for (const m of [...buildTreeMeshes(trees, this.surfaceAt), ...props.meshes, ...piers.surfaces.flatMap((s) => s.meshes)]) { group.add(m); draws++; }
     this.root.add(group);
     tile.group = group; tile.drawObjects = draws; tile.triangles = tris;
-    tile.quality = { ...summarise({ ...f, buildings: ownBuildings }), treeStats: tile.treeStats, propStats: tile.propStats };
+    tile.quality = { ...summarise({ ...f, buildings: ownBuildings }), treeStats: tile.treeStats, propStats: tile.propStats, shopSigns: tile.signStats.signs, shopSignsResearchedStyle: tile.signStats.researched, shopSignsGeneratedStyle: tile.signStats.generated, shopSignsCorrectedOrAdded: tile.signStats.corrected + tile.signStats.added };
   }
 
   /** Instanced container blocks for the yard runs whose centre lies in this tile. */
@@ -369,6 +377,7 @@ export class World extends EventTarget {
     for (const g of [this.edgeGrid, this.circleGrid, this.roadGrid, this.buildingGrid, this.areaGrid]) g.remove(pred);
     this.surfaces = this.surfaces.filter((s) => !(t.surfaces || []).includes(s));
     for (const id of t.pois || []) this.pois.delete(id);
+    for (const [k, m] of t.signMaterials || []) { m.map.dispose(); m.dispose(); this._signMats.delete(k); }
     this.tiles.delete(key);
     this.dispatchEvent(new CustomEvent('tileunloaded', { detail: key }));
   }
@@ -378,6 +387,7 @@ export class World extends EventTarget {
     if (type === 'facade') return { material: facadeMaterial(a, b === 'true', +(key.split(':')[3] || 0)), order: 10, shadow: true };
     if (type === 'door') return { material: doorMaterial(+a), order: 10, shadow: false };
     if (key === 'roller') return { material: rollerMaterial(), order: 10, shadow: false };
+    if (type === 'sign') return { material: this._signMats.get(key), order: 10, shadow: false };
     if (type === 'shop') return { material: shopMaterial(+a), order: 10, shadow: true };
     if (type === 'roof') return { material: roofMaterial(a), order: 10, shadow: true };
     if (type === 'ground') return { material: groundMaterial(a, +b), order: +b === LAYER.deck ? 10 : +b, shadow: +b === LAYER.deck };
