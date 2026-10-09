@@ -311,15 +311,21 @@ if (dsm) {
           for (let dv = -1; dv <= 1; dv++) for (let du = -1; du <= 1; du++) { const a2 = iv + dv, b2 = iu + du; if (a2 >= 0 && b2 >= 0 && a2 < nV && b2 < nU && T[a2 * nU + b2]) n++; }
           if (n >= 5) C[iv * nU + iu] = T[iv * nU + iu];
         }
-        const rr = []; let n = 0;
-        for (let iv = 0; iv < nV; iv++) { let start = -1;
-          for (let iu = 0; iu <= nU; iu++) {
-            const t = iu < nU ? C[iv * nU + iu] : 0, prev = start >= 0 ? C[iv * nU + start] : 0;
-            if (start >= 0 && t !== prev) { const len = (iu - start) * ALONG, su = -half + start * ALONG + len / 2, sv = -half + (iv + 0.5) * ACROSS; rr.push([+(obb.cx + ux * su + vx * sv).toFixed(2), +(obb.cz + uz * su + vz * sv).toFixed(2), +len.toFixed(2), +(prev * TIER).toFixed(2), +Math.atan2(ux, uz).toFixed(4)]); n += iu - start; start = -1; }
-            if (t && start < 0) start = iu;
+        // group cells into 40 ft container slots (4 x 3.05 m = 12.2 m); a slot is stacked when at least
+        // two of its cells are, at the median tier of those cells
+        const rr = []; let n = 0, rowCells = 0, rows = 0;
+        for (let iv = 0; iv < nV; iv++) {
+          let inRow = false;
+          for (let iu = 0; iu + 4 <= nU; iu += 4) {
+            const t = [0, 1, 2, 3].map((k) => C[iv * nU + iu + k]).filter(Boolean).sort();
+            if (t.length >= 2) {
+              const tier = t[t.length >> 1], su = -half + (iu + 2) * ALONG, sv = -half + (iv + 0.5) * ACROSS;
+              rr.push([+(obb.cx + ux * su + vx * sv).toFixed(2), +(obb.cz + uz * su + vz * sv).toFixed(2), 12.2, +(tier * TIER).toFixed(2), +Math.atan2(ux, uz).toFixed(4)]);
+              n += t.length; rowCells++; if (!inRow) rows++; inRow = true;
+            } else inRow = false;
           }
         }
-        const score = rr.length ? n / rr.length : 0; // longer rows = better alignment with the stacks
+        const score = rows ? rowCells / rows : 0; // longer continuous rows = better alignment with the stacks
         if (!best || score > best.score) best = { score, rr, n };
       }
       if (best) { runs.push(...best.rr); cells += best.n; }

@@ -6,7 +6,7 @@ import { CONFIG, tileRect, tileAt, tileKey } from '../config.js';
 import { parseOverpass, buildFeatures, summarise, overtureBuildings } from '../geo/osm.js';
 import { landPolygons } from '../geo/coast.js';
 import { SpatialGrid } from '../geo/spatial.js';
-import { pointInRing, pointInPolygon, distToSegment, bounds, clipRingToRect, ensureCCW } from '../geo/polygon.js';
+import { pointInRing, pointInPolygon, distToSegment, bounds, clipRingToRect, ensureCCW, orientedBox } from '../geo/polygon.js';
 import { ChunkedAccum } from './accum.js';
 import { addBuilding } from './buildings.js';
 import { buildRoads, buildRail } from './roads.js';
@@ -232,9 +232,32 @@ export class World extends EventTarget {
     tile.surfaces = piers.surfaces; this.surfaces.push(...piers.surfaces);
     ctx.surfaceAt = this.surfaceAt;
     // --- buildings ---
+    // Beach huts: OSM-tagged huts, plus narrow rows of buildings on or next to a mapped beach
+    // (often a whole row as one footprint, e.g. in Overture). Rows are split into individual huts.
+    const beaches = f.areas.filter((a) => a.kind === 'beach' || a.kind === 'shingle');
+    const nearBeach = (b) => beaches.some((a) => { if (pointInRing(b.cx, b.cz, a.outer)) return true; for (let k = 0; k < a.outer.length; k++) { const p = a.outer[k], q = a.outer[(k + 1) % a.outer.length]; if (distToSegment(b.cx, b.cz, p[0], p[1], q[0], q[1]).d < 25) return true; } return false; });
+    const hutRows = [];
+    for (const b of ownBuildings) {
+      if (b.isPart || b.hasParts) continue;
+      const obb = orientedBox(b.outer); if (!obb) continue;
+      const row = b.kind === 'beach_hut' ? obb.length > 5 : (b.area <= 700 && obb.width <= 3.8 && obb.length >= 6 && b.area / obb.area > 0.8 && (b.heightSource === 'estimated' || b.height < 4.5) && nearBeach(b));
+      if (row || (b.kind === 'beach_hut')) { b.hutRow = { obb, inferred: b.kind !== 'beach_hut' }; hutRows.push(b); }
+    }
     let nb = 0;
     for (const b of ownBuildings) {
       if (b.hasParts) { this._addCollider(tile, b); continue; }
+      if (b.hutRow) {
+        const { obb } = b.hutRow; const n = Math.max(1, Math.round(obb.length / 2.6)), seg = obb.length / n;
+        for (let k = 0; k < n; k++) {
+          const s0 = -obb.length / 2 + k * seg + 0.08, s1 = s0 + seg - 0.16, hw = obb.width / 2;
+          const P = (su, sv) => [obb.cx + obb.ux * su - obb.uz * sv, obb.cz + obb.uz * su + obb.ux * sv];
+          const hut = { ...b, id: b.id * 64 + k, outer: [P(s0, -hw), P(s1, -hw), P(s1, hw), P(s0, hw)], holes: [], kind: 'beach_hut', height: 2.3, heightSource: b.heightSource, roofShape: 'gabled', roofHeight: 0.7, area: (s1 - s0) * obb.width, shop: false, hutRow: null };
+          [hut.cx, hut.cz] = P((s0 + s1) / 2, 0);
+          addBuilding(hut, ctx);
+        }
+        this._addCollider(tile, b);
+        continue;
+      }
       const col = addBuilding(b, ctx);
       if (col && !b.isPart) this._addCollider(tile, b, col);
       if (col?.extraRings?.length) for (const ring of col.extraRings) for (let k = 0; k < ring.length; k++) {
@@ -288,25 +311,33 @@ export class World extends EventTarget {
       if (c.x >= r.minX && c.x < r.maxX && c.z >= r.minZ && c.z < r.maxZ) list.push({ ...c, len, h, ang: Math.PI / 2 });
     }
     if (!list.length) return null;
-    const geo = new THREE.BoxGeometry(1, 1, 1); geo.translate(0, 0.5, 0);
-    const uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * 4, uv.getY(i) * 2);
     const t = Textures.containerTexture();
     const mat = new THREE.MeshStandardMaterial({ map: t.map, normalMap: t.normalMap, roughnessMap: t.roughnessMap, roughness: 1, metalness: 0.3 });
-    const im = new THREE.InstancedMesh(geo, mat, list.length);
     const PAL = [0x1f4e8c, 0x9c2a22, 0x2f6b3a, 0x7a7d80, 0xd8d6cf, 0x1c6e7a, 0xb06a25, 0x5d3a6e, 0x2a2f36];
+    const group = new THREE.Group(); group.name = 'container-stacks';
     const m4 = new THREE.Matrix4(), col = new THREE.Color(), colliders = [];
-    list.forEach((b, i) => {
-      const y = this.ground(b.x, b.z);
-      const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), b.ang);
-      m4.compose(new THREE.Vector3(b.x, y, b.z), q, new THREE.Vector3(2.44, b.h, Math.max(0.5, b.len - 0.3))); im.setMatrixAt(i, m4);
-      im.setColorAt(i, col.set(PAL[Math.floor(Math.abs(Math.sin(b.x * 12.9898 + b.z * 78.233)) * 43758.5453) % PAL.length]));
-      const fx = Math.sin(b.ang), fz = Math.cos(b.ang), hl = b.len / 2, hw = 1.22;
-      const P = (s1, s2) => [b.x + fx * s1 - fz * s2, b.z + fz * s1 + fx * s2];
-      const c4 = [P(-hl, -hw), P(hl, -hw), P(hl, hw), P(-hl, hw)];
-      for (let k = 0; k < 4; k++) colliders.push({ type: 'segment', a: c4[k], b: c4[(k + 1) % 4], r: 0.05, y0: y, top: y + b.h, kind: 'building', id: -1 });
-    });
-    im.castShadow = true; im.receiveShadow = true; im.computeBoundingSphere(); im.renderOrder = 10; im.name = 'container-stacks';
-    return { mesh: im, colliders, count: list.length };
+    const byTier = new Map();
+    for (const b of list) { const tier = Math.max(1, Math.round(b.h / 2.59)); if (!byTier.has(tier)) byTier.set(tier, []); byTier.get(tier).push(b); }
+    for (const [tier, items] of byTier) {
+      // one texture repeat per container along the length and per tier vertically
+      const geo = new THREE.BoxGeometry(1, 1, 1); geo.translate(0, 0.5, 0);
+      const uv = geo.attributes.uv, nrm = geo.attributes.normal;
+      for (let k = 0; k < uv.count; k++) { const side = Math.abs(nrm.getX(k)) > 0.5; uv.setXY(k, uv.getX(k) * (side ? 4 : 1), uv.getY(k) * tier); }
+      const im = new THREE.InstancedMesh(geo, mat, items.length);
+      items.forEach((b, i) => {
+        const y = this.ground(b.x, b.z);
+        const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), b.ang);
+        m4.compose(new THREE.Vector3(b.x, y, b.z), q, new THREE.Vector3(2.44, tier * 2.59, Math.max(0.5, b.len - 0.25))); im.setMatrixAt(i, m4);
+        im.setColorAt(i, col.set(PAL[Math.floor(Math.abs(Math.sin(b.x * 12.9898 + b.z * 78.233)) * 43758.5453) % PAL.length]));
+        const fx = Math.sin(b.ang), fz = Math.cos(b.ang), hl = b.len / 2, hw = 1.22;
+        const P = (s1, s2) => [b.x + fx * s1 - fz * s2, b.z + fz * s1 + fx * s2];
+        const c4 = [P(-hl, -hw), P(hl, -hw), P(hl, hw), P(-hl, hw)];
+        for (let k = 0; k < 4; k++) colliders.push({ type: 'segment', a: c4[k], b: c4[(k + 1) % 4], r: 0.05, y0: y, top: y + tier * 2.59, kind: 'building', id: -1 });
+      });
+      im.castShadow = true; im.receiveShadow = true; im.computeBoundingSphere(); im.renderOrder = 10;
+      group.add(im);
+    }
+    return { mesh: group, colliders, count: list.length };
   }
 
   _tileLand(tile, x, z) { return tile.land && tile.land.some((l) => pointInPolygon(x, z, l.outer, l.holes)); }
