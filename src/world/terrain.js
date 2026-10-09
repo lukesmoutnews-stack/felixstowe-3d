@@ -3,7 +3,11 @@
 // Two layouts: a single grid (small areas/tests) or 1 km chunks streamed with the map tiles.
 
 export class Terrain {
-  constructor() { this.grid = null; this.seaLevel = -0.25; this.mode = 'flat'; this.chunks = null; }
+  constructor() { this.grid = null; this.seaLevel = -0.25; this.mode = 'flat'; this.chunks = null; this.clamps = []; }
+
+  /** Keep the ground inside a footprint at or below maxY (dug-in buildings with interiors). */
+  addClamp(ring, maxY) { let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity; for (const [x, z] of ring) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); } this.clamps.push({ ring, maxY, x0, x1, z0, z1 }); }
+  _clamp(x, z, h) { for (const c of this.clamps) { if (x < c.x0 || x > c.x1 || z < c.z0 || z > c.z1) continue; let ins = false; const r = c.ring; for (let i = 0, j = r.length - 1; i < r.length; j = i++) { if ((r[i][1] > z) !== (r[j][1] > z) && x < (r[j][0] - r[i][0]) * (z - r[i][1]) / (r[j][1] - r[i][1]) + r[i][0]) ins = !ins; } if (ins && h > c.maxY) h = c.maxY; } return h; }
 
   /** Load terrain.json (+ terrain.bin for a single grid). Returns true when LiDAR terrain is active. */
   async load(url, frame) {
@@ -59,7 +63,8 @@ export class Terrain {
   }
 
   /** Height (m ODN) at world x,z. */
-  heightAt(x, z) {
+  heightAt(x, z) { const h = this._heightAt(x, z); return this.clamps.length ? this._clamp(x, z, h) : h; }
+  _heightAt(x, z) {
     if (this.mode === 'flat') return 0;
     const o = this.frame.toOSGB(x, z); const under = this.seaLevel - 1.5;
     if (this.chunks) {

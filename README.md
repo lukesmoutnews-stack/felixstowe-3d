@@ -38,7 +38,7 @@ The app never substitutes test data silently: synthetic and other-region data se
 - [Architecture decision record](docs/architecture.md)
 - [Validation, visual QA and performance log](docs/validation.md)
 - [Hamilton Road shops: sources, corrections, sign styles](docs/hamilton-road.md)
-- [Hand-modelled buildings (pier, leisure centre, Fish Dish, The Regal)](docs/landmark-models.md)
+- [Hand-modelled buildings (pier, leisure centre, Fish Dish, The Regal, Spa Pavilion with interior)](docs/landmark-models.md)
 - [Roadmap and known limitations](docs/roadmap.md)
 - [Setup and deployment](docs/setup.md)
 

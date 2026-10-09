@@ -16,7 +16,10 @@ export class CameraRig {
   cycle() { this.mode = MODES[(MODES.indexOf(this.mode) + 1) % MODES.length]; this.transition = 1; if (this.mode === 'overview') this.pitch = -0.95; else if (this.pitch < -0.6) this.pitch = -0.25; }
 
   _blocked(x, y, z) {
+    const room = this._room; // inside an enterable building: stay within its walls and under its ceiling
+    if (room) return !pointInRing(x, z, room.ring) || y > room.ceilingAt(x, z) - 0.25;
     for (const b of this.world.buildingGrid.query(x, z, x, z)) {
+      if (b.b.enterable && this.world.interiorAt(x, z, y)) continue;
       if (!pointInRing(x, z, b.outer)) continue;
       const top = this.world.ground(b.b.cx, b.b.cz) + b.b.height + 3;
       if (y < top) return true;
@@ -48,6 +51,7 @@ export class CameraRig {
     } else {
       const D = this.mode === 'overview' ? this.overDist : (driving ? Math.max(this.dist, 7.5) : this.dist);
       let d = D;
+      this._room = this.mode !== 'overview' && !driving ? this.world.interiorAt?.(head.x, head.z, head.y) : null;
       if (this.mode !== 'overview') {
         // pull camera in front of walls
         for (let s = 0.6; s <= D; s += 0.4) {

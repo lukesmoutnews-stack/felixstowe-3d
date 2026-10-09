@@ -16,6 +16,8 @@ export const LANDMARKS = [
     style: { facade: 'render', tint: [0.98, 0.98, 0.96], windows: true },
     facts: [
       { text: 'Built in 1938 to replace the 1910 Floral Hall, the Spa Pavilion theatre was bombed in 1941 and rebuilt in 1950.', source: 'https://database.theatrestrust.org.uk/resources/theatres/show/140-spa-pavilion' },
+      { text: 'The theatre has a raked auditorium with a proscenium stage and 919 seats. A sea-view lounge was added in 1960.', source: 'https://database.theatrestrust.org.uk/resources/theatres/show/140-spa-pavilion' },
+      { text: 'After closing in January 2013, it was bought by NRG Theatres in March 2015 and reopened that November.', source: 'https://database.theatrestrust.org.uk/resources/theatres/show/140-spa-pavilion' },
       { text: 'It stands below Cliff Gardens and the Town Hall Garden, a Grade II registered park and garden (List entry 1001220).', source: 'https://historicengland.org.uk/listing/the-list/list-entry/1001220' },
     ],
   },

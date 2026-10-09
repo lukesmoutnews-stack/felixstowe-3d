@@ -16,6 +16,7 @@ import { buildProps, buildBarriers, buildPiers } from './furniture.js';
 import { isPierBuilding, buildPierBuilding } from './pier-building.js';
 import { isFishDish, buildFishDish } from './fish-dish.js';
 import { isRegal, buildRegal } from './regal.js';
+import { isSpaPavilion, buildSpaPavilion, spaFloorLevel } from './spa-pavilion.js';
 import { isLeisureCentre, buildLeisureCentre, leisureMaterial } from './leisure-centre.js';
 import { collectBusinesses, markShopBuildings, buildSigns } from './shopfronts.js';
 import { facadeMaterial, shopMaterial, doorMaterial, rollerMaterial, roofMaterial, groundMaterial, waterMaterial, plainMaterial, LAYER } from './materials.js';
@@ -38,6 +39,7 @@ export class World extends EventTarget {
     this.pois = new Map();
     this.surfaces = [];                        // pier decks
     this._signMats = new Map();                // per-tile shop sign atlases
+    this.interiors = [];                       // enterable building volumes (camera stays inside)
     this.lidarTrees = [];
     this.lidarHeights = null;
     this.yardRuns = null; this.yardVersion = 1;                      // LiDAR-measured container stack blocks (OSGB)                  // OSM id -> [median, p90] height from EA DSM-DTM
@@ -50,6 +52,7 @@ export class World extends EventTarget {
     for (const s of this.surfaces) if (pointInRing(x, z, s.ring)) return s.heightAt(x, z);
     return this.ground(x, z);
   };
+  interiorAt(x, z, y = -Infinity) { return this.interiors.find((i) => pointInRing(x, z, i.ring) && y < i.top) || null; }
   onDeck(x, z) { return this.surfaces.find((s) => pointInRing(x, z, s.ring)) || null; }
 
   isLand(x, z) {
@@ -220,6 +223,9 @@ export class World extends EventTarget {
       isClear: this.isClear, nearestRoad: (x, z, d, f) => this.nearestRoad(x, z, d, f), isLand: (x, z) => this.isLand(x, z) || this._tileLand(tile, x, z), roadGrid: this.roadGrid, surfaceAt: null, points: f.points.filter((p) => inTile(p.x, p.z)) };
 
     // --- ground, areas ---
+    for (const b of ownBuildings) if (isSpaPavilion(b) && !b.isPart && !this.terrain.clamps.some((c) => c.id === b.id)) { // dig the theatre into the cliff
+      this.terrain.addClamp(b.outer, spaFloorLevel(b, this.ground) - 1.7); this.terrain.clamps[this.terrain.clamps.length - 1].id = b.id;
+    }
     buildGround(tile, ctx);
     buildAreas(f.areas, tile, ctx);
     await yieldFrame();
@@ -260,6 +266,14 @@ export class World extends EventTarget {
         landmarkMeshes.push(pb.group); this._addCollider(tile, b, pb.collider);
         for (const c of pb.colliders) this._addPrimitive(tile, c);
         tile.surfaces.push(...pb.surfaces); this.surfaces.push(...pb.surfaces); b.geom = null; b.customModel = 'pier-building';
+        continue;
+      }
+      if (isSpaPavilion(b) && !b.isPart) { // enterable: own colliders with door openings, floors and interior volume
+        const sp = buildSpaPavilion(b, ctx); landmarkMeshes.push(sp.group);
+        for (const c of sp.colliders) this._addPrimitive(tile, c);
+        tile.surfaces.push(...sp.surfaces); this.surfaces.unshift(...sp.surfaces);
+        tile.interiors = [...(tile.interiors || []), sp.interior]; this.interiors.push(sp.interior);
+        b.geom = null; b.customModel = 'spa-pavilion'; b.enterable = true;
         continue;
       }
       if (isRegal(b) && !b.isPart) {
@@ -403,6 +417,7 @@ export class World extends EventTarget {
     for (const g of [this.edgeGrid, this.circleGrid, this.roadGrid, this.buildingGrid, this.areaGrid]) g.remove(pred);
     this.surfaces = this.surfaces.filter((s) => !(t.surfaces || []).includes(s));
     for (const id of t.pois || []) this.pois.delete(id);
+    this.interiors = this.interiors.filter((i) => !(t.interiors || []).includes(i));
     for (const [k, m] of t.signMaterials || []) { m.map.dispose(); m.dispose(); this._signMats.delete(k); }
     this.tiles.delete(key);
     this.dispatchEvent(new CustomEvent('tileunloaded', { detail: key }));

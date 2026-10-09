@@ -39,7 +39,7 @@ export class Collision {
   /** True if (x,z) is inside a building footprint whose vertical extent covers y. */
   insideBuilding(x, z, y = null) {
     for (const b of this.world.buildingGrid.query(x, z, x, z)) {
-      if (b.b.minHeight > 2.2) continue;
+      if (b.b.minHeight > 2.2 || b.b.enterable) continue; // enterable buildings use their own wall colliders
       if (pointInRing(x, z, b.outer)) { if (y == null) return b; const top = this.world.ground(b.b.cx, b.b.cz) + b.b.height + 6; if (y < top) return b; }
     }
     return null;

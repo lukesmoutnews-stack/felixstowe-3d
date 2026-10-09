@@ -16,7 +16,7 @@
 
 ## Done: seafront landmark models (9 October 2026)
 
-- Felixstowe Pier building, Felixstowe Leisure Centre, Fish Dish and The Regal modelled from user photos on their OSM footprints (docs/landmark-models.md); pier deck now level with the pier terrace.
+- Felixstowe Pier building, Felixstowe Leisure Centre, Fish Dish, The Regal and the Spa Pavilion (with an enterable entrance room, foyer and auditorium) modelled from user photos on their OSM footprints (docs/landmark-models.md); pier deck now level with the pier terrace.
 
 ## Done: Hamilton Road shops (9 October 2026)
 
@@ -59,6 +59,6 @@
 - Container stacks exist only where LiDAR measured them inside mapped yards; their colours are invented. Cranes appear only where mapped, with a generic model and approximate orientation.
 - Kerbs are painted, not raised; bridges are drawn at ground level; tunnels are hidden.
 - The car is kinematic (no suspension or tyre slip).
-- Buildings cannot be entered; no characters yet.
+- Only the Spa Pavilion can be entered; no characters yet.
 - The map is grid-north-up (true north is ~2.6° anticlockwise).
 - Tiles outside the prepared data set render as open water.
