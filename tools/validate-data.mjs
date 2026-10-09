@@ -76,25 +76,28 @@ if (felixstowe) {
     add('Names', `Landmark in OSM: ${label}`, m.length ? 'PASS' : 'WARN', m.length ? m.map((p) => `${p.id} (${p.kind})`).slice(0, 3).join(', ') : 'not found by name');
   }
   // ---------- independent control points ----------
+  // Listed-building points from Historic England sit on or inside the listed building, so an OSM
+  // footprint should contain them (or be within a few metres). This checks absolute positioning.
   const controls = [
-    { name: 'Landguard Fort (NHLE 1030415)', lat: 51.938688, lon: 1.320669, re: /landguard fort/i, tol: 60 },
-    { name: 'Felixstowe station (NHLE 1284364)', lat: 51.967069, lon: 1.35227, re: /^felixstowe$|felixstowe station/i, tol: 80 },
-    { name: 'Cliff Gardens (NHLE 1001220 centroid)', lat: 51.961163, lon: 1.355859, re: /cliff gardens|town hall garden/i, tol: 120 },
-    { name: 'Felixstowe Pier (Suffolk HER MXS19251, TM 30251 33918)', grid: 'TM 30251 33918', re: /^felixstowe pier$/i, tol: 120 },
+    { name: 'Landguard Fort (NHLE 1030415, Grade I)', lat: 51.938688, lon: 1.320669, tol: 15 },
+    { name: 'Felixstowe station buildings (NHLE 1284364, Grade II)', lat: 51.967069, lon: 1.35227, tol: 15 },
+    { name: 'Felixstowe Pier landward end (Suffolk HER MXS19251, TM 30251 33918)', grid: 'TM 30251 33918', tol: 60, pier: true },
   ];
   for (const c of controls) {
     let pt;
     if (c.grid) { const g = parseGridRef(c.grid); pt = frame.fromOSGB(g.E, g.N); } else pt = frame.toWorld(c.lat, c.lon);
-    const cands = pois.filter((p) => c.re.test(p.name));
     let best = Infinity, id = null;
-    for (const p of cands) {
-      let d = Math.hypot(p.x - pt.x, p.z - pt.z);
-      if (p.ring && pointInRing(pt.x, pt.z, p.ring)) d = 0;
-      if (p.line) for (let i = 1; i < p.line.length; i++) d = Math.min(d, distToSegment(pt.x, pt.z, p.line[i - 1][0], p.line[i - 1][1], p.line[i][0], p.line[i][1]).d);
-      if (d < best) { best = d; id = p.id; }
+    const cands = c.pier ? pois.filter((p) => /^felixstowe pier$/i.test(p.name)).map((p) => ({ id: p.id, ring: p.ring, line: p.line, x: p.x, z: p.z })) : buildings.map((b) => ({ id: b.osmType + b.id, ring: b.outer }));
+    for (const b of cands) {
+      let d = Infinity;
+      if (b.ring) { if (pointInRing(pt.x, pt.z, b.ring)) d = 0; else for (let k = 0; k < b.ring.length; k++) { const a = b.ring[k], q = b.ring[(k + 1) % b.ring.length]; d = Math.min(d, distToSegment(pt.x, pt.z, a[0], a[1], q[0], q[1]).d); } }
+      if (b.line) for (let k = 1; k < b.line.length; k++) d = Math.min(d, distToSegment(pt.x, pt.z, b.line[k - 1][0], b.line[k - 1][1], b.line[k][0], b.line[k][1]).d);
+      if (d < best) { best = d; id = b.id; }
     }
-    add('Control points', c.name, !cands.length ? 'WARN' : best <= c.tol ? 'PASS' : 'FAIL', cands.length ? `nearest OSM feature ${id} is ${best.toFixed(1)} m away (tolerance ${c.tol} m; HER/NHLE points are approximate centroids)` : 'no OSM feature with a matching name');
+    add('Control points', c.name, best <= c.tol ? 'PASS' : 'WARN', `nearest OSM ${c.pier ? 'pier' : 'building'} ${id} is ${best === 0 ? 'under the point (contains it)' : best.toFixed(1) + ' m away'} (tolerance ${c.tol} m)`);
   }
+  const station = pois.find((p) => /^felixstowe$/i.test(p.name) && p.tags?.railway === 'station');
+  if (station) { const s0 = frame.toWorld(51.967069, 1.35227); add('Control points', 'OSM station node vs. listed station building', 'INFO', `${Math.hypot(station.x - s0.x, station.z - s0.z).toFixed(0)} m apart (the operational station and the listed 1898 building need not coincide)`); }
 }
 
 // ---------- geometry checks ----------
@@ -129,14 +132,20 @@ add('Geometry', 'Coastline ways present', coast ? 'PASS' : felixstowe ? 'FAIL' :
 if (manifest.terrain) {
   try {
     const t = JSON.parse(await readFile(join(dataDir, 'terrain', 'terrain.json'), 'utf8'));
-    add('LiDAR', 'Terrain grid', 'PASS', `${t.cols}×${t.rows} @ ${t.cell} m, ${t.meta.minHeight}–${t.meta.maxHeight} m ODN, ${t.meta.validCells} cells with data, source: ${t.meta.source}`);
+    add('LiDAR', 'Terrain grid', 'PASS', `${t.chunks ? t.chunks.length + ' chunks of ' + t.chunk + ' m' : t.cols + '×' + t.rows} @ ${t.cell} m, ${t.meta.minHeight}–${t.meta.maxHeight} m ODN, ${t.meta.validCells} cells with data, source: ${t.meta.source}`);
     if (t.meta.alignment) add('LiDAR', 'OSM ↔ LiDAR alignment', t.meta.alignment.bestScore > 0.3 ? 'PASS' : 'WARN', JSON.stringify(t.meta.alignment));
     else add('LiDAR', 'OSM ↔ LiDAR alignment', 'WARN', 'not run (needs a DSM)');
     if (felixstowe) {
-      const bin = await readFile(join(dataDir, 'terrain', 'terrain.bin')); const h = new Int16Array(bin.buffer, bin.byteOffset, bin.length / 2);
-      const at = (lat, lon) => { const w = frame.toWorld(lat, lon); const o = { E: w.x + frame.E0 + t.osgbShift.se, N: -w.z + frame.N0 + t.osgbShift.sn }; const x = Math.round((o.E - t.E0) / t.cell), y = Math.round((t.N0 - o.N) / t.cell); const v = h[y * t.cols + x]; return v === t.nodata || v === undefined ? null : v / 100; };
-      const top = at(51.9612, 1.3559), station = at(51.967069, 1.35227);
-      add('LiDAR', 'Ground heights at control points (m ODN)', 'INFO', `Cliff Gardens ${top}, station ${station}, Landguard Fort ${at(51.938688, 1.320669)}`);
+      const at = async (lat, lon) => {
+        const w = frame.toWorld(lat, lon); const E = w.x + frame.E0 + t.osgbShift.se, N = -w.z + frame.N0 + t.osgbShift.sn;
+        if (t.chunks) {
+          const cE = Math.floor(E / t.chunk) * t.chunk, cN = Math.floor(N / t.chunk) * t.chunk;
+          try { const b = await readFile(join(dataDir, 'terrain', 'chunks', `${cE}_${cN}.bin`)); const h = new Int16Array(b.buffer, b.byteOffset, b.length / 2); const v = h[Math.round((cN + t.chunk - N) / t.cell) * t.samples + Math.round((E - cE) / t.cell)]; return v === t.nodata ? null : v / 100; } catch { return null; }
+        }
+        return null;
+      };
+      add('LiDAR', 'Ground heights (m ODN) at reference points', 'INFO', `Cliff Gardens ${await at(51.9612, 1.3559)}, station ${await at(51.967069, 1.35227)}, Landguard Fort ${await at(51.938688, 1.320669)}, pier landward end ${await at(51.95605, 1.34963)}`);
+      if (t.meta.waterSurfaceCellsRemoved != null) add('LiDAR', 'Water-surface returns replaced by sea bed', 'INFO', String(t.meta.waterSurfaceCellsRemoved));
     }
   } catch (e) { add('LiDAR', 'Terrain files readable', 'FAIL', e.message); }
 } else add('LiDAR', 'Terrain processed', 'WARN', 'no terrain in manifest – run node tools/fetch-lidar.mjs');

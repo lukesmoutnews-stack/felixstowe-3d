@@ -71,6 +71,10 @@ export function overpassQuery(bb, timeout = CONFIG.overpass.timeout) {
   way["water"](${b});
   way["area:highway"](${b});
   way["place"="square"](${b});
+  way["historic"](${b});
+  way["tourism"](${b});
+  relation["type"="multipolygon"]["historic"](${b});
+  relation["type"="multipolygon"]["tourism"](${b});
   relation["type"="multipolygon"]["landuse"](${b});
   relation["type"="multipolygon"]["leisure"](${b});
   relation["type"="multipolygon"]["natural"](${b});
@@ -100,12 +104,12 @@ export function wantedByQuery(type, t) {
   }
   if (type === 'way') {
     return !!(t.highway || t.building || t['building:part'] || t.landuse || t.leisure || t.natural || t.man_made || t.railway ||
-      t.waterway || t.water || t['area:highway']) || /parking|school|hospital|college|grave_yard/.test(t.amenity || '') ||
+      t.waterway || t.water || t['area:highway'] || t.historic || t.tourism) || /parking|school|hospital|college|grave_yard/.test(t.amenity || '') ||
       /wall|fence|hedge|retaining_wall|city_wall|guard_rail/.test(t.barrier || '') || t.place === 'square';
   }
   if (type === 'relation') {
     if (t.building) return true;
-    return t.type === 'multipolygon' && !!(t.landuse || t.leisure || t.natural || t.man_made || t.amenity);
+    return t.type === 'multipolygon' && !!(t.landuse || t.leisure || t.natural || t.man_made || t.amenity || t.historic || t.tourism);
   }
   return false;
 }

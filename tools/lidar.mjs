@@ -84,11 +84,12 @@ function sampler(rasters) {
 
 // ---------- OSM context ----------
 async function loadOsm(frame) {
-  const feats = { buildings: [], roads: [], coast: [], yards: [] };
+  const feats = { buildings: [], roads: [], coast: [], yards: [], intertidal: [] };
+  const isTidal = (a) => ['beach', 'shingle', 'mud'].includes(a.kind) || (a.kind === 'wetland' && /tidal/.test(a.tags.wetland || ''));
   const isYard = (a) => a.kind === 'port' || (a.kind === 'industrial' && /port|container|logistic/i.test((a.tags.industrial || '') + (a.tags.name || '')));
   if (args.fixture) {
     const j = JSON.parse(await readFile(join(root, 'test/fixtures', one('fixture') + '.json'), 'utf8'));
-    const f = buildFeatures(parseOverpass(j, frame)); feats.buildings = f.buildings; feats.roads = f.roads; feats.coast = f.coastLines; feats.yards = f.areas.filter(isYard); feats.tiles = ['fixture'];
+    const f = buildFeatures(parseOverpass(j, frame)); feats.buildings = f.buildings; feats.roads = f.roads; feats.coast = f.coastLines; feats.yards = f.areas.filter(isYard); feats.intertidal = f.areas.filter(isTidal); feats.tiles = ['fixture'];
     return feats;
   }
   let manifest = { tiles: [] };
@@ -99,7 +100,7 @@ async function loadOsm(frame) {
     const f = buildFeatures(parseOverpass(j, frame));
     for (const b of f.buildings) if (!seen.has('b' + b.id)) { seen.add('b' + b.id); feats.buildings.push(b); }
     for (const r of f.roads) if (!seen.has('r' + r.id)) { seen.add('r' + r.id); feats.roads.push(r); }
-    for (const a of f.areas) if (isYard(a) && !seen.has('a' + a.id)) { seen.add('a' + a.id); feats.yards.push(a); }
+    for (const a of f.areas) { if (isYard(a) && !seen.has('a' + a.id)) { seen.add('a' + a.id); feats.yards.push(a); } if (isTidal(a) && !seen.has('t' + a.id)) { seen.add('t' + a.id); feats.intertidal.push(a); } }
     for (const c of f.coastLines) { const k = 'c' + c[0].join(',') + c.length; if (!seen.has(k)) { seen.add(k); feats.coast.push(c); } }
   }
   feats.tiles = manifest.tiles || [];
@@ -177,22 +178,42 @@ for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) { const v = dtm(E0
 // Gaps: LiDAR has no returns over water. Cells on land (OSM coastline) are filled from their
 // neighbours so there are no pits or walls; cells at sea get a sea-bed level below the water.
 const seaBed = Number(one('seabed', -2));
-const landCache = new Map();
-const isLand = (x, z) => {
-  const [i, j] = tileAt(x, z); const k = i + '_' + j;
-  if (!landCache.has(k)) {
-    const r = tileRect(i, j), inR = (px, pz) => px >= r.minX && px < r.maxX && pz >= r.minZ && pz < r.maxZ;
-    const hint = osm.buildings.some((b) => inR(b.cx, b.cz)) || osm.roads.some((rd) => rd.pts.some((p) => inR(p[0], p[1])));
-    landCache.set(k, landPolygons(osm.coast, r, osm.coast.length ? hint : true).land);
+// Land/sea mask in world coordinates (2 m): 1 = land behind the OSM coastline (mean high water),
+// 2 = mapped intertidal ground (beach, shingle, mud, sand), 0 = sea. LiDAR also records the water
+// surface near the shore, which would otherwise appear as flat ground above the sea.
+const MR = 2, mx0 = area.minX - 50, mz0 = area.minZ - 50, MW = Math.ceil((area.maxX - mx0 + 50) / MR), MH = Math.ceil((area.maxZ - mz0 + 50) / MR);
+const mask = new Uint8Array(MW * MH);
+function fill(rings, v) {
+  for (let j = 0; j < MH; j++) {
+    const z = mz0 + (j + 0.5) * MR, xs = [];
+    for (const ring of rings) for (let k = 0; k < ring.length; k++) {
+      const a = ring[k], b = ring[(k + 1) % ring.length];
+      if ((a[1] > z) !== (b[1] > z)) xs.push(a[0] + ((z - a[1]) / (b[1] - a[1])) * (b[0] - a[0]));
+    }
+    xs.sort((p, q) => p - q);
+    for (let k = 0; k + 1 < xs.length; k += 2) {
+      const i0 = Math.max(0, Math.ceil((xs[k] - mx0) / MR - 0.5)), i1 = Math.min(MW - 1, Math.floor((xs[k + 1] - mx0) / MR - 0.5));
+      for (let ii = i0; ii <= i1; ii++) if (mask[j * MW + ii] < v) mask[j * MW + ii] = v;
+    }
   }
-  return landCache.get(k).some((l) => pointInPolygon(x, z, l.outer, l.holes));
-};
-let filledLand = 0, filledSea = 0;
+}
+const haveCoast = osm.coast.length > 0;
+if (haveCoast) {
+  const [ti0, tj0] = tileAt(area.minX, area.minZ), [ti1, tj1] = tileAt(area.maxX, area.maxZ);
+  for (let tj = tj0; tj <= tj1; tj++) for (let ti = ti0; ti <= ti1; ti++) {
+    const r = tileRect(ti, tj), inR = (px, pz) => px >= r.minX && px < r.maxX && pz >= r.minZ && pz < r.maxZ;
+    const hint = osm.buildings.some((b) => inR(b.cx, b.cz)) || osm.roads.some((rd) => rd.pts.some((p) => inR(p[0], p[1])));
+    for (const l of landPolygons(osm.coast, r, hint).land) fill([l.outer, ...l.holes], 1);
+  }
+  for (const a of osm.intertidal) fill([a.outer, ...(a.holes || [])], 2);
+} else mask.fill(1);
+const maskAt = (x, z) => { const i = Math.floor((x - mx0) / MR), j = Math.floor((z - mz0) / MR); return i < 0 || j < 0 || i >= MW || j >= MH ? 0 : mask[j * MW + i]; };
+let filledLand = 0, filledSea = 0, waterSurface = 0;
 const gaps = [];
 for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
-  if (!Number.isNaN(H[y * cols + x])) continue;
-  const w = frame.fromOSGB(E0 + x * cell, N1 - y * cell);
-  if (osm.buildings.length && isLand(w.x, w.z)) gaps.push(y * cols + x); else { H[y * cols + x] = seaBed; filledSea++; }
+  const idx = y * cols + x, w = frame.fromOSGB(E0 + x * cell, N1 - y * cell), m = maskAt(w.x, w.z);
+  if (m === 0) { if (!Number.isNaN(H[idx])) waterSurface++; H[idx] = seaBed; filledSea++; continue; }
+  if (Number.isNaN(H[idx])) { if (m === 1) gaps.push(idx); else { H[idx] = seaBed; filledSea++; } }
 }
 for (let pass = 0; pass < 400 && gaps.length; pass++) { // diffuse inwards from valid neighbours
   const still = [];
@@ -206,7 +227,7 @@ for (let pass = 0; pass < 400 && gaps.length; pass++) { // diffuse inwards from 
 for (const idx of gaps) { H[idx] = 0; filledLand++; }
 let minH = Infinity, maxH = -Infinity; for (const v of H) { if (v < minH) minH = v; if (v > maxH) maxH = v; }
 await mkdir(outDir, { recursive: true });
-const meta = { source: one('source', 'Environment Agency LiDAR DTM'), files: dtmFiles.map((f) => basename(f)), created: new Date().toISOString(), licence: 'Open Government Licence v3.0', attribution: '© Environment Agency copyright and/or database right. All rights reserved.', validCells: valid, filledLandCells: filledLand, seaCells: filledSea, minHeight: +minH.toFixed(2), maxHeight: +maxH.toFixed(2), alignment };
+const meta = { source: one('source', 'Environment Agency LiDAR DTM'), files: dtmFiles.map((f) => basename(f)), created: new Date().toISOString(), licence: 'Open Government Licence v3.0', attribution: '© Environment Agency copyright and/or database right. All rights reserved.', validCells: valid, filledLandCells: filledLand, seaCells: filledSea, waterSurfaceCellsRemoved: waterSurface, minHeight: +minH.toFixed(2), maxHeight: +maxH.toFixed(2), alignment };
 const header = { cell, scale: 0.01, nodata: -32768, seaLevel: Number(one('sea', 0.3)), osgbShift: shift, meta };
 if (args.single) { // one file (small areas and tests)
   const I = Int16Array.from(H, (v) => Math.round(v * 100));
@@ -228,7 +249,7 @@ if (args.single) { // one file (small areas and tests)
   await writeFile(join(outDir, 'terrain.json'), JSON.stringify({ ...header, chunk: CH, samples: n, chunks }, null, 2));
   console.log(`  wrote ${chunks.length} terrain chunks of ${CH} m`);
 }
-console.log(`  heights ${minH.toFixed(1)} – ${maxH.toFixed(1)} m ODN; ${valid} LiDAR cells, ${filledLand} land gaps filled, ${filledSea} sea cells`);
+console.log(`  heights ${minH.toFixed(1)} – ${maxH.toFixed(1)} m ODN; ${valid} LiDAR cells, ${filledLand} land gaps filled, ${filledSea} sea cells (${waterSurface} LiDAR water-surface returns removed)`);
 
 // ---------- 3. building heights + 4. trees (need DSM) ----------
 const outputs = { terrain: 'data/terrain/terrain.json' };

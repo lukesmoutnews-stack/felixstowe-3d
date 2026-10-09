@@ -1,5 +1,5 @@
 {
-  "note": "Written by tools/fetch-osm.mjs and tools/lidar.mjs. Lists pre-downloaded data; empty means the browser fetches live OSM data.",
+  "note": "Written by tools/fetch-osm.mjs, tools/osm-from-pbf.mjs and tools/lidar.mjs. The prepared Felixstowe data lives on the `data` branch (git checkout data -- data). Empty means the browser fetches live OSM data.",
   "tiles": [],
   "terrain": null
 }
