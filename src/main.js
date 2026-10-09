@@ -75,7 +75,7 @@ class App {
     if (hasTerrain) {
       const dir = terrainPath.replace(/[^/]*$/, '');
       try { const r = await fetch(dir + 'building-heights.json'); if (r.ok) { this.world.lidarHeights = new Map(Object.entries((await r.json()).heights).map(([k, v]) => [Number(k), v])); this.ui.log(`LiDAR building heights: ${this.world.lidarHeights.size} buildings.`); } } catch { /* optional */ }
-      try { const r = await fetch(dir + 'yard.json'); if (r.ok) { this.world.yardRuns = (await r.json()).runs; this.ui.log(`LiDAR container stacks: ${this.world.yardRuns.length} blocks.`); } } catch { /* optional */ }
+      try { const r = await fetch(dir + 'yard.json'); if (r.ok) { const y = await r.json(); this.world.yardRuns = y.runs; this.world.yardVersion = y.version || 1; this.ui.log(`LiDAR container stacks: ${this.world.yardRuns.length} blocks.`); } } catch { /* optional */ }
       try { const r = await fetch(dir + 'trees.json'); if (r.ok) this.world.lidarTrees = (await r.json()).trees.map(([E, N, h]) => ({ ...this.frame.fromOSGB(E, N), h })); } catch { /* optional */ }
     }
     this.ui.log(hasTerrain ? 'LiDAR terrain loaded (Environment Agency DTM).' : 'No LiDAR terrain file – using flat ground at sea level (documented limitation).');

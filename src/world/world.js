@@ -34,7 +34,7 @@ export class World extends EventTarget {
     this.surfaces = [];                        // pier decks
     this.lidarTrees = [];
     this.lidarHeights = null;
-    this.yardRuns = null;                      // LiDAR-measured container stack blocks (OSGB)                  // OSM id -> [median, p90] height from EA DSM-DTM
+    this.yardRuns = null; this.yardVersion = 1;                      // LiDAR-measured container stack blocks (OSGB)                  // OSM id -> [median, p90] height from EA DSM-DTM
     this.stats = { tiles: 0, buildMs: [] };
     this.loading = new Set();
   }
@@ -197,12 +197,16 @@ export class World extends EventTarget {
       tile.pois.push(p.id);
     }
     const shopPts = f.points.filter((p) => p.tags.shop || ['restaurant', 'cafe', 'pub', 'bar', 'fast_food', 'bank', 'pharmacy'].includes(p.tags.amenity));
+    // Landmark styling: by the building's own name, or by a named landmark area (e.g. a
+    // historic=fort polygon) that contains the building.
+    const lmAreas = f.pois.filter((p) => p.ring && matchLandmark(p)?.style);
     const landmarkStyle = (b) => {
-      const lm = b.name ? matchLandmark({ name: b.name, tags: {} }) : null;
+      let lm = b.name ? matchLandmark({ name: b.name, tags: {} }) : null;
+      if (!lm?.style) { const a = lmAreas.find((p) => pointInRing(b.cx, b.cz, p.ring)); if (a) lm = matchLandmark(a); }
       return lm && lm.style ? lm.style : null;
     };
     for (const b of ownBuildings) if (!b.shop && shopPts.some((p) => pointInRing(p.x, p.z, b.outer))) { b.shop = true; b.shopSource = 'osm:shop-node'; }
-    for (const b of ownBuildings) if (b.name && matchLandmark({ name: b.name, tags: {} })) b.landmark = true;
+    for (const b of ownBuildings) if ((b.name && matchLandmark({ name: b.name, tags: {} })) || lmAreas.some((p) => pointInRing(b.cx, b.cz, p.ring))) b.landmark = true;
 
     const ctx = { acc, ground: this.ground, terrain: this.terrain, hasTerrain: this.terrain.hasTerrain, landmarkStyle, settings: this.settings,
       isClear: this.isClear, nearestRoad: (x, z, d, f) => this.nearestRoad(x, z, d, f), isLand: (x, z) => this.isLand(x, z) || this._tileLand(tile, x, z), roadGrid: this.roadGrid, surfaceAt: null, points: f.points.filter((p) => inTile(p.x, p.z)) };
@@ -278,13 +282,14 @@ export class World extends EventTarget {
   _yardMesh(tile) {
     if (!this.yardRuns?.length) return null;
     const r = tile.rect, list = [];
-    for (const [E, N, len, h] of this.yardRuns) {
-      const c = this.frame.fromOSGB(E + len / 2, N + 1.25);
-      if (c.x >= r.minX && c.x < r.maxX && c.z >= r.minZ && c.z < r.maxZ) list.push({ ...c, len, h });
+    for (const run of this.yardRuns) {
+      if (this.yardVersion === 2) { const [x, z, len, h, ang] = run; if (x >= r.minX && x < r.maxX && z >= r.minZ && z < r.maxZ) list.push({ x, z, len, h, ang }); continue; }
+      const [E, N, len, h] = run; const c = this.frame.fromOSGB(E + len / 2, N + 1.25);
+      if (c.x >= r.minX && c.x < r.maxX && c.z >= r.minZ && c.z < r.maxZ) list.push({ ...c, len, h, ang: Math.PI / 2 });
     }
     if (!list.length) return null;
     const geo = new THREE.BoxGeometry(1, 1, 1); geo.translate(0, 0.5, 0);
-    const uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * 4, uv.getY(i) * 1);
+    const uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * 4, uv.getY(i) * 2);
     const t = Textures.containerTexture();
     const mat = new THREE.MeshStandardMaterial({ map: t.map, normalMap: t.normalMap, roughnessMap: t.roughnessMap, roughness: 1, metalness: 0.3 });
     const im = new THREE.InstancedMesh(geo, mat, list.length);
@@ -292,11 +297,13 @@ export class World extends EventTarget {
     const m4 = new THREE.Matrix4(), col = new THREE.Color(), colliders = [];
     list.forEach((b, i) => {
       const y = this.ground(b.x, b.z);
-      m4.makeScale(b.len, b.h, 2.45).setPosition(b.x, y, b.z); im.setMatrixAt(i, m4);
+      const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), b.ang);
+      m4.compose(new THREE.Vector3(b.x, y, b.z), q, new THREE.Vector3(2.44, b.h, Math.max(0.5, b.len - 0.3))); im.setMatrixAt(i, m4);
       im.setColorAt(i, col.set(PAL[Math.floor(Math.abs(Math.sin(b.x * 12.9898 + b.z * 78.233)) * 43758.5453) % PAL.length]));
-      const hx = b.len / 2, hz = 1.25;
-      for (const [a, c] of [[[b.x - hx, b.z - hz], [b.x + hx, b.z - hz]], [[b.x + hx, b.z - hz], [b.x + hx, b.z + hz]], [[b.x + hx, b.z + hz], [b.x - hx, b.z + hz]], [[b.x - hx, b.z + hz], [b.x - hx, b.z - hz]]])
-        colliders.push({ type: 'segment', a, b: c, r: 0.05, y0: y, top: y + b.h, kind: 'building', id: -1 });
+      const fx = Math.sin(b.ang), fz = Math.cos(b.ang), hl = b.len / 2, hw = 1.22;
+      const P = (s1, s2) => [b.x + fx * s1 - fz * s2, b.z + fz * s1 + fx * s2];
+      const c4 = [P(-hl, -hw), P(hl, -hw), P(hl, hw), P(-hl, hw)];
+      for (let k = 0; k < 4; k++) colliders.push({ type: 'segment', a: c4[k], b: c4[(k + 1) % 4], r: 0.05, y0: y, top: y + b.h, kind: 'building', id: -1 });
     });
     im.castShadow = true; im.receiveShadow = true; im.computeBoundingSphere(); im.renderOrder = 10; im.name = 'container-stacks';
     return { mesh: im, colliders, count: list.length };

@@ -20,7 +20,7 @@ import { CONFIG, tileRect, tileAt } from '../src/config.js';
 import { landPolygons } from '../src/geo/coast.js';
 import { LocalFrame } from '../src/geo/projection.js';
 import { parseOverpass, buildFeatures } from '../src/geo/osm.js';
-import { pointInPolygon, bounds, distToSegment, insetRing } from '../src/geo/polygon.js';
+import { pointInPolygon, bounds, distToSegment, insetRing, orientedBox } from '../src/geo/polygon.js';
 import { SpatialGrid } from '../src/geo/spatial.js';
 
 const args = {};
@@ -285,26 +285,47 @@ if (dsm) {
   await writeFile(join(outDir, 'trees.json'), JSON.stringify({ note: 'Tree tops detected from EA DSM - DTM (OSGB E, N, height m). Detection is approximate.', trees }));
   console.log(`Detected ${trees.length} probable trees.`);
   outputs.trees = 'data/terrain/trees.json';
-  // container stacks: measured above-ground height in mapped port/container yards (outside
-  // buildings), merged into east-west runs. Shape is measured; container colours are illustrative.
+  // Container stacks: measured above-ground height inside mapped port/container yards (outside
+  // buildings and roads), sampled on a grid aligned with each yard, quantised to container tiers
+  // (2.59 m), de-noised (isolated returns such as straddle carriers and masts are dropped) and merged
+  // into rows. The shape is measured; container colours in the game are illustrative.
   if (osm.yards.length) {
-    const yc = 2.5, runs = []; let cells = 0;
+    const ACROSS = 2.5, ALONG = 3.05, TIER = 2.59, runs = []; let cells = 0;
+    const nd = (x, z) => { const o = frame.toOSGB(x, z); return dsm(o.E, o.N) - dtm(o.E, o.N); };
     for (const a of osm.yards) {
-      const bb = bounds(a.outer); const o0 = frame.toOSGB(bb.minX, bb.maxZ), o1 = frame.toOSGB(bb.maxX, bb.minZ);
-      const e0 = Math.floor(Math.min(o0.E, o1.E) / yc) * yc, e1 = Math.max(o0.E, o1.E), n0 = Math.floor(Math.min(o0.N, o1.N) / yc) * yc, n1 = Math.max(o0.N, o1.N);
-      for (let N = n0; N <= n1; N += yc) {
-        let run = null;
-        for (let E = e0; E <= e1 + yc; E += yc) {
-          const w = frame.fromOSGB(E + yc / 2, N + yc / 2);
-          let h = NaN;
-          if (E <= e1 && pointInPolygon(w.x, w.z, a.outer, a.holes) && !inBuilding(w.x, w.z) && !onRoad(w.x, w.z)) { const v = dsm(E + yc / 2, N + yc / 2) - dtm(E + yc / 2, N + yc / 2); if (v > 2.2 && v < 16) h = Math.round(v / 2.59) * 2.59; }
-          if (!Number.isNaN(h) && h > 0) { cells++; if (run && Math.abs(run[3] - h) < 0.1) run[2] += yc; else { if (run) runs.push(run); run = [E, N, yc, h]; } }
-          else if (run) { runs.push(run); run = null; }
+      const obb = orientedBox(a.outer); if (!obb) continue;
+      let best = null;
+      for (const [ux, uz] of [[obb.ux, obb.uz], [-obb.uz, obb.ux]]) {
+        const vx = -uz, vz = ux, half = Math.max(obb.length, obb.width) / 2 + 5;
+        const nU = Math.ceil((2 * half) / ALONG), nV = Math.ceil((2 * half) / ACROSS);
+        const T = new Uint8Array(nU * nV);
+        for (let iv = 0; iv < nV; iv++) for (let iu = 0; iu < nU; iu++) {
+          const su = -half + (iu + 0.5) * ALONG, sv = -half + (iv + 0.5) * ACROSS;
+          const x = obb.cx + ux * su + vx * sv, z = obb.cz + uz * su + vz * sv;
+          if (!pointInPolygon(x, z, a.outer, a.holes) || inBuilding(x, z) || onRoad(x, z)) continue;
+          const h = nd(x, z); if (h > 2.0 && h < 15) T[iv * nU + iu] = Math.min(5, Math.max(1, Math.round(h / TIER)));
         }
+        const C = new Uint8Array(T.length); // de-noise: keep cells with at least 4 stacked neighbours in 3x3
+        for (let iv = 0; iv < nV; iv++) for (let iu = 0; iu < nU; iu++) {
+          if (!T[iv * nU + iu]) continue; let n = 0;
+          for (let dv = -1; dv <= 1; dv++) for (let du = -1; du <= 1; du++) { const a2 = iv + dv, b2 = iu + du; if (a2 >= 0 && b2 >= 0 && a2 < nV && b2 < nU && T[a2 * nU + b2]) n++; }
+          if (n >= 5) C[iv * nU + iu] = T[iv * nU + iu];
+        }
+        const rr = []; let n = 0;
+        for (let iv = 0; iv < nV; iv++) { let start = -1;
+          for (let iu = 0; iu <= nU; iu++) {
+            const t = iu < nU ? C[iv * nU + iu] : 0, prev = start >= 0 ? C[iv * nU + start] : 0;
+            if (start >= 0 && t !== prev) { const len = (iu - start) * ALONG, su = -half + start * ALONG + len / 2, sv = -half + (iv + 0.5) * ACROSS; rr.push([+(obb.cx + ux * su + vx * sv).toFixed(2), +(obb.cz + uz * su + vz * sv).toFixed(2), +len.toFixed(2), +(prev * TIER).toFixed(2), +Math.atan2(ux, uz).toFixed(4)]); n += iu - start; start = -1; }
+            if (t && start < 0) start = iu;
+          }
+        }
+        const score = rr.length ? n / rr.length : 0; // longer rows = better alignment with the stacks
+        if (!best || score > best.score) best = { score, rr, n };
       }
+      if (best) { runs.push(...best.rr); cells += best.n; }
     }
-    await writeFile(join(outDir, 'yard.json'), JSON.stringify({ note: 'Container stack blocks from EA DSM - DTM inside mapped port/container yards (OSGB E, N of south-west corner, length east, height m). Colours in the game are illustrative.', cell: yc, runs }));
-    console.log(`Container yards: ${cells} stacked cells in ${runs.length} runs.`);
+    await writeFile(join(outDir, 'yard.json'), JSON.stringify({ version: 2, note: 'Container stack rows from EA DSM - DTM inside mapped port/container yards: [world x, world z (centre), length m, height m, heading rad]. Colours in the game are illustrative.', runs }));
+    console.log(`Container yards: ${cells} stacked cells in ${runs.length} rows.`);
     outputs.yard = 'data/terrain/yard.json';
   }
 }
