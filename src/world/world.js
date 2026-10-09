@@ -13,6 +13,10 @@ import { buildRoads, buildRail } from './roads.js';
 import { buildGround, buildAreas } from './landcover.js';
 import { placeTrees, buildTreeMeshes } from './vegetation.js';
 import { buildProps, buildBarriers, buildPiers } from './furniture.js';
+import { isPierBuilding, buildPierBuilding } from './pier-building.js';
+import { isFishDish, buildFishDish } from './fish-dish.js';
+import { isRegal, buildRegal } from './regal.js';
+import { isLeisureCentre, buildLeisureCentre, leisureMaterial } from './leisure-centre.js';
 import { collectBusinesses, markShopBuildings, buildSigns } from './shopfronts.js';
 import { facadeMaterial, shopMaterial, doorMaterial, rollerMaterial, roofMaterial, groundMaterial, waterMaterial, plainMaterial, LAYER } from './materials.js';
 import { matchLandmark } from '../content/landmarks.js';
@@ -248,7 +252,29 @@ export class World extends EventTarget {
       if (row || (b.kind === 'beach_hut')) { b.hutRow = { obb, inferred: b.kind !== 'beach_hut' }; hutRows.push(b); }
     }
     let nb = 0;
+    const landmarkMeshes = [];
+    const pierStarts = piers.surfaces.flatMap((sf) => sf.ring);
     for (const b of ownBuildings) {
+      if (isPierBuilding(b) && !b.isPart) { // hand-modelled landmark (see pier-building.js)
+        const pb = buildPierBuilding(b, { ...ctx, pierStarts });
+        landmarkMeshes.push(pb.group); this._addCollider(tile, b, pb.collider);
+        for (const c of pb.colliders) this._addPrimitive(tile, c);
+        tile.surfaces.push(...pb.surfaces); this.surfaces.push(...pb.surfaces); b.geom = null; b.customModel = 'pier-building';
+        continue;
+      }
+      if (isRegal(b) && !b.isPart) {
+        const rg = buildRegal(b, ctx); landmarkMeshes.push(rg.group); this._addCollider(tile, b, rg.collider); b.geom = null; b.customModel = 'regal';
+        continue;
+      }
+      if (isFishDish(b) && !b.isPart) {
+        const fd = buildFishDish(b, ctx); landmarkMeshes.push(fd.group); this._addCollider(tile, b, fd.collider); b.geom = null; b.customModel = 'fish-dish';
+        continue;
+      }
+      if (isLeisureCentre(b) && !b.isPart) {
+        const lc = buildLeisureCentre(b, ctx); landmarkMeshes.push(...lc.meshes);
+        this._addCollider(tile, { ...b, outer: lc.collider.outer, holes: [] }, lc.collider); b.geom = null; b.customModel = 'leisure-centre';
+        continue;
+      }
       if (b.hasParts) { this._addCollider(tile, b); continue; }
       if (b.hutRow) {
         const { obb } = b.hutRow; const n = Math.max(1, Math.round(obb.length / 2.6)), seg = obb.length / n;
@@ -303,7 +329,7 @@ export class World extends EventTarget {
     }
     const yard = this._yardMesh(tile);
     if (yard) { group.add(yard.mesh); draws++; for (const c of yard.colliders) this._addPrimitive(tile, c); tile.yardBlocks = yard.count; }
-    for (const m of [...buildTreeMeshes(trees, this.surfaceAt), ...props.meshes, ...piers.surfaces.flatMap((s) => s.meshes)]) { group.add(m); draws++; }
+    for (const m of [...buildTreeMeshes(trees, this.surfaceAt), ...props.meshes, ...piers.surfaces.flatMap((s) => s.meshes), ...landmarkMeshes]) { group.add(m); draws++; }
     this.root.add(group);
     tile.group = group; tile.drawObjects = draws; tile.triangles = tris;
     tile.quality = { ...summarise({ ...f, buildings: ownBuildings }), treeStats: tile.treeStats, propStats: tile.propStats, shopSigns: tile.signStats.signs, shopSignsResearchedStyle: tile.signStats.researched, shopSignsGeneratedStyle: tile.signStats.generated, shopSignsCorrectedOrAdded: tile.signStats.corrected + tile.signStats.added };
@@ -387,6 +413,7 @@ export class World extends EventTarget {
     if (type === 'facade') return { material: facadeMaterial(a, b === 'true', +(key.split(':')[3] || 0)), order: 10, shadow: true };
     if (type === 'door') return { material: doorMaterial(+a), order: 10, shadow: false };
     if (key === 'roller') return { material: rollerMaterial(), order: 10, shadow: false };
+    if (type === 'pb') return { material: leisureMaterial(key), order: 10, shadow: true };
     if (type === 'sign') return { material: this._signMats.get(key), order: 10, shadow: false };
     if (type === 'shop') return { material: shopMaterial(+a), order: 10, shadow: true };
     if (type === 'roof') return { material: roofMaterial(a), order: 10, shadow: true };

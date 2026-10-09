@@ -14,6 +14,10 @@
 | 8 Expand the town | Ready | Data workflow covers the whole extent; streaming loads 1 km tiles and terrain chunks |
 | 9 Production readiness | Not started | Browser matrix, accessibility, hosting |
 
+## Done: seafront landmark models (9 October 2026)
+
+- Felixstowe Pier building, Felixstowe Leisure Centre, Fish Dish and The Regal modelled from user photos on their OSM footprints (docs/landmark-models.md); pier deck now level with the pier terrace.
+
 ## Done: Hamilton Road shops (9 October 2026)
 
 - Named fascia boards for every OSM shop/amenity in a building; Hamilton Road businesses verified against licensing, hygiene and store-locator records (4 corrections, 5 additions); researched brand fascia colours for chains; generated (flagged) styles for independents; no logos. Shopfronts now also on single-storey shops.
@@ -42,7 +46,7 @@
 2. Hamilton Road: check fascia colours against openly licensed photographs; projecting signs, awnings, shop window displays.
 3. Review the 43 road/building crossings and the pier HER offset; compare key views against openly licensed photographs.
 4. Tune estimated defaults to Felixstowe's stock (storey heights, roof shares, facade mix); OSM tags heights on <2% of buildings.
-5. Model landmarks from openly licensed references: pier building, Spa Pavilion, Landguard Fort earthworks, crane orientation per quay.
+5. Model more landmarks from openly licensed references: Spa Pavilion, Landguard Fort earthworks, crane orientation per quay.
 6. Narrative content, clearly labelled as fiction, built on the sourced history.
 
 ## Known limitations

@@ -7,7 +7,8 @@ export const LANDMARKS = [
     facts: [
       { text: 'Opened in August 1905 as a landing stage for steamers, the pier was half a mile (about 800 m) long – then the third-longest in England – and had an electric tramway.', source: 'https://heritage.suffolk.gov.uk/Monument/MXS19251' },
       { text: 'Army engineers cut the pier into sections in the Second World War and the seaward end was later demolished; the tram never ran again.', source: 'https://heritage.suffolk.gov.uk/Monument/MXS19251' },
-      { text: 'A new pier building opened to visitors in 2017.', source: 'https://en.wikipedia.org/wiki/Felixstowe_Pier' },
+      { text: 'The £3 million pier building, with an arcade, bowling and a restaurant, opened to visitors in August 2017 and was officially opened that October.', source: 'https://en.wikipedia.org/wiki/Felixstowe_Pier' },
+      { text: 'The remaining deck beyond the building has been closed to the public since about 1999 because of corroded steel and rotten timbers.', source: 'https://en.wikipedia.org/wiki/Felixstowe_Pier' },
     ],
   },
   {

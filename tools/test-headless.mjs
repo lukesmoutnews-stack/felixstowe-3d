@@ -93,7 +93,7 @@ await page.evaluate(() => window.__f3d.setView('third', null, -0.3, 7));
 // teleport to pier & check deck height. Works for piers at any bearing: sample points inside the
 // deck ring that lie over the sea, use the one nearest the deck's centre.
 const pierPick = () => {
-  const { app } = window.__f3d; const s = app.world.surfaces[0]; if (!s) return null;
+  const { app } = window.__f3d; const s = app.world.surfaces.find((q) => !q.kind); if (!s) return null;
   const R = s.ring, xs = R.map((p) => p[0]), zs = R.map((p) => p[1]);
   const inside = (x, z) => { let c = false; for (let i = 0, j = R.length - 1; i < R.length; j = i++) { const [xi, zi] = R[i], [xj, zj] = R[j]; if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) c = !c; } return c; };
   const cx = xs.reduce((a, b) => a + b) / xs.length, cz = zs.reduce((a, b) => a + b) / zs.length;

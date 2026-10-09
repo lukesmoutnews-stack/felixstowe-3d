@@ -225,10 +225,21 @@ export function buildPiers(features, tile, ctx) {
     const onLand = (q) => ctx.isLand(q[0], q[1]);
     let land = e2, dirSign = 1; // axis from land end towards sea
     if (onLand(e1) && !onLand(e2)) { land = e1; dirSign = -1; }
-    const baseY = ctx.ground(land[0], land[1]);
+    else if (!onLand(e1) && !onLand(e2)) { // both ends over the beach/sea: the land end has higher ground beyond it
+      const beyond = (q, sg) => { let h = -99; for (let s = 2; s <= 40; s += 2) h = Math.max(h, ctx.ground(q[0] - obb.ux * s * sg, q[1] - obb.uz * s * sg)); return h; };
+      if (beyond(e1, -1) > beyond(e2, 1)) { land = e1; dirSign = -1; }
+    }
+    let baseY = ctx.ground(land[0], land[1]), ramp = 2.4;
+    // Felixstowe's pier starts behind the pier building on the beach: the deck is level with the
+    // promenade terrace, so take the highest ground up to 50 m landward and keep the deck flat.
+    if (baseY < 1) {
+      let hi = baseY;
+      for (let s = 2; s <= 50; s += 2) hi = Math.max(hi, ctx.ground(land[0] - obb.ux * s * dirSign, land[1] - obb.uz * s * dirSign));
+      if (hi > baseY + 1) { baseY = hi; ramp = 0; }
+    }
     const deckY = (x, z) => {
       const s = ((x - land[0]) * obb.ux + (z - land[1]) * obb.uz) * dirSign;
-      return baseY + 0.08 + Math.min(1, Math.max(0, s / 30)) * 2.4;
+      return baseY + 0.08 + Math.min(1, Math.max(0, s / 30)) * ramp;
     };
     const acc = ctx.acc.get(cx, cz, `ground:wood_deck:${LAYER.deck}`);
     const { verts, tris } = triangulate(p.ring);
