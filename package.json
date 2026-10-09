@@ -1,0 +1,18 @@
+{
+  "name": "felixstowe-3d",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Browser-based 3D recreation of Felixstowe, Suffolk, built from OpenStreetMap and Environment Agency LiDAR.",
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node tools/serve.mjs",
+    "data": "node tools/setup-data.mjs",
+    "data:osm": "node tools/setup-data.mjs --no-lidar",
+    "validate": "node tools/validate-data.mjs",
+    "test": "node test/unit.mjs && node test/tools.test.mjs",
+    "test:browser": "node tools/test-headless.mjs",
+    "test:live": "node tools/test-headless.mjs --live"
+  },
+  "license": "SEE LICENSE IN docs/licensing.md"
+}

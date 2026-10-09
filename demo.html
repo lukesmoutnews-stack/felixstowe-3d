@@ -1,0 +1,33 @@
+<title>Felixstowe 3D Demo</title>
+<link rel="stylesheet" href="src/style.css">
+<style>
+  .demo-switch { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12.5px; color: #b9c2ca; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .demo-switch a { color: var(--cream); padding: 5px 10px; border: 1px solid var(--line); border-radius: 8px; text-decoration: none; }
+  .demo-switch a[aria-current="true"] { background: var(--cream); color: var(--ink); }
+  .demo-note { width: 100%; color: #8796a3; }
+</style>
+<script>
+  // Demo data sets. Real Felixstowe data is not included: it could not be downloaded in the build environment.
+  window.F3D_DEMO = location.hash === '#vaduz'
+    ? { data: 'test/real-osm-liechtenstein/' }
+    : { fixture: 'test-grid', terrain: 'test/lidar/out-web/terrain.json' };
+  addEventListener('hashchange', () => location.reload());
+</script>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three/three.module.js", "three/addons/": "./vendor/three/addons/" } }
+</script>
+<canvas id="scene"></canvas>
+<div id="ui"></div>
+<script type="module" src="src/main.js"></script>
+<script>
+  const vaduz = location.hash === '#vaduz';
+  const add = setInterval(() => {
+    const card = document.querySelector('.load-card'); if (!card) return; clearInterval(add);
+    const d = document.createElement('div'); d.className = 'demo-switch';
+    d.innerHTML = `<span>Demo data:</span>
+      <a href="#test" aria-current="${!vaduz}">Test town (synthetic, with test terrain)</a>
+      <a href="#vaduz" aria-current="${vaduz}">Vaduz, Liechtenstein (real OSM, 2013)</a>
+      <span class="demo-note">Neither is Felixstowe. Real Felixstowe data needs <code>node tools/setup-data.mjs</code> on your computer.</span>`;
+    card.append(d);
+  }, 100);
+</script>

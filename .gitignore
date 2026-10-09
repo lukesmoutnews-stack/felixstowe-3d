@@ -1,0 +1,8 @@
+test/results*/
+test/lidar/*.raw
+test/lidar/*.asc
+test/lidar/out/
+data/lidar-raw/
+data/*.osm.pbf
+data/overture-buildings.geojson
+node_modules/

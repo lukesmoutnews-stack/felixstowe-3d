@@ -1,0 +1,57 @@
+# Downloads and prepares the real Felixstowe data on a GitHub-hosted runner (which has internet
+# access) and commits it to the `data` branch. Runs when the data tools or this workflow change on
+# main, or manually from the Actions tab ("Run workflow").
+name: Fetch Felixstowe data
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/fetch-data.yml', 'tools/**', 'src/config.js', '.github/fetch-request']
+permissions:
+  contents: write
+concurrency: { group: fetch-data, cancel-in-progress: false }
+jobs:
+  data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Tests
+        continue-on-error: true
+        run: npm test 2>&1 | tee -a run-log.txt
+      - name: OpenStreetMap (Geofabrik extract, Overpass fallback)
+        continue-on-error: true
+        run: node tools/setup-data.mjs --no-lidar 2>&1 | tee -a run-log.txt
+      - name: Overture buildings
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          pip install overturemaps 2>&1 | tail -1 | tee -a run-log.txt
+          overturemaps download --bbox=1.27,51.93,1.40,52.00 -f geojson --type=building -o data/overture-buildings.geojson 2>&1 | tail -5 | tee -a run-log.txt
+          node tools/merge-overture.mjs --in=data/overture-buildings.geojson 2>&1 | tee -a run-log.txt
+      - name: Environment Agency LiDAR
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node tools/fetch-lidar.mjs 2>&1 | tee -a run-log.txt
+      - name: Validation report
+        if: always()
+        run: node tools/validate-data.mjs 2>&1 | tee -a run-log.txt || true
+      - name: Commit data to the data branch
+        if: always()
+        run: |
+          mkdir -p data && cp run-log.txt data/run-log.txt || true
+          cp data/lidar-raw/coverage.json data/lidar-coverage.json 2>/dev/null || true
+          rm -f data/suffolk-latest.osm.pbf data/overture-buildings.geojson
+          rm -rf data/lidar-raw
+          git config user.name "felixstowe-3d data bot"
+          git config user.email "actions@users.noreply.github.com"
+          git checkout -B data
+          git add -f data
+          git add -f docs/data-report.md 2>/dev/null || true
+          git commit -m "Felixstowe data $(date -u +%Y-%m-%dT%H:%MZ)" || echo "nothing to commit"
+          git push -f origin data

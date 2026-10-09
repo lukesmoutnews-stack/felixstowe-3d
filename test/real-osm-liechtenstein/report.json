@@ -1,0 +1,82 @@
+{
+  "generated": "2026-10-09T11:05:23.406Z",
+  "dataDir": "test/real-osm-liechtenstein",
+  "osmTimestamps": [
+    "2013-08-03T19:00:02.000Z"
+  ],
+  "checks": [
+    {
+      "group": "Coverage",
+      "name": "Tiles in the configured extent present",
+      "status": "PASS",
+      "detail": "30 of 30"
+    },
+    {
+      "group": "Coverage",
+      "name": "Geographic bounds of buildings and roads",
+      "status": "INFO",
+      "detail": "47.10553, 9.47554 to 47.16373, 9.57273 (WGS84)"
+    },
+    {
+      "group": "Coverage",
+      "name": "Feature counts",
+      "status": "PASS",
+      "detail": "{\"buildings\":269,\"roads\":587,\"namedRoads\":371,\"areas\":52,\"lines\":1,\"pois\":111,\"coastlineWays\":0,\"trees\":0}"
+    },
+    {
+      "group": "Attributes",
+      "name": "Building height/levels/roof/material tag coverage",
+      "status": "INFO",
+      "detail": "{\"height\":\"0.0%\",\"levels\":\"0.0%\",\"estimated\":\"100.0%\",\"roofShape\":\"0.0%\",\"material\":\"0.0%\",\"roadWidths\":\"1 of 587\",\"sidewalkTagged\":\"0 of 453 car roads\"}"
+    },
+    {
+      "group": "Geometry",
+      "name": "Duplicate building footprints",
+      "status": "PASS",
+      "detail": "none"
+    },
+    {
+      "group": "Geometry",
+      "name": "Car-road centre lines crossing building footprints",
+      "status": "PASS",
+      "detail": "0 (often legitimate: arches, canopies, petrol stations)"
+    },
+    {
+      "group": "Geometry",
+      "name": "Coastline ways present",
+      "status": "INFO",
+      "detail": "0 coastline way references across tiles"
+    },
+    {
+      "group": "LiDAR",
+      "name": "Terrain processed",
+      "status": "WARN",
+      "detail": "no terrain in manifest – run node tools/fetch-lidar.mjs"
+    }
+  ],
+  "bounds": {
+    "south": 47.10553,
+    "west": 9.47554,
+    "north": 47.16373,
+    "east": 9.57273
+  },
+  "counts": {
+    "buildings": 269,
+    "roads": 587,
+    "namedRoads": 371,
+    "areas": 52,
+    "lines": 1,
+    "pois": 111,
+    "coastlineWays": 0,
+    "trees": 0
+  },
+  "attributes": {
+    "height": "0.0%",
+    "levels": "0.0%",
+    "estimated": "100.0%",
+    "roofShape": "0.0%",
+    "material": "0.0%",
+    "roadWidths": "1 of 587",
+    "sidewalkTagged": "0 of 453 car roads"
+  }
+}

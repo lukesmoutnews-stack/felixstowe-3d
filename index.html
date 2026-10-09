@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Felixstowe 3D</title>
+<meta name="description" content="A browser-based 3D recreation of Felixstowe, Suffolk, built from OpenStreetMap and other open geographic data.">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="src/style.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three/three.module.js", "three/addons/": "./vendor/three/addons/" } }
+</script>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div id="ui"></div>
+<noscript><p class="noscript">Felixstowe 3D needs JavaScript and WebGL.</p></noscript>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

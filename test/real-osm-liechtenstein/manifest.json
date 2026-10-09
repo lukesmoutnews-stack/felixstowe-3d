@@ -1,0 +1,58 @@
+{
+  "tiles": [
+    "-1_-1",
+    "-1_-2",
+    "-1_0",
+    "-1_1",
+    "-1_2",
+    "-1_3",
+    "-2_-1",
+    "-2_-2",
+    "-2_0",
+    "-2_1",
+    "-2_2",
+    "-2_3",
+    "0_-1",
+    "0_-2",
+    "0_0",
+    "0_1",
+    "0_2",
+    "0_3",
+    "1_-1",
+    "1_-2",
+    "1_0",
+    "1_1",
+    "1_2",
+    "1_3",
+    "2_-1",
+    "2_-2",
+    "2_0",
+    "2_1",
+    "2_2",
+    "2_3"
+  ],
+  "osm": {
+    "updated": "2026-10-09T11:01:37.341Z",
+    "source": "/tmp/claude-0/pbfsrc/o2p/tests/data/liechtenstein-2013-08-03.osm.pbf",
+    "osmBase": "2013-08-03T19:00:02.000Z",
+    "licence": "ODbL 1.0",
+    "attribution": "\u00a9 OpenStreetMap contributors"
+  },
+  "origin": {
+    "lat": 47.141,
+    "lon": 9.5209
+  },
+  "extent": {
+    "s": 47.12,
+    "w": 9.49,
+    "n": 47.16,
+    "e": 9.55
+  },
+  "spawn": {
+    "name": "Vaduz",
+    "lat": 47.141,
+    "lon": 9.5209
+  },
+  "terrain": null,
+  "label": "Real OSM data: Vaduz, Liechtenstein (2013 test extract) \u2013 pipeline test, not Felixstowe"
+}

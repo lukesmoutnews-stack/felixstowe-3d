@@ -1,0 +1,5 @@
+{
+  "note": "Written by tools/fetch-osm.mjs and tools/lidar.mjs. Lists pre-downloaded data; empty means the browser fetches live OSM data.",
+  "tiles": [],
+  "terrain": null
+}
