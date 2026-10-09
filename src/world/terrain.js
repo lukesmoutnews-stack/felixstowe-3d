@@ -17,7 +17,7 @@ export class Terrain {
       if (t.chunks) {
         this.mode = 'lidar-chunks'; this.base = url.replace(/[^/]*$/, '') + 'chunks/';
         this.ch = { size: t.chunk, n: t.samples, cell: t.cell, keys: new Set(t.chunks) };
-        this.chunks = new Map(); this.pending = new Map(); this.b64 = !!t.base64Chunks;
+        this.chunks = new Map(); this.pending = new Map(); this.b64 = !!t.base64Chunks; this.enc = t.chunkEncoding || 'raw';
         return true;
       }
       const binRes = await fetch(url.replace(/\.json$/, '.bin'), { cache: 'no-cache' });
@@ -50,7 +50,12 @@ export class Terrain {
     const r = await fetch(this.base + k + '.b64.json'); if (!r.ok) return null;
     const bin = atob((await r.json()).data); const u = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
-    return u.buffer;
+    if (this.enc !== 'delta-gzip') return u.buffer;
+    // tools/make-web-data.mjs: row-major Int16 deltas, gzipped (about 8x smaller for this terrain).
+    const out = await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+    const d = new Int16Array(out); let p = 0;
+    for (let i = 0; i < d.length; i++) { p = (p + d[i]) << 16 >> 16; d[i] = p; }
+    return out;
   }
 
   /** Height (m ODN) at world x,z. */

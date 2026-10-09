@@ -37,11 +37,11 @@ const tStart = Date.now();
 await page.goto(url);
 await page.waitForFunction(() => window.__f3d && (window.__f3d.error || window.__f3d.state?.().loadFailed || document.querySelector('.enter:not([disabled])')), null, { timeout: 240000 });
 const err = await page.evaluate(() => window.__f3d.error || null);
-if (err) { check('app starts', false, err); await page.screenshot({ path: join(outDir, '00-error.png') }); await finish(); }
+if (err) { check('app starts', false, err); await page.screenshot({ path: join(outDir, '00-error.png'), timeout: 180000 }); await finish(); }
 const st0 = await page.evaluate(() => window.__f3d.state());
 check('app loads data and becomes enterable', !st0.loadFailed, `loadMs=${st0.loadMs}, tiles=${st0.tiles.join(' ')}`);
 log.perf.loadMs = st0.loadMs; log.perf.wallLoadMs = Date.now() - tStart;
-await page.screenshot({ path: join(outDir, '01-loading-screen.png') });
+await page.screenshot({ path: join(outDir, '01-loading-screen.png'), timeout: 180000 });
 await page.click('.enter');
 await page.waitForTimeout(1500);
 const shot = async (name) => { await page.waitForTimeout(400); await page.screenshot({ path: join(outDir, name), timeout: 180000 }); };
@@ -90,24 +90,41 @@ for (const [mode, file] of [['first', '05-first-person.png'], ['overview', '06-o
 }
 await page.evaluate(() => window.__f3d.setView('third', null, -0.3, 7));
 
-// teleport to pier & check deck height
-const pier = await page.evaluate(async () => {
+// teleport to pier & check deck height. Works for piers at any bearing: sample points inside the
+// deck ring that lie over the sea, use the one nearest the deck's centre.
+const pierPick = () => {
   const { app } = window.__f3d; const s = app.world.surfaces[0]; if (!s) return null;
-  const xs = s.ring.map((p) => p[0]), zs = s.ring.map((p) => p[1]);
-  const x = (Math.min(...xs) + Math.max(...xs)) / 2 + (Math.max(...xs) - Math.min(...xs)) * 0.3, z = (Math.min(...zs) + Math.max(...zs)) / 2;
-  app.player.place(x, z); app.rig.yaw = -Math.PI / 2; app.rig.initialised = false;
+  const R = s.ring, xs = R.map((p) => p[0]), zs = R.map((p) => p[1]);
+  const inside = (x, z) => { let c = false; for (let i = 0, j = R.length - 1; i < R.length; j = i++) { const [xi, zi] = R[i], [xj, zj] = R[j]; if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) c = !c; } return c; };
+  const cx = xs.reduce((a, b) => a + b) / xs.length, cz = zs.reduce((a, b) => a + b) / zs.length;
+  const pts = [];
+  for (let i = 0; i <= 60; i++) for (let j = 0; j <= 60; j++) {
+    const x = Math.min(...xs) + (Math.max(...xs) - Math.min(...xs)) * i / 60, z = Math.min(...zs) + (Math.max(...zs) - Math.min(...zs)) * j / 60;
+    if (inside(x, z) && !app.world.isLand(x, z)) pts.push([x, z]);
+  }
+  pts.sort((a, b) => Math.hypot(a[0] - cx, a[1] - cz) - Math.hypot(b[0] - cx, b[1] - cz));
+  // nearest edge from the chosen point (for the walk-off test)
+  const [x, z] = pts[0] || [cx, cz]; let best = null;
+  for (let i = 0; i < R.length; i++) {
+    const [ax, az] = R[i], [bx, bz] = R[(i + 1) % R.length], L2 = (bx - ax) ** 2 + (bz - az) ** 2 || 1;
+    const t = Math.max(0, Math.min(1, ((x - ax) * (bx - ax) + (z - az) * (bz - az)) / L2)), px = ax + t * (bx - ax), pz = az + t * (bz - az), d = Math.hypot(px - x, pz - z);
+    if (!best || d < best.d) best = { d, dx: (px - x) / (d || 1), dz: (pz - z) / (d || 1) };
+  }
+  return { x, z, edge: best };
+};
+const pier = await page.evaluate(`(${pierPick})()`).then((q) => q && page.evaluate(({ x, z }) => {
+  const { app } = window.__f3d; app.player.place(x, z); app.rig.yaw = -Math.PI / 2; app.rig.initialised = false;
   return { x, z, y: app.player.pos.y, ground: app.world.ground(x, z), walkable: app.world.isWalkable(x, z), land: app.world.isLand(x, z) };
-});
+}, q));
 if (pier === null) log.checks.push({ name: 'pier deck (no pier in this data set)', ok: true, skipped: true }), console.log('SKIP  pier checks – no pier surface in this data set');
 else if (pier) { check('pier deck is walkable above the sea', pier.walkable && !pier.land && pier.y > pier.ground + 0.4, JSON.stringify(pier)); await shot('07-on-pier.png'); }
 
 
-// sea blocks walking: walk east from pier end
-const sea = pier && await page.evaluate(async () => {
-  const { app } = window.__f3d; const s = app.world.surfaces[0]; const xs = s.ring.map((p) => p[0]), zs = s.ring.map((p) => p[1]);
-  const x = Math.max(...xs) - 10, z = (Math.min(...zs) + Math.max(...zs)) / 2; app.player.place(x, z + 3); app.rig.yaw = Math.PI; // on the deck near its south edge, facing south (towards open sea)
+// sea blocks walking: from the deck, walk towards the nearest deck edge (the railing should stop the player)
+const sea = pier && await page.evaluate(`(${pierPick})()`).then((q) => page.evaluate(({ x, z, edge }) => {
+  const { app } = window.__f3d; app.player.place(x, z); app.rig.yaw = Math.atan2(-edge.dx, -edge.dz);
   return { x, z };
-});
+}, q));
 if (pier) await page.evaluate(() => { const f = window.__f3d; f.key('KeyW', true); f.advance(4); f.key('KeyW', false); });
 const seaRes = await page.evaluate(() => { const { app } = window.__f3d; const p = app.player.pos; return { walkable: app.world.isWalkable(p.x, p.z), y: p.y }; });
 if (pier) check('player cannot walk off the pier into the sea', seaRes.walkable, JSON.stringify(seaRes));

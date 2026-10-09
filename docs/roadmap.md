@@ -5,8 +5,8 @@
 | Phase | State | Evidence / next step |
 |---|---|---|
 | 1 Audit and research | Done | reference-analysis.md, data-sources.md, architecture.md |
-| 2 Geographic prototype | Built; real-data run pending | Pipeline runs on real OSM (Vaduz test); Felixstowe needs `node tools/setup-data.mjs` on a networked machine |
-| 3 Validate prototype | **Open** | `tools/validate-data.mjs` produces the evidence; checklist in validation.md |
+| 2 Geographic prototype | **Done** | Real Felixstowe data prepared by GitHub Actions (OSM 8 Oct 2026, Overture, EA LiDAR 2020/2023) and rendered |
+| 3 Validate prototype | Largely done | docs/data-report.md: control points pass, 15/16 streets, LiDAR alignment 2.25 m; open: pier HER point (89 m), 43 road/building crossings, photo comparison |
 | 4 Exploration (walk, collision, cameras, map) | Built; tested on synthetic, real-OSM and terrain data | |
 | 5 Improve environment | Largely done | Doors, canted bays, eaves, window styles, shopfronts, roller doors, beach huts, LiDAR container stacks, terrain LOD; landmark models outstanding |
 | 6 Driving | Built; tested | Kinematic controller |
@@ -14,7 +14,14 @@
 | 8 Expand the town | Ready | Data workflow covers the whole extent; streaming loads 1 km tiles and terrain chunks |
 | 9 Production readiness | Not started | Browser matrix, accessibility, hosting |
 
-## Done in this round (9 October 2026)
+## Done in the real-data round (9 October 2026)
+
+- Ran the data workflow on GitHub Actions four times; real Felixstowe data on the `data` branch.
+- Fixed what the real data revealed: Landguard Fort missing (historic features added to the query), container stacks drawn as thin columns (now 12.2 m slots in the yard's grid, one mesh per tier), generic facade on the fort (landmark styling from the containing area), beach-hut rows split into huts.
+- `tools/make-web-data.mjs` for static hosts; published the playable demo with the real data.
+- Browser test harness: pier checks now work for piers at any bearing.
+
+## Done in the previous round
 
 - Diagnosed the data blocker as an egress policy of the development sandbox, not a tool bug.
 - One-command data workflow: `tools/setup-data.mjs` (Geofabrik PBF → tiles, Overpass fallback, EA LiDAR search/download/processing, optional Overture merge, validation report); GitHub Actions workflow for the same.
@@ -27,16 +34,16 @@
 
 ## Next actions, in order
 
-1. Run `node tools/setup-data.mjs` and `node tools/test-headless.mjs --live`; review `docs/data-report.md` and screenshots; fix what the real data reveals.
-2. Tune estimated defaults against the real attribute coverage (storey heights, roof shares, facade mix for Felixstowe's actual building stock).
-3. Model landmarks from openly licensed references: pier building, Spa Pavilion, Landguard Fort earthworks, crane orientation per quay.
-4. Real-GPU performance measurement; set targets; compress tiles for hosting.
+1. Performance: the real town is about 1,400–1,700 draw calls and 2.6–2.8 M triangles near the pier on SwiftShader. Merge per-tile materials further, simplify distant buildings, and measure on real GPUs.
+2. Review the 43 road/building crossings and the pier HER offset; compare key views against openly licensed photographs.
+3. Tune estimated defaults to Felixstowe's stock (storey heights, roof shares, facade mix); OSM tags heights on <2% of buildings.
+4. Model landmarks from openly licensed references: pier building, Spa Pavilion, Landguard Fort earthworks, crane orientation per quay.
 5. Narrative content, clearly labelled as fiction, built on the sourced history.
 
 ## Known limitations
 
-- **No real Felixstowe data has been rendered yet.** All appearance claims about Felixstowe are unverified.
-- Without LiDAR the town is flat at sea level and the seafront cliff is missing.
+- Real Felixstowe has been checked only on software-rendered screenshots, not against photographs.
+- Without LiDAR (e.g. outside the six 5 km squares) the ground is flat at sea level.
 - Heights, roof shapes, facade materials, doors, bays and pavements are estimated where data is silent; the Data panel shows the proportion. Bays may double up where OSM footprints already include them.
 - Facades are generic UK materials, not photographs. Shop signs are abstract.
 - LiDAR gaps on land are filled by interpolation (counted in `terrain.json`); terrain is meshed at 5 m, so very sharp edges are softened.

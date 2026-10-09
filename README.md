@@ -17,16 +17,17 @@ node tools/serve.mjs        # http://localhost:8080
 
 ## Status (9 October 2026)
 
+Real Felixstowe data has been downloaded, processed and rendered. The GitHub Actions workflow (`.github/workflows/fetch-data.yml`) ran the data tools on a networked runner and committed the result to the `data` branch.
+
 | Area | State |
 |---|---|
-| Data workflow (OSM, Overture, EA LiDAR, validation) | Built; tested offline with mock services and a real OSM extract; **not yet run against live services** |
-| Geographic pipeline (OSM → world) | Built; unit-tested; exercised on real OSM data for Vaduz (2013 test extract) |
-| 3D buildings, roofs, doors, bays, materials, roads, landcover, trees, props, pier, cranes, container stacks | Built; tested on synthetic and real-OSM data |
-| LiDAR terrain (streamed 1 km chunks), building heights, trees, alignment check | Built; tested on synthetic GeoTIFF/ASC rasters |
-| Walking, collision, cameras, map/minimap, driving, journal, landmark cards, audio | Built; browser checks pass on three data sets |
-| **Real Felixstowe rendering and geographic verification** | **Outstanding** – needs one run of `setup-data.mjs` on a networked machine |
+| Data workflow (OSM, Overture, EA LiDAR, validation) | **Run on live services** (4 runs): OSM extract of 8 Oct 2026, 9,841 OSM + 2,545 Overture buildings, EA National LiDAR Programme DTM/DSM 2020 and 2023 for six 5 km squares |
+| Geographic checks | Listed-building control points for Landguard Fort and the station fall inside the matching OSM footprints; 15/16 expected streets found; OSM–LiDAR alignment offset 2.25 m. See [docs/data-report.md](docs/data-report.md) |
+| 3D town | Rendered and checked by eye: seafront, pier, beach, cliff terrain, Hamilton Road, Landguard Fort, port crane rows and LiDAR container stacks |
+| Browser checks on the real data | 13/13 after a test-harness fix for diagonal piers (see [docs/validation.md](docs/validation.md)) |
+| Still estimated | 98% of building heights in OSM are untagged (LiDAR measures 8,453 of them); roof shapes, facades, doors and container colours are generated |
 
-The development sandbox's network policy blocks every geographic data host (see [docs/validation.md](docs/validation.md)), so Felixstowe itself has not been downloaded or rendered here. The app never substitutes test data silently: synthetic and other-region data sets are labelled on screen.
+The app never substitutes test data silently: synthetic and other-region data sets are labelled on screen.
 
 ## Documentation
 
@@ -44,7 +45,8 @@ The development sandbox's network policy blocks every geographic data host (see 
 npm test                                   # 14 unit tests + 11 offline data-tool tests
 node tools/test-headless.mjs               # browser run on the synthetic fixture (screenshots in test/results/)
 node tools/test-headless.mjs --data=test/real-osm-liechtenstein/   # browser run on a real OSM extract
-node tools/test-headless.mjs --live        # browser run on the Felixstowe data in data/
+node tools/test-headless.mjs --data=data/  # browser run on the prepared Felixstowe data (git checkout origin/data -- data)
+node tools/make-web-data.mjs               # copy data/ for hosts that refuse binary files (gzipped base64 terrain)
 ```
 
 Map data © OpenStreetMap contributors (ODbL). Terrain, when used: © Environment Agency copyright and/or database right (OGL v3).

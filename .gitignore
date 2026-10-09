@@ -6,3 +6,5 @@ data/lidar-raw/
 data/*.osm.pbf
 data/overture-buildings.geojson
 node_modules/
+fx/
+web-data/

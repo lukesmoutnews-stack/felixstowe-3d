@@ -7,10 +7,11 @@
   .demo-note { width: 100%; color: #8796a3; }
 </style>
 <script>
-  // Demo data sets. Real Felixstowe data is not included: it could not be downloaded in the build environment.
-  window.F3D_DEMO = location.hash === '#vaduz'
-    ? { data: 'test/real-osm-liechtenstein/' }
-    : { fixture: 'test-grid', terrain: 'test/lidar/out-web/terrain.json' };
+  // Demo data sets. Default: real Felixstowe (OSM 8 Oct 2026, Overture, EA LiDAR 2020/2023), prepared
+  // by the GitHub Actions workflow and converted with tools/make-web-data.mjs.
+  window.F3D_DEMO = location.hash === '#vaduz' ? { data: 'test/real-osm-liechtenstein/' }
+    : location.hash === '#test' ? { fixture: 'test-grid', terrain: 'test/lidar/out-web/terrain.json' }
+    : { data: 'fx/' };
   addEventListener('hashchange', () => location.reload());
 </script>
 <script type="importmap">
@@ -20,14 +21,15 @@
 <div id="ui"></div>
 <script type="module" src="src/main.js"></script>
 <script>
-  const vaduz = location.hash === '#vaduz';
+  const mode = location.hash === '#vaduz' ? 'vaduz' : location.hash === '#test' ? 'test' : 'fx';
   const add = setInterval(() => {
     const card = document.querySelector('.load-card'); if (!card) return; clearInterval(add);
     const d = document.createElement('div'); d.className = 'demo-switch';
     d.innerHTML = `<span>Demo data:</span>
-      <a href="#test" aria-current="${!vaduz}">Test town (synthetic, with test terrain)</a>
-      <a href="#vaduz" aria-current="${vaduz}">Vaduz, Liechtenstein (real OSM, 2013)</a>
-      <span class="demo-note">Neither is Felixstowe. Real Felixstowe data needs <code>node tools/setup-data.mjs</code> on your computer.</span>`;
+      <a href="#felixstowe" aria-current="${mode === 'fx'}">Felixstowe (real data)</a>
+      <a href="#test" aria-current="${mode === 'test'}">Test town</a>
+      <a href="#vaduz" aria-current="${mode === 'vaduz'}">Vaduz 2013</a>
+      <span class="demo-note">Felixstowe: OpenStreetMap (8 Oct 2026), Overture buildings and Environment Agency LiDAR. Roof shapes, facades and container colours are generated, not surveyed.</span>`;
     card.append(d);
   }, 100);
 </script>

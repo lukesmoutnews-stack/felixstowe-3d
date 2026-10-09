@@ -83,7 +83,8 @@ export function placeTrees(features, tile, ctx) {
       acc += L;
     }
   }
-  for (const t of ctx.lidarTrees || []) if (inRect(t.x, t.z)) out.push({ x: t.x, z: t.z, kind: t.h > 13 ? 'broadleaf_large' : 'broadleaf', scale: Math.max(0.4, Math.min(2.2, t.h / 11)), rot: t.x, source: 'lidar' });
+  // LiDAR crowns over water (pier structure, boats, spray) are not trees: keep land points above high water.
+  for (const t of ctx.lidarTrees || []) if (inRect(t.x, t.z) && (!ctx.isLand || ctx.isLand(t.x, t.z)) && (!ctx.hasTerrain || ctx.ground(t.x, t.z) > 2)) out.push({ x: t.x, z: t.z, kind: t.h > 13 ? 'broadleaf_large' : 'broadleaf', scale: Math.max(0.4, Math.min(2.2, t.h / 11)), rot: t.x, source: 'lidar' });
 
   // Procedural fill (flagged) for mapped vegetation areas lacking mapped trees.
   if (ctx.settings.proceduralTrees) {
