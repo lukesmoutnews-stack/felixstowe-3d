@@ -1,0 +1,14 @@
+{
+  "last_release": "2026-09-23.1",
+  "last_run": "2026-10-09T12:45:54.694639+00:00",
+  "theme": "buildings",
+  "type": "building",
+  "bbox": {
+    "xmin": 1.27,
+    "ymin": 51.93,
+    "xmax": 1.4,
+    "ymax": 52.0
+  },
+  "backend": "geojson",
+  "output": "/home/runner/work/felixstowe-3d/felixstowe-3d/data/overture-buildings.geojson"
+}

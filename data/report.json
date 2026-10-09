@@ -1,0 +1,234 @@
+{
+  "generated": "2026-10-09T12:47:56.847Z",
+  "dataDir": "data",
+  "osmTimestamps": [
+    "2026-10-08T20:21:06.000Z"
+  ],
+  "checks": [
+    {
+      "group": "Coverage",
+      "name": "Tiles in the configured extent present",
+      "status": "WARN",
+      "detail": "88 of 90; missing -5_4 -4_4 (tiles entirely at sea have no data and are expected to be missing)"
+    },
+    {
+      "group": "Coverage",
+      "name": "Geographic bounds of buildings and roads",
+      "status": "INFO",
+      "detail": "51.9342, 1.26182 to 52.01736, 1.4181 (WGS84)"
+    },
+    {
+      "group": "Coverage",
+      "name": "Feature counts",
+      "status": "PASS",
+      "detail": "{\"buildings\":9841,\"roads\":3109,\"namedRoads\":928,\"areas\":1202,\"lines\":581,\"pois\":713,\"coastlineWays\":107,\"trees\":0}"
+    },
+    {
+      "group": "Attributes",
+      "name": "Building height/levels/roof/material tag coverage",
+      "status": "INFO",
+      "detail": "{\"height\":\"0.0%\",\"levels\":\"1.8%\",\"estimated\":\"98.2%\",\"roofShape\":\"1.4%\",\"material\":\"0.0%\",\"roadWidths\":\"138 of 3109\",\"sidewalkTagged\":\"28 of 2175 car roads\"}"
+    },
+    {
+      "group": "Names",
+      "name": "Expected street names present",
+      "status": "PASS",
+      "detail": "found 15/16; missing: View Point Road"
+    },
+    {
+      "group": "Names",
+      "name": "Landmark in OSM: Felixstowe Pier",
+      "status": "PASS",
+      "detail": "w28724732 (pier)"
+    },
+    {
+      "group": "Names",
+      "name": "Landmark in OSM: Spa Pavilion",
+      "status": "PASS",
+      "detail": "w240664453 (building)"
+    },
+    {
+      "group": "Names",
+      "name": "Landmark in OSM: Landguard Fort",
+      "status": "PASS",
+      "detail": "w32007009 (historic)"
+    },
+    {
+      "group": "Names",
+      "name": "Landmark in OSM: Seafront Gardens",
+      "status": "WARN",
+      "detail": "not found by name"
+    },
+    {
+      "group": "Names",
+      "name": "Landmark in OSM: Hamilton Gardens",
+      "status": "WARN",
+      "detail": "not found by name"
+    },
+    {
+      "group": "Names",
+      "name": "Landmark in OSM: Cliff Gardens",
+      "status": "WARN",
+      "detail": "not found by name"
+    },
+    {
+      "group": "Names",
+      "name": "Landmark in OSM: Felixstowe station",
+      "status": "PASS",
+      "detail": "n25685821 (station)"
+    },
+    {
+      "group": "Control points",
+      "name": "Landguard Fort (NHLE 1030415, Grade I)",
+      "status": "PASS",
+      "detail": "nearest OSM building relation1812042 is under the point (contains it) (tolerance 15 m)"
+    },
+    {
+      "group": "Control points",
+      "name": "Felixstowe station buildings (NHLE 1284364, Grade II)",
+      "status": "PASS",
+      "detail": "nearest OSM building way357281655 is under the point (contains it) (tolerance 15 m)"
+    },
+    {
+      "group": "Control points",
+      "name": "Felixstowe Pier landward end (Suffolk HER MXS19251, TM 30251 33918)",
+      "status": "WARN",
+      "detail": "nearest OSM pier w28724732 is 88.8 m away (tolerance 60 m)"
+    },
+    {
+      "group": "Control points",
+      "name": "OSM station node vs. listed station building",
+      "status": "INFO",
+      "detail": "169 m apart (the operational station and the listed 1898 building need not coincide)"
+    },
+    {
+      "group": "Geometry",
+      "name": "Duplicate building footprints",
+      "status": "PASS",
+      "detail": "none"
+    },
+    {
+      "group": "Geometry",
+      "name": "Car-road centre lines crossing building footprints",
+      "status": "WARN",
+      "detail": "43 e.g. road 5938611×building 506430487, road 688146024×building 506426480, road 688146024×building 506426480, road 347644375×building 350995923, road 4728656×building 488445151, road 4717827×building 488445030, road 4747962×building 506431048, road 4748294×building 506430917, road 5938638×building 506431819, road 6131284×building 506431144 (often legitimate: arches, canopies, petrol stations)"
+    },
+    {
+      "group": "Geometry",
+      "name": "Coastline ways present",
+      "status": "PASS",
+      "detail": "107 coastline way references across tiles"
+    },
+    {
+      "group": "LiDAR",
+      "name": "Terrain grid",
+      "status": "PASS",
+      "detail": "121 chunks of 1000 m @ 2 m, -2–29.35 m ODN, 18370662 cells with data, source: National LIDAR Programme DTM 2023; National LIDAR Programme DTM 2020"
+    },
+    {
+      "group": "LiDAR",
+      "name": "OSM ↔ LiDAR alignment",
+      "status": "PASS",
+      "detail": "{\"samplePoints\":972825,\"scoreAtHelmert\":0.529,\"bestOffsetE\":0,\"bestOffsetN\":2.25,\"bestScore\":0.62}"
+    },
+    {
+      "group": "LiDAR",
+      "name": "Ground heights (m ODN) at reference points",
+      "status": "INFO",
+      "detail": "Cliff Gardens 8.49, station 20.32, Landguard Fort 2.9, pier landward end -2"
+    },
+    {
+      "group": "LiDAR",
+      "name": "Water-surface returns replaced by sea bed",
+      "status": "INFO",
+      "detail": "7536643"
+    }
+  ],
+  "bounds": {
+    "south": 51.9342,
+    "west": 1.26182,
+    "north": 52.01736,
+    "east": 1.4181
+  },
+  "counts": {
+    "buildings": 9841,
+    "roads": 3109,
+    "namedRoads": 928,
+    "areas": 1202,
+    "lines": 581,
+    "pois": 713,
+    "coastlineWays": 107,
+    "trees": 0
+  },
+  "attributes": {
+    "height": "0.0%",
+    "levels": "1.8%",
+    "estimated": "98.2%",
+    "roofShape": "1.4%",
+    "material": "0.0%",
+    "roadWidths": "138 of 3109",
+    "sidewalkTagged": "28 of 2175 car roads"
+  },
+  "sampleStreets": [
+    "Academy Terrace",
+    "Adams Road",
+    "Adastral Close",
+    "Addington Road",
+    "Admiralty Pier",
+    "Albert Walk",
+    "Aldringham Mews",
+    "Aleston Street",
+    "Alexandra Road",
+    "Allens Drive",
+    "Andrew Close",
+    "Anne Street",
+    "Anzani Avenue",
+    "Arwela Road",
+    "Ascot Drive",
+    "Ash Ground Close",
+    "Ashtree Close",
+    "Ataka Road",
+    "Avocet Mews",
+    "Back Lane",
+    "Bacton Road",
+    "Barnfield",
+    "Barons Close",
+    "Barton Road",
+    "Bath Hill",
+    "Bath Road",
+    "Battery Lane",
+    "Bawdsey Close",
+    "Beach Road East",
+    "Beach Road West",
+    "Beach Station Road",
+    "Beacon Field",
+    "Beatrice Avenue",
+    "Bent Hill",
+    "Berners Road",
+    "Bigod Terrace",
+    "Bishops Close",
+    "Black Barns",
+    "Blofield Road",
+    "Blofield Track",
+    "Bloomfield Road",
+    "Blue Barn Close",
+    "Bluebell Way",
+    "Blyford Way",
+    "Boxford Court",
+    "Brackley Close",
+    "Brandon Road",
+    "Bredfield Close",
+    "Brick Kiln Close",
+    "Bridge Road",
+    "Brightwell Close",
+    "Brinkley Way",
+    "Bristol Hill",
+    "Brook Lane",
+    "Broom Field",
+    "Brotherton Avenue",
+    "Brownlow Road",
+    "Bryon Avenue",
+    "Buregate Road",
+    "Burnham Close"
+  ]
+}

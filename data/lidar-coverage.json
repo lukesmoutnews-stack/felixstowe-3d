@@ -1,0 +1,32 @@
+{
+  "checked": "2026-10-09T12:45:56.122Z",
+  "api": "https://environment.data.gov.uk",
+  "needed": [
+    "TM2030",
+    "TM2530",
+    "TM3030",
+    "TM2035",
+    "TM2535",
+    "TM3035"
+  ],
+  "dtm": {
+    "TM2030": "national_lidar_programme_dtm 2023",
+    "TM2530": "national_lidar_programme_dtm 2020",
+    "TM3030": "national_lidar_programme_dtm 2020",
+    "TM2035": "national_lidar_programme_dtm 2023",
+    "TM2535": "national_lidar_programme_dtm 2020",
+    "TM3035": "national_lidar_programme_dtm 2020"
+  },
+  "dsm": {
+    "TM2030": "national_lidar_programme_dsm 2023",
+    "TM2530": "national_lidar_programme_dsm 2020",
+    "TM3030": "national_lidar_programme_dsm 2020",
+    "TM2035": "national_lidar_programme_dsm 2023",
+    "TM2535": "national_lidar_programme_dsm 2020",
+    "TM3035": "national_lidar_programme_dsm 2020"
+  },
+  "missing": {
+    "dtm": [],
+    "dsm": []
+  }
+}

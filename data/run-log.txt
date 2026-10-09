@@ -1,0 +1,151 @@
+
+> felixstowe-3d@0.2.0 test
+> node test/unit.mjs && node test/tools.test.mjs
+
+ok   OS worked example: Airy TM forward (OS guide, Annex C)
+ok   grid references round-trip
+ok   local frame round-trips within 1 mm across the town
+ok   Helmert OSGB shift is about 100 m and consistent with the frame
+ok   coastline: land on the left of the way (west of a northbound coast)
+ok   coastline: reversed direction gives the complementary land
+ok   coastline: two separate crossings make two land pieces (an inlet)
+ok   coastline: dangling end inside the tile is extended to the edge
+ok   coastline: island ring inside the tile
+ok   inset roof ring for an L-shaped footprint
+ok   oriented box finds the long axis of a rotated rectangle
+ok   tag parsing: heights and widths
+ok   multipolygon ring assembly from split ways
+ok   Overpass JSON (out geom) -> features keeps OSM ids
+
+14 unit tests passed
+ok   fetch-osm exits cleanly
+ok   fetch-osm retried after HTTP 429
+ok   manifest lists both tiles
+ok   tile records licence and query box
+ok   fetch-osm skips tiles already downloaded
+ok   fetch-lidar exits cleanly
+ok   fetch-lidar finds the six OS 5 km tiles
+ok   prefers newest National LiDAR Programme DTM over composite
+ok   falls back to composite DTM where NLP is missing
+ok   reports tiles without a DSM
+ok   downloads one zip per chosen product
+
+11 tool tests passed
+Downloading https://download.geofabrik.de/europe/united-kingdom/england/suffolk-latest.osm.pbf …
+  33.4 MB
+
+▶ node tools/osm-from-pbf.mjs --pbf=/home/runner/work/felixstowe-3d/felixstowe-3d/data/suffolk-latest.osm.pbf
+Reading /home/runner/work/felixstowe-3d/felixstowe-3d/data/suffolk-latest.osm.pbf (33.4 MB)…
+  pass 1: 103620 nodes in the extent
+  pass 2–4: 15353 ways, 1550 candidate relations, 5031 member-only ways, 159842 outside nodes
+Wrote 88 tiles to /home/runner/work/felixstowe-3d/felixstowe-3d/data/tiles in 3.2 s (OSM data as of 2026-10-08T20:21:06.000Z).
+
+▶ node tools/validate-data.mjs 
+WARN  Coverage – Tiles in the configured extent present: 88 of 90; missing -5_4 -4_4 (tiles entirely at sea have no data and are expected to be missing)
+INFO  Coverage – Geographic bounds of buildings and roads: 51.9342, 1.26182 to 52.01736, 1.4181 (WGS84)
+PASS  Coverage – Feature counts: {"buildings":9841,"roads":3109,"namedRoads":928,"areas":1202,"lines":581,"pois":713,"coastlineWays":107,"trees":0}
+INFO  Attributes – Building height/levels/roof/material tag coverage: {"height":"0.0%","levels":"1.8%","estimated":"98.2%","roofShape":"1.4%","material":"0.0%","roadWidths":"138 of 3109","sidewalkTagged":"28 of 2175 car roads"}
+PASS  Names – Expected street names present: found 15/16; missing: View Point Road
+PASS  Names – Landmark in OSM: Felixstowe Pier: w28724732 (pier)
+PASS  Names – Landmark in OSM: Spa Pavilion: w240664453 (building)
+PASS  Names – Landmark in OSM: Landguard Fort: w32007009 (historic)
+WARN  Names – Landmark in OSM: Seafront Gardens: not found by name
+WARN  Names – Landmark in OSM: Hamilton Gardens: not found by name
+WARN  Names – Landmark in OSM: Cliff Gardens: not found by name
+PASS  Names – Landmark in OSM: Felixstowe station: n25685821 (station)
+PASS  Control points – Landguard Fort (NHLE 1030415, Grade I): nearest OSM building relation1812042 is under the point (contains it) (tolerance 15 m)
+PASS  Control points – Felixstowe station buildings (NHLE 1284364, Grade II): nearest OSM building way357281655 is under the point (contains it) (tolerance 15 m)
+WARN  Control points – Felixstowe Pier landward end (Suffolk HER MXS19251, TM 30251 33918): nearest OSM pier w28724732 is 88.8 m away (tolerance 60 m)
+INFO  Control points – OSM station node vs. listed station building: 169 m apart (the operational station and the listed 1898 building need not coincide)
+PASS  Geometry – Duplicate building footprints: none
+WARN  Geometry – Car-road centre lines crossing building footprints: 43 e.g. road 5938611×building 506430487, road 688146024×building 506426480, road 688146024×building 506426480, road 347644375×building 350995923, road 4728656×building 488445151, road 4717827×building 488445030, road 4747962×building 506431048, road 4748294×building 506430917, road 5938638×building 506431819, road 6131284×building 506431144 (often legitimate: arches, canopies, petrol stations)
+PASS  Geometry – Coastline ways present: 107 coastline way references across tiles
+WARN  LiDAR – Terrain processed: no terrain in manifest – run node tools/fetch-lidar.mjs
+
+20 checks, 0 failed. Report written.
+
+Summary:
+  done    OpenStreetMap tiles
+  done    Validation report (docs/data-report.md)
+
+Start the game: node tools/serve.mjs  →  http://localhost:8080
+Optional real-data browser test: node tools/test-headless.mjs --live
+Successfully installed click-8.5.0 colorama-0.4.6 numpy-2.5.3 orjson-3.13.0 overturemaps-1.0.2 pyarrow-26.0.0 pyfiglet-1.0.4 shapely-2.2.0 tqdm-4.70.1
+Downloading: 0 rows [00:00, ? rows/s]Downloading: 2023 rows [00:01, 1799.15 rows/s]Downloading: 15063 rows [00:01, 12594.24 rows/s]
+State saved to data/overture-buildings.geojson.state
+OSM buildings: 9841. Overture input 15063: 12517 already from OSM, 1 overlapping OSM, 0 invalid, 2545 added in 50 tiles.
+Extent 51.93,1.27 – 52,1.4 needs 6 OS 5 km tiles: TM2030 TM2530 TM3030 TM2035 TM2535 TM3035
+Search returned 410 products.
+┌─────────┬──────────┬─────────────────────────────────────┬─────────────────────────────────────┐
+│ (index) │ tile     │ dtm                                 │ dsm                                 │
+├─────────┼──────────┼─────────────────────────────────────┼─────────────────────────────────────┤
+│ 0       │ 'TM2030' │ 'national_lidar_programme_dtm 2023' │ 'national_lidar_programme_dsm 2023' │
+│ 1       │ 'TM2530' │ 'national_lidar_programme_dtm 2020' │ 'national_lidar_programme_dsm 2020' │
+│ 2       │ 'TM3030' │ 'national_lidar_programme_dtm 2020' │ 'national_lidar_programme_dsm 2020' │
+│ 3       │ 'TM2035' │ 'national_lidar_programme_dtm 2023' │ 'national_lidar_programme_dsm 2023' │
+│ 4       │ 'TM2535' │ 'national_lidar_programme_dtm 2020' │ 'national_lidar_programme_dsm 2020' │
+│ 5       │ 'TM3035' │ 'national_lidar_programme_dtm 2020' │ 'national_lidar_programme_dsm 2020' │
+└─────────┴──────────┴─────────────────────────────────────┴─────────────────────────────────────┘
+  downloaded /home/runner/work/felixstowe-3d/felixstowe-3d/data/lidar-raw/national_lidar_programme_dtm-2023-1m-TM23sw.zip (60.5 MB)
+  downloaded /home/runner/work/felixstowe-3d/felixstowe-3d/data/lidar-raw/national_lidar_programme_dtm-2023-1m-TM23nw.zip (50.3 MB)
+  downloaded /home/runner/work/felixstowe-3d/felixstowe-3d/data/lidar-raw/national_lidar_programme_dtm-2020-1m-TM23se.zip (82.6 MB)
+  downloaded /home/runner/work/felixstowe-3d/felixstowe-3d/data/lidar-raw/national_lidar_programme_dtm-2020-1m-TM23ne.zip (88.6 MB)
+  downloaded /home/runner/work/felixstowe-3d/felixstowe-3d/data/lidar-raw/national_lidar_programme_dtm-2020-1m-TM33sw.zip (43.2 MB)
+  downloaded /home/runner/work/felixstowe-3d/felixstowe-3d/data/lidar-raw/national_lidar_programme_dtm-2020-1m-TM33nw.zip (88.0 MB)
+  downloaded /home/runner/work/felixstowe-3d/felixstowe-3d/data/lidar-raw/national_lidar_programme_dsm-2023-1m-TM23sw.zip (62.7 MB)
+  downloaded /home/runner/work/felixstowe-3d/felixstowe-3d/data/lidar-raw/national_lidar_programme_dsm-2023-1m-TM23nw.zip (51.0 MB)
+  downloaded /home/runner/work/felixstowe-3d/felixstowe-3d/data/lidar-raw/national_lidar_programme_dsm-2020-1m-TM23se.zip (50.4 MB)
+  downloaded /home/runner/work/felixstowe-3d/felixstowe-3d/data/lidar-raw/national_lidar_programme_dsm-2020-1m-TM23ne.zip (61.8 MB)
+  downloaded /home/runner/work/felixstowe-3d/felixstowe-3d/data/lidar-raw/national_lidar_programme_dsm-2020-1m-TM33sw.zip (25.1 MB)
+  downloaded /home/runner/work/felixstowe-3d/felixstowe-3d/data/lidar-raw/national_lidar_programme_dsm-2020-1m-TM33nw.zip (54.7 MB)
+Processing with tools/lidar.mjs…
+Reading DTM…
+  DTM_TM2030_P_12749_20230109_20230219.tif: 639x4428 @ 1 m, E 624361–625000, N 230572–235000
+  DTM_TM2035_P_12749_20230109_20230219.tif: 639x4166 @ 1 m, E 624361–625000, N 235000–239166
+  DTM_TM2530_P_10807_20191211_20200107.tif: 5000x4428 @ 1 m, E 625000–630000, N 230572–235000
+  DTM_TM2535_P_10807_20191211_20200107.tif: 5000x4166 @ 1 m, E 625000–630000, N 235000–239166
+  DTM_TM3030_P_10807_20191211_20200107.tif: 4047x4428 @ 1 m, E 630000–634047, N 230572–235000
+  DTM_TM3035_P_10807_20191211_20200107.tif: 4047x4166 @ 1 m, E 630000–634047, N 235000–239166
+Reading DSM…
+  DSM_TM2030_P_12749_20230109_20230219.tif: 639x4428 @ 1 m, E 624361–625000, N 230572–235000
+  DSM_TM2035_P_12749_20230109_20230219.tif: 639x4166 @ 1 m, E 624361–625000, N 235000–239166
+  DSM_TM2530_P_10807_20191211_20200107.tif: 5000x4428 @ 1 m, E 625000–630000, N 230572–235000
+  DSM_TM2535_P_10807_20191211_20200107.tif: 5000x4166 @ 1 m, E 625000–630000, N 235000–239166
+  DSM_TM3030_P_10807_20191211_20200107.tif: 4047x4428 @ 1 m, E 630000–634047, N 230572–235000
+  DSM_TM3035_P_10807_20191211_20200107.tif: 4047x4166 @ 1 m, E 630000–634047, N 235000–239166
+OSM context: 9841 buildings, 3109 roads from 88 tile(s).
+Checking OSM ↔ LiDAR alignment (building footprints vs. DSM-DTM)…
+  separation score 0.529 at Helmert estimate; best 0.620 with offset E+0 m, N+2.25 m
+  applied calibrated OSGB shift
+Terrain grid 5254 x 4971 at 2 m…
+  wrote 121 terrain chunks of 1000 m
+  heights -2.0 – 29.3 m ODN; 18370662 LiDAR cells, 2910024 land gaps filled, 12373591 sea cells (7536643 LiDAR water-surface returns removed)
+Building heights measured for 8453 of 9841 buildings.
+Detected 11952 probable trees.
+Container yards: 33294 stacked cells in 10605 rows.
+Done.
+WARN  Coverage – Tiles in the configured extent present: 88 of 90; missing -5_4 -4_4 (tiles entirely at sea have no data and are expected to be missing)
+INFO  Coverage – Geographic bounds of buildings and roads: 51.9342, 1.26182 to 52.01736, 1.4181 (WGS84)
+PASS  Coverage – Feature counts: {"buildings":9841,"roads":3109,"namedRoads":928,"areas":1202,"lines":581,"pois":713,"coastlineWays":107,"trees":0}
+INFO  Attributes – Building height/levels/roof/material tag coverage: {"height":"0.0%","levels":"1.8%","estimated":"98.2%","roofShape":"1.4%","material":"0.0%","roadWidths":"138 of 3109","sidewalkTagged":"28 of 2175 car roads"}
+PASS  Names – Expected street names present: found 15/16; missing: View Point Road
+PASS  Names – Landmark in OSM: Felixstowe Pier: w28724732 (pier)
+PASS  Names – Landmark in OSM: Spa Pavilion: w240664453 (building)
+PASS  Names – Landmark in OSM: Landguard Fort: w32007009 (historic)
+WARN  Names – Landmark in OSM: Seafront Gardens: not found by name
+WARN  Names – Landmark in OSM: Hamilton Gardens: not found by name
+WARN  Names – Landmark in OSM: Cliff Gardens: not found by name
+PASS  Names – Landmark in OSM: Felixstowe station: n25685821 (station)
+PASS  Control points – Landguard Fort (NHLE 1030415, Grade I): nearest OSM building relation1812042 is under the point (contains it) (tolerance 15 m)
+PASS  Control points – Felixstowe station buildings (NHLE 1284364, Grade II): nearest OSM building way357281655 is under the point (contains it) (tolerance 15 m)
+WARN  Control points – Felixstowe Pier landward end (Suffolk HER MXS19251, TM 30251 33918): nearest OSM pier w28724732 is 88.8 m away (tolerance 60 m)
+INFO  Control points – OSM station node vs. listed station building: 169 m apart (the operational station and the listed 1898 building need not coincide)
+PASS  Geometry – Duplicate building footprints: none
+WARN  Geometry – Car-road centre lines crossing building footprints: 43 e.g. road 5938611×building 506430487, road 688146024×building 506426480, road 688146024×building 506426480, road 347644375×building 350995923, road 4728656×building 488445151, road 4717827×building 488445030, road 4747962×building 506431048, road 4748294×building 506430917, road 5938638×building 506431819, road 6131284×building 506431144 (often legitimate: arches, canopies, petrol stations)
+PASS  Geometry – Coastline ways present: 107 coastline way references across tiles
+PASS  LiDAR – Terrain grid: 121 chunks of 1000 m @ 2 m, -2–29.35 m ODN, 18370662 cells with data, source: National LIDAR Programme DTM 2023; National LIDAR Programme DTM 2020
+PASS  LiDAR – OSM ↔ LiDAR alignment: {"samplePoints":972825,"scoreAtHelmert":0.529,"bestOffsetE":0,"bestOffsetN":2.25,"bestScore":0.62}
+INFO  LiDAR – Ground heights (m ODN) at reference points: Cliff Gardens 8.49, station 20.32, Landguard Fort 2.9, pier landward end -2
+INFO  LiDAR – Water-surface returns replaced by sea bed: 7536643
+
+23 checks, 0 failed. Report written.
