@@ -8,6 +8,8 @@ import * as THREE from 'three';
 import { mulberry32 } from '../geo/polygon.js';
 
 const cache = new Map();
+/** Texture budget: low = phones (set from ?quality=low before any texture is made). */
+export const TEX = { low: false };
 
 function canvas(w, h) {
   const c = document.createElement('canvas'); c.width = w; c.height = h; return c;
@@ -70,10 +72,12 @@ class Painter {
     rctx.putImageData(id, 0, 0);
   }
   result(normalStrength = 2, opts = {}) {
-    const map = new THREE.CanvasTexture(this.c); map.colorSpace = THREE.SRGBColorSpace;
-    const normalMap = new THREE.CanvasTexture(normalFromHeight(this.hc, normalStrength));
+    // phones (TEX.low): half-size maps and no roughness map, about a fifth of the GPU memory
+    const sh = (c) => { if (!TEX.low || c.width < 256) return c; const o = canvas(c.width >> 1, c.height >> 1); const g = o.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(c, 0, 0, o.width, o.height); return o; };
+    const map = new THREE.CanvasTexture(sh(this.c)); map.colorSpace = THREE.SRGBColorSpace;
+    const normalMap = new THREE.CanvasTexture(sh(normalFromHeight(this.hc, normalStrength)));
     const out = { map, normalMap };
-    if (this.rc) out.roughnessMap = new THREE.CanvasTexture(this.rc);
+    if (this.rc && !TEX.low) out.roughnessMap = new THREE.CanvasTexture(this.rc);
     for (const t of Object.values(out)) {
       t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = opts.anisotropy || 8;
       t.generateMipmaps = true; t.minFilter = THREE.LinearMipmapLinearFilter;

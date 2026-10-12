@@ -106,15 +106,18 @@ export function buildSigns(businesses, buildings, ctx, tileKey) {
   }
   const materials = new Map(); const stats = { signs: 0, researched: 0, generated: 0, corrected: 0, added: 0 };
   let atlas = null, slot = 0, atlasIdx = -1;
+  let AH = ATLAS, left = placed.length;
   const newAtlas = () => {
-    const c = document.createElement('canvas'); c.width = ATLAS; c.height = ATLAS;
+    // only as tall as this tile's signs need (a full 2048x2048 sheet per tile was ~22 MB of GPU memory each)
+    const rows = Math.ceil(Math.min(left, PER_ATLAS) / (ATLAS / CELL_W)); AH = Math.min(ATLAS, Math.max(64, 2 ** Math.ceil(Math.log2(rows * CELL_H))));
+    const c = document.createElement('canvas'); c.width = ATLAS; c.height = AH;
     const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
     atlasIdx++; const key = `sign:${tileKey}:${atlasIdx}`;
     materials.set(key, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.55, metalness: 0.05 }));
     atlas = { ctx: c.getContext('2d'), key, tex }; slot = 0;
   };
   for (const p of placed) {
-    if (!atlas || slot >= PER_ATLAS) newAtlas();
+    if (!atlas || slot >= PER_ATLAS) newAtlas(); left--;
     const cx0 = (slot % (ATLAS / CELL_W)) * CELL_W, cy0 = Math.floor(slot / (ATLAS / CELL_W)) * CELL_H; slot++;
     const w = p.s1 - p.s0;
     paintSign(atlas.ctx, cx0, cy0, w, p.style);
@@ -122,7 +125,7 @@ export function buildSigns(businesses, buildings, ctx, tileKey) {
     const top = g.shopTop ? g.shopTop - 0.04 : g.base + Math.min(3.6, Math.max(2.6, g.wallTop - g.base - 0.4));
     const y0 = top - BOARD_H + 0.02, off = 0.03, dep = 0.1;
     const P = (s, o, y) => [a[0] + ux * s + nx * o, y, a[1] + uz * s + nz * o];
-    const U0 = cx0 / ATLAS, U1 = (cx0 + CELL_W) / ATLAS, V1 = 1 - cy0 / ATLAS, V0 = 1 - (cy0 + CELL_H) / ATLAS, Us = (cx0 + 2) / ATLAS;
+    const U0 = cx0 / ATLAS, U1 = (cx0 + CELL_W) / ATLAS, V1 = 1 - cy0 / AH, V0 = 1 - (cy0 + CELL_H) / AH, Us = (cx0 + 2) / ATLAS;
     const acc = ctx.acc.get(a[0], a[1], atlas.key);
     const f = off + dep;
     acc.quad(P(p.s0, f, y0), P(p.s1, f, y0), P(p.s1, f, top), P(p.s0, f, top), [U0, V0], [U1, V0], [U1, V1], [U0, V1]); // face

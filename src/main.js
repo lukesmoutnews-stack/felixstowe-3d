@@ -10,6 +10,7 @@ import { World } from './world/world.js';
 import { Environment } from './world/environment.js';
 import { makeSea } from './world/landcover.js';
 import { updateMaterials, allMaterials } from './world/materials.js';
+import { TEX } from './world/textures.js';
 import { Input } from './play/input.js';
 import { Collision } from './play/collision.js';
 import { Player } from './play/player.js';
@@ -32,7 +33,7 @@ class App {
     this.t0 = performance.now();
     this.settings = loadSettings(params.has('fixture') ? { proceduralTrees: true } : {});
     // ?quality=low (phones / the mayor game): no shadows, shorter view, 1x pixels
-    if (params.get('quality') === 'low') Object.assign(this.settings, { shadows: 'off', viewDistance: 900, pixelRatio: 1, proceduralTrees: false });
+    if (params.get('quality') === 'low') Object.assign(this.settings, { shadows: 'off', viewDistance: 900, pixelRatio: 1, proceduralTrees: false }); if (params.get('quality') === 'low') { TEX.low = true; CONFIG.streamRadius = 650; CONFIG.unloadRadius = 1400; } // phones: fewer 1 km tiles in memory (view distance is 900 m)
     this.hooks = window.F3D_HOOKS || {};
     this.fixture = params.get('fixture');
     let origin = CONFIG.origin, spawn = CONFIG.spawn;
@@ -52,7 +53,16 @@ class App {
 
     // renderer
     const canvas = document.getElementById('scene');
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: params.has('test') });
+    const low = params.get('quality') === 'low'; // phones: no MSAA buffers
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !low, powerPreference: low ? 'default' : 'high-performance', preserveDrawingBuffer: params.has('test') });
+    // if the phone reclaims graphics memory, say so and offer a reload instead of leaving a frozen black screen
+    canvas.addEventListener('webglcontextlost', (e) => {
+      e.preventDefault(); this.suspended = true; if (document.getElementById('gl-lost')) return;
+      const d = document.createElement('div'); d.id = 'gl-lost';
+      d.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:rgba(10,20,30,.88);color:#fff;font:16px system-ui,sans-serif;text-align:center;padding:24px';
+      d.innerHTML = '<p style="margin:0;max-width:22em">The 3D town ran out of graphics memory on this device.</p><button style="font:inherit;padding:10px 20px;border-radius:999px;border:0;background:#2f7de1;color:#fff">Reload</button>';
+      d.querySelector('button').onclick = () => location.reload(); document.body.appendChild(d);
+    });
     this.renderer.setPixelRatio(this.settings.pixelRatio);
     this.renderer.setSize(innerWidth, innerHeight);
     this.renderer.shadowMap.enabled = true; this.renderer.shadowMap.type = THREE.PCFShadowMap;
