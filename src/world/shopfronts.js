@@ -64,9 +64,12 @@ function hostAndEdge(biz, buildings, nearestRoad) {
     const nx = -dz / L, nz = dx / L;
     let t = ((biz.x - a[0]) * dx + (biz.z - a[1]) * dz) / (L * L); t = Math.max(0, Math.min(1, t));
     const d = Math.hypot(a[0] + dx * t - biz.x, a[1] + dz * t - biz.z);
-    const mx = (a[0] + c[0]) / 2 + nx * 7, mz = (a[1] + c[1]) / 2 + nz * 7;
-    const road = nearestRoad(mx, mz, 14, (r) => (r.car && r.kind !== 'service') || r.kind === 'pedestrian');
-    const score = d + (road ? 0 : 25) - Math.min(L, 12) * 0.3;
+    const cx = (a[0] + c[0]) / 2, cz = (a[1] + c[1]) / 2, mx = cx + nx * 7, mz = cz + nz * 7;
+    const flt = (r) => (r.car && r.kind !== 'service') || r.kind === 'pedestrian';
+    const out = nearestRoad(mx, mz, 30, flt), mid = nearestRoad(cx, cz, 30, flt);
+    // the shopfront is the wall that faces the street (its outward side is nearer the road), not a party wall
+    const facing = out && mid && out.d < mid.d - 3;
+    const score = (facing ? 0 : 40) + (mid ? mid.d * 0.5 : 20) + d * 0.3 - Math.min(L, 12) * 0.3;
     if (!best || score < best.score) best = { score, a, c, L, nx, nz, t, ux: dx / L, uz: dz / L, key: host.id + ':' + i };
   }
   return best && { host, ...best };

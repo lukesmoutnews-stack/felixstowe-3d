@@ -31,10 +31,12 @@ export function streetEdge(b, nearestRoad) {
     const a = R[i], c = R[(i + 1) % R.length], L = Math.hypot(c[0] - a[0], c[1] - a[1]); if (L < 2.5) continue;
     const ux = (c[0] - a[0]) / L, uz = (c[1] - a[1]) / L, mx = (a[0] + c[0]) / 2, mz = (a[1] + c[1]) / 2;
     let nx = uz, nz = -ux; if (pointInRing(mx + nx * 0.3, mz + nz * 0.3, R)) { nx = -nx; nz = -nz; } // outward, whatever the ring's handedness
-    const out = nearestRoad(mx + nx * 6, mz + nz * 6, 40, (r) => !r.footOnly), inn = nearestRoad(mx - nx * 6, mz - nz * 6, 40, (r) => !r.footOnly);
+    const street = (r) => r.car && r.kind !== 'service' && r.kind !== 'track'; // the street, not a car park aisle or lane behind
+    const out = nearestRoad(mx + nx * 6, mz + nz * 6, 40, street), inn = nearestRoad(mx - nx * 6, mz - nz * 6, 40, street);
     if (!out || (inn && inn.d < out.d)) continue;
-    const fd = nearestRoad(mx, mz, 60, (r) => !r.footOnly); const front = fd ? fd.d - fd.road.width / 2 - 2.3 : 6; // facade to the back of the pavement
-    const score = out.d - L * 0.15; if (!best || score < best.score) best = { a, c, L, ux, uz, nx, nz, score, roadD: out.d, front };
+    const fd = nearestRoad(mx, mz, 60, street); const front = fd ? fd.d - fd.road.width / 2 - 2.3 : 6; // facade to the back of the pavement
+    const score = out.d - L * 0.4; // prefer the long wall facing the street
+    if (!best || score < best.score) best = { a, c, L, ux, uz, nx, nz, score, roadD: out.d, front };
   }
   return best;
 }
