@@ -164,7 +164,12 @@ export function buildSpaPavilion(b, ctx) {
     box(m.white, u - 0.22, u + 0.22, Gp, LF - 0.6, 0.15, 0.6);
     const head = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.28, 0.5, 4), m.white); head.rotation.y = Math.PI / 4; head.position.set(u, LF - 0.65, Z(0.38)); add(head);
   }
-  box(m.render, 0, 36, LF + 0.25, LT, 1.2, 9);                   // lounge body
+  // lounge body: hollow, so you can walk in from the entrance balcony (user, 12 Oct 2026)
+  box(m.render, 0, 36, LF + 0.25, LT, 8.7, 9.0);                 // back wall
+  box(m.render, 35.7, 36, LF + 0.25, LT, -0.1, 9.0);             // north-east end
+  box(m.render, 0, 36, LT, LT + 0.5, -0.2, 9.0);                 // roof over the lounge
+  for (let k = 0; k < 7; k++) { const u1 = 0.4 + k * 4.45 + 4.0; box(m.render, u1, u1 + 0.45, LF + 0.25, LT, -0.1, 1.2); } // piers between the bays
+  for (const u of [0.4, 35.8]) box(m.render, u === 0.4 ? 0 : 35.7, u === 0.4 ? 0.4 : 36, LF + 0.25, LT, -0.1, 1.2);
   for (let k = 0; k < 8; k++) {                                  // angled glazed bays
     const u0 = 0.4 + k * 4.45, u1 = u0 + 4.0, inset = 0.6;
     seaPlane(m.lounge, u0 + inset, u1 - inset, -0.1, LF + 0.35, LT - 0.15);
@@ -174,7 +179,20 @@ export function buildSpaPavilion(b, ctx) {
   }
   box(m.blue, 0, 36, LT, LT + 0.5, 1.1, 1.3);
   box(m.white, -0.3, 36.3, LT + 0.5, LT + 0.7, -0.3, 9);          // flat roof edge
-  facePlane(m.lounge, -0.05, 1.3, 8.8, LF + 0.35, LT - 0.1);       // SW end glazing
+  // SW end glazing with a pair of glazed doors (open) onto the entrance balcony
+  const ld0 = 3.25, ld1 = 5.05, LD = LF + 0.25;
+  facePlane(m.lounge, -0.05, 1.3, ld0, LF + 0.35, LT - 0.1); facePlane(m.lounge, -0.05, ld1, 8.8, LF + 0.35, LT - 0.1); facePlane(m.lounge, -0.05, ld0, ld1, LD + 2.4, LT - 0.1);
+  for (const [v, sg] of [[ld0, 1], [ld1, -1]]) { const g = new THREE.BoxGeometry(0.05, 2.3, (ld1 - ld0) / 2); g.translate(0, 0, Z(sg * (ld1 - ld0) / 4)); const me = new THREE.Mesh(g, m.lounge); me.position.set(-0.02, LD + 1.15, Z(v)); me.rotation.y = sg * zs * 1.25; add(me, false); }
+  // lounge interior: carpet, tables and chairs by the windows, a bar along the back wall, pendant lights
+  flat(m.carpet, 0.05, 35.65, -0.05, 8.65, LD + 0.01); flat(m.ceiling, 0.05, 35.65, -0.05, 8.65, LT - 0.02);
+  wall(m.wallCream, 0.05, 8.68, 35.65, 8.68, LD, LT, [10, 4]);
+  for (let u = 2.4; u < 34; u += 3.1) for (const v of [2.4, 5.2]) {
+    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.04, 16), m.wood); t.position.set(u, LD + 0.74, Z(v)); add(t, false);
+    box(m.black, u - 0.03, u + 0.03, LD, LD + 0.72, v - 0.03, v + 0.03, false);
+    for (const du of [-0.7, 0.7]) { box(m.chair, u + du - 0.2, u + du + 0.2, LD + 0.42, LD + 0.47, v - 0.2, v + 0.2, false); box(m.chair, u + du + (du > 0 ? 0.17 : -0.22), u + du + (du > 0 ? 0.22 : -0.17), LD + 0.45, LD + 0.95, v - 0.2, v + 0.2, false); }
+  }
+  box(m.wood, 8, 26, LD, LD + 1.05, 7.2, 7.8, false); box(m.pale, 7.9, 26.1, LD + 1.05, LD + 1.1, 7.1, 7.9, false); // bar
+  for (let u = 3; u < 34; u += 4.5) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.12, 0.25, 12), m.pendant); c.position.set(u, LT - 0.6, Z(4)); add(c, false); box(m.black, u - 0.005, u + 0.005, LT - 0.48, LT, 3.995, 4.005, false); }
   box(m.blue, -0.15, 0.0, LT - 0.9, LT + 0.5, 1.3, 5.5);
   facePlane(m.terraceSign, -0.25, 1.6, 5.0, LF - 0.42, LF + 0.16);
   for (let u = 3; u < 34; u += 3.2) box(m.blue, u, u + 2.6, Gp, Gp + 0.5, -3.4, -2.8); // planters along the promenade (were red)
@@ -217,7 +235,7 @@ export function buildSpaPavilion(b, ctx) {
   pbox(m.render, -2.2, 2.2, Gb, F - 0.02, 2.9, qLand); pbox(m.steps, -2.2, 2.2, F - 0.05, F + 0.02, 2.95, qLand);
   for (const sgn of [-1, 1]) {
     for (let p = 1.6; p <= 2.2; p += 0.2) pbox(m.black, sgn * p - 0.015, sgn * p + 0.015, F, F + 1.05, qLand - 0.02, qLand + 0.02);
-    if (sgn < 0) continue; // the south-west side opens onto the walkway to the balcony terrace
+    continue; // both sides open: south-west onto the walkway to the balcony terrace, north-east onto the balcony to the lounge
     for (let q = 3.0; q <= qLand; q += 0.25) pbox(m.black, sgn * 2.2 - 0.02, sgn * 2.2 + 0.02, F, F + 1.05, q - 0.015, q + 0.015);
     pbox(m.black, sgn * 2.2 - 0.04, sgn * 2.2 + 0.04, F + 1.0, F + 1.06, 2.9, qLand);
     for (let p = 1.5; p <= 2.2; p += 0.2) pbox(m.black, sgn * p - 0.015, sgn * p + 0.015, F, F + 1.05, 2.9, 2.94);
@@ -228,6 +246,19 @@ export function buildSpaPavilion(b, ctx) {
   const rail = (p, yOff) => { const pts = [new THREE.Vector3(p, yb0 + yOff, qz * qBot), new THREE.Vector3(p, F + yOff, qz * qLand), new THREE.Vector3(p, F + yOff, qz * (qLand - 0.6))]; padd(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.05), 24, 0.03, 6), m.rail)); };
   rail(0, 0.95); rail(-sw + 0.15, 1.85); rail(sw - 0.15, 1.85);
   for (let k = 0; k <= ns; k += 4) { const q = qLand + k * 0.3, yy = F - k * rise; pbox(m.rail, -0.03, 0.03, yy, yy + 0.95, q - 0.03, q + 0.03); }
+  // balcony from the landing's seaward-east side round to the lounge doors (user, 12 Oct 2026)
+  const yB = LD, bA = { u0: -6.9, u1: -5.8, v0: 2.4, v1: 8.6 }, bB = { u0: -5.8, u1: 0, v0: 2.4, v1: 6.0 };
+  // the lounge floor is lower than the entrance landing: a short flight of steps on the balcony takes up the difference
+  const nsB = Math.max(0, Math.round((F - yB) / rise)), rB = nsB ? (F - yB) / nsB : 0, vs1 = 7.5, vs0 = vs1 - nsB * 0.3;
+  const balY = (v) => (v >= vs1 ? F : v <= vs0 ? yB : F - Math.ceil((vs1 - v) / 0.3 - 1e-6) * rB);
+  for (const r of [bA, bB]) { box(m.render, r.u0, r.u1, yB - 0.35, yB - 0.02, r.v0, r.v1, false); box(m.steps, r.u0, r.u1, yB - 0.05, yB + 0.02, r.v0, r.v1, false); box(m.blue, r.u0, r.u1, yB - 0.35, yB - 0.12, r.v0 - 0.07, r.v0 + 0.15, false); }
+  if (nsB) { box(m.render, bA.u0, bA.u1, yB - 0.35, F - 0.02, vs1, bA.v1, false); box(m.steps, bA.u0, bA.u1, F - 0.05, F + 0.02, vs1, bA.v1, false);
+    for (let k = 0; k < nsB; k++) { const v1 = vs1 - k * 0.3, y = F - (k + 1) * rB; box(m.steps, bA.u0, bA.u1, yB - 0.3, y, v1 - 0.3, v1, false); box(m.nosing, bA.u0, bA.u1, y, y + 0.01, v1 - 0.3, v1 - 0.22, false); }
+    const pts = [new THREE.Vector3(bA.u1 - 0.08, yB + 0.95, Z(vs0)), new THREE.Vector3(bA.u1 - 0.08, F + 0.95, Z(vs1))]; add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 8, 0.03, 6), m.rail)); }
+  for (const u of [-6.8, -3.5, -0.2]) box(m.render, u - 0.18, u + 0.18, Gp - 0.3, yB - 0.35, 2.45, 2.81);
+  for (let u = bA.u0 + 0.1; u < 0; u += 0.25) box(m.black, u - 0.015, u + 0.015, yB, yB + 1.05, 2.4, 2.44, false);
+  box(m.black, bA.u0, 0, yB + 1.0, yB + 1.06, 2.36, 2.48);
+  for (let v = 2.5; v <= 6.7; v += 0.25) box(m.black, bA.u0, bA.u0 + 0.04, balY(v), balY(v) + 1.05, v - 0.015, v + 0.015, false);
   // walkway along the entrance block's landward face: the landing joins the balcony terrace (user's sketch, 12 Oct 2026)
   const wu0 = -11.2, wv0 = 8.2;
   box(m.render, wu0, bu0, Gb, F - 0.02, wv0, 21.2, false); box(m.steps, wu0, bu0 - 0.3, F - 0.05, F + 0.02, wv0, 21.2, false);
@@ -363,6 +394,8 @@ export function buildSpaPavilion(b, ctx) {
   const ringPQ = (pts) => pts.map(([p, q]) => W(...pq(p, q)));
   const qOf = (x, z) => { const [u, v] = toL(x, z); return (u - Ou) * dU + (v - Ov) * dV; };
   surfaces.push({ id: 'spa-terrace', kind: 'terrace', ring: ringW([[wu0, wv0], [bu0, wv0], [bu0, 21.2], [-6.6, 21.2], [-6.6, 31], [-10.05, 31], [-10.05, 21.2], [wu0, 21.2]]), heightAt: () => F });
+  surfaces.push({ id: 'spa-balcony', kind: 'terrace', ring: ringW([[bA.u0, bA.v0], [bB.u1, bB.v0], [bB.u1, bB.v1], [bA.u1, bB.v1], [bA.u1, bA.v1], [bA.u0, bA.v1]]), heightAt: (x, z) => balY(toL(x, z)[1]) });
+  surfaces.push({ id: 'spa-lounge', kind: 'terrace', ring: ringW([[0.0, -0.1], [35.7, -0.1], [35.7, 8.7], [0.0, 8.7]]), heightAt: () => LD });
   surfaces.push({ id: 'spa-porch', kind: 'terrace', ring: ringPQ([[-1.3, -0.6], [1.3, -0.6], [1.3, 2.9], [2.2, 2.9], [2.2, qLand], [-2.2, qLand], [-2.2, 2.9], [-1.3, 2.9]]), heightAt: () => F });
   surfaces.push({ id: 'spa-stair', kind: 'terrace', ring: ringPQ([[-sw, qLand], [sw, qLand], [sw, qBot], [-sw, qBot]]), heightAt: (x, z) => { const k = Math.max(0, Math.ceil((qOf(x, z) - qLand) / 0.3 - 1e-6)); return Math.max(ctx.ground(x, z), F - k * rise); } });
   void lv;
@@ -373,14 +406,19 @@ export function buildSpaPavilion(b, ctx) {
   for (let i = 0; i < Lr.length; i++) { // footprint, except the colonnade face and the entrance opening
     const p = Lr[i], q = Lr[(i + 1) % Lr.length], L = Math.hypot(q[0] - p[0], q[1] - p[1]), n = Math.max(1, Math.ceil(L));
     for (let k = 0; k < n; k++) { const a = [p[0] + (q[0] - p[0]) * k / n, p[1] + (q[1] - p[1]) * k / n], c = [p[0] + (q[0] - p[0]) * (k + 1) / n, p[1] + (q[1] - p[1]) * (k + 1) / n], mu = (a[0] + c[0]) / 2, mv = (a[1] + c[1]) / 2;
-      if (mv < 2.5 && mu > -1 && mu < 37) continue; if (mu < -4.5 && mv > bv0 - 0.1 && mv < bv1 + 0.1) continue; seg(a, c); }
+      if (mv < 2.5 && mu > -1 && mu < 37) continue; if (mu < -4.5 && mv > bv0 - 0.1 && mv < bv1 + 0.1) continue;
+      if (mu > -0.5 && mu < 1.0 && mv < 6.5) { seg(a, c, 0.05, Gf - 1, LF - 0.1); continue; } // lounge end: open at balcony level (walls added below)
+      seg(a, c); }
   }
   seg([0, 3], [36, 3]); for (let u = 0.3; u <= 35.8; u += 4.45) colliders.push({ type: 'circle', ...(() => { const w = W(u, 0.38); return { x: w[0], z: w[1] }; })(), r: 0.32, y0: Gp - 1, top: LF, kind: 'column' });
   seg([bu1, bv0 - 0.15], [-4.5, bv0 - 0.15]); seg([bu0 - 0.15, bv1 + 0.15], [-4.5, bv1 + 0.15]);
   seg([bu0 - 0.15, bv0 - 0.15], [bu0 - 0.15, bv1 + 0.15]);
   const segPQ = (a, c, r = 0.05, y0 = Gf - 1, top = E + 3, kind = 'building') => colliders.push({ type: 'segment', a: W(...pq(...a)), b: W(...pq(...c)), r, y0, top, kind });
   segPQ([-1.4, -0.5], [-1.4, 3.0], 0.1); segPQ([1.4, -0.5], [1.4, 3.0], 0.1); segPQ([-1.5, 2.9], [-0.8, 2.9], 0.1); segPQ([0.8, 2.9], [1.5, 2.9], 0.1);
-  for (const sgn of [-1, 1]) { if (sgn > 0) { segPQ([sgn * 2.2, 2.9], [sgn * 2.2, qLand], 0.08, F - 1, F + 1.1, 'railing'); segPQ([sgn * 1.5, 2.9], [sgn * 2.2, 2.9], 0.08, F - 1, F + 1.1, 'railing'); } segPQ([sgn * 1.6, qLand], [sgn * 2.2, qLand], 0.08, F - 1, F + 1.1, 'railing'); segPQ([sgn * (sw + 0.2), qLand], [sgn * (sw + 0.2), qBot + 0.4], 0.2); }
+  seg([0.05, 1.2], [0.05, ld0], 0.08, LF, LT); seg([0.05, ld1], [0.05, 8.8], 0.08, LF, LT); seg([0, -0.15], [36, -0.15], 0.1, LF, LT); seg([0, 8.75], [36, 8.75], 0.1, LF, LT); // lounge
+  seg([bA.u0, bA.v0], [0, bA.v0], 0.08, yB - 1, yB + 1.1, 'railing'); seg([bA.u0, bA.v0], [bA.u0, 6.6], 0.08, yB - 1, yB + 1.1, 'railing');
+  seg([8, 7.5], [26, 7.5], 0.35, LD - 0.2, LD + 1.1, 'furniture');
+  for (const sgn of [-1, 1]) { segPQ([sgn * 1.6, qLand], [sgn * 2.2, qLand], 0.08, F - 1, F + 1.1, 'railing'); segPQ([sgn * (sw + 0.2), qLand], [sgn * (sw + 0.2), qBot + 0.4], 0.2); }
   seg([wu0, wv0], [wu0, 21.2], 0.08, F - 1, F + 1.1, 'railing'); seg([wu0, 21.2], [-10.05, 21.2], 0.08, F - 1, F + 1.1, 'railing');
   seg([-10.05, 21.2], [-10.05, 31], 0.08, F - 1, F + 1.1, 'railing'); seg([-10.05, 31], [-6.6, 31], 0.08, F - 1, F + 1.1, 'railing');
   seg([IN.e1, bv0], [-4.5, bv0]); seg([IN.e1, bv1], [-4.5, bv1]); // entrance room side walls inside the block
@@ -395,7 +433,8 @@ export function buildSpaPavilion(b, ctx) {
   // interior volume for the camera
   const interiorRing = ringW([[bu0, bv0], [IN.e1, bv0], [IN.e1, IN.v0], [IN.s1, IN.v0], [IN.s1, IN.v1], [IN.e1, IN.v1], [IN.e1, bv1], [bu0, bv1]]);
   const interior = { id: 'spa-pavilion', name: 'Spa Pavilion Theatre', ring: interiorRing, top: E, ceilingAt: (x, z) => { const [u, v] = toL(x, z); if (u < IN.e1) return F + 3.2; if (u < IN.f1) return fy; if (u < IN.a1) return arcY(v); return F + 5.8; } };
-  return { group, colliders, surfaces, interior, floorY: F, info: { F, nSteps: ns, entranceFaces: 'sea, 18 deg towards Undercliff Road', seats: seatPos.length } };
+  const loungeInterior = { id: 'spa-lounge', name: 'Spa Pavilion lounge', ring: ringW([[0.0, -0.1], [35.7, -0.1], [35.7, 8.7], [0.0, 8.7]]), top: LT, bottom: LF - 0.6, ceilingAt: () => LT - 0.15 };
+  return { group, colliders, surfaces, interior, extraInteriors: [loungeInterior], floorY: F, info: { F, nSteps: ns, entranceFaces: 'sea, 18 deg towards Undercliff Road', seats: seatPos.length } };
 }
 
 function clipHalf(ring, f) {

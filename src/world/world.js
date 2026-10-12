@@ -12,6 +12,8 @@ import { addBuilding } from './buildings.js';
 import { buildRoads, buildRail } from './roads.js';
 import { RoadNetwork } from './road-surface.js';
 import { promenadeWays, buildSeafrontWall, isSeafrontShelter, buildShelter } from './seafront.js';
+import { FRONTAGES } from '../content/frontages.js';
+import { buildFrontageDetails } from './frontage-details.js';
 import { profileNetwork, buildBridge, buildRamp, BRIDGE } from './bridges.js';
 import { buildGround, buildAreas } from './landcover.js';
 import { placeTrees, buildTreeMeshes } from './vegetation.js';
@@ -84,7 +86,7 @@ export class World extends EventTarget {
     for (const s of this.surfaces) if (s.bridge && pointInRing(x, z, s.ring)) { const under = s.heightAt(x, z) - s.depth; if (under > y + 0.3) room = Math.min(room, under - y); }
     return room;
   }
-  interiorAt(x, z, y = -Infinity) { return this.interiors.find((i) => pointInRing(x, z, i.ring) && y < i.top) || null; }
+  interiorAt(x, z, y = -Infinity) { return this.interiors.find((i) => pointInRing(x, z, i.ring) && y < i.top && (i.bottom == null || y >= i.bottom)) || null; }
   onDeck(x, z, y = null) { return this.surfaces.find((s) => pointInRing(x, z, s.ring) && (!s.layered || (y != null && Math.abs(s.heightAt(x, z) - y) < BRIDGE.step))) || null; }
 
   isLand(x, z) {
@@ -227,6 +229,8 @@ export class World extends EventTarget {
       b.height = Math.max(2.2, h[1]); b.heightSource = 'lidar';
       if (b.roofShape !== 'flat' && h[1] - h[0] < 0.6 && b.roofShapeSource !== 'osm') b.roofShape = 'flat'; // flat in the DSM
     }
+    // photographed frontages (content/frontages.js): height and roof from the photo unless measured (LiDAR/OSM)
+    for (const b of ownBuildings) { const fr = FRONTAGES[b.id]; if (!fr) continue; b.frontage = fr; if (fr.height && (fr.force || (b.heightSource !== 'lidar' && b.heightSource !== 'osm:height'))) { b.height = fr.height; b.heightSource = 'photo'; } if (fr.roofShape && b.roofShapeSource !== 'osm') { b.roofShape = fr.roofShape; b.roofShapeSource = 'photo'; } }
     for (const b of ownBuildings) { const bb = bounds(b.outer); this.buildingGrid.insert(bb.minX, bb.minZ, bb.maxX, bb.maxZ, { outer: b.outer, b, tile: tile.key }); }
 
     // --- POIs and landmark styles ---
@@ -251,7 +255,8 @@ export class World extends EventTarget {
     markShopBuildings(businesses, ownBuildings);
     for (const b of ownBuildings) if ((b.name && matchLandmark({ name: b.name, tags: {} })) || lmAreas.some((p) => pointInRing(b.cx, b.cz, p.ring))) b.landmark = true;
 
-    const ctx = { acc, ground: this.ground, terrain: this.terrain, hasTerrain: this.terrain.hasTerrain, landmarkStyle, settings: this.settings,
+    const styleOf = (b) => { const base = landmarkStyle(b); return b.frontage?.style ? { ...(base || {}), ...b.frontage.style } : base; };
+    const ctx = { acc, ground: this.ground, terrain: this.terrain, hasTerrain: this.terrain.hasTerrain, landmarkStyle: styleOf, settings: this.settings,
       isClear: this.isClear, nearestRoad: (x, z, d, f) => this.nearestRoad(x, z, d, f), isLand: (x, z) => this.isLand(x, z) || this._tileLand(tile, x, z), roadGrid: this.roadGrid, surfaceAt: null, points: f.points.filter((p) => inTile(p.x, p.z)) };
 
     // --- ground, areas ---
@@ -343,7 +348,7 @@ export class World extends EventTarget {
         const sp = buildSpaPavilion(b, ctx); landmarkMeshes.push(sp.group);
         for (const c of sp.colliders) this._addPrimitive(tile, c);
         tile.surfaces.push(...sp.surfaces); this.surfaces.unshift(...sp.surfaces);
-        tile.interiors = [...(tile.interiors || []), sp.interior]; this.interiors.push(sp.interior);
+        const ins = [sp.interior, ...(sp.extraInteriors || [])]; tile.interiors = [...(tile.interiors || []), ...ins]; this.interiors.push(...ins);
         b.geom = null; b.customModel = 'spa-pavilion'; b.enterable = true;
         continue;
       }
@@ -384,6 +389,7 @@ export class World extends EventTarget {
       }
       const col = addBuilding(b, ctx);
       if (col && !b.isPart) this._addCollider(tile, b, col);
+      if (col && b.frontage) { const fd = buildFrontageDetails(b, { nearestRoad: ctx.nearestRoad, ground: this.ground }); if (fd) { landmarkMeshes.push(fd.group); for (const c of fd.colliders) this._addPrimitive(tile, c); } }
       if (col?.extraRings?.length) for (const ring of col.extraRings) for (let k = 0; k < ring.length; k++) {
         const a = ring[k], c = ring[(k + 1) % ring.length];
         this.edgeGrid.insert(Math.min(a[0], c[0]), Math.min(a[1], c[1]), Math.max(a[0], c[0]), Math.max(a[1], c[1]), { type: 'segment', a, b: c, r: 0.02, y0: col.base, top: col.base + 3.5, kind: 'building', id: b.id, tile: tile.key });

@@ -37,7 +37,7 @@ function mats() {
 }
 
 /** Geometry builder: quads with explicit UVs, merged into one mesh per material. */
-class Geo {
+export class Geo {
   constructor() { this.p = []; this.uv = []; this.idx = []; }
   quad(a, b, c, d, uv = [[0, 0], [1, 0], [1, 1], [0, 1]]) { const n = this.p.length / 3; this.p.push(...a, ...b, ...c, ...d); for (const t of uv) this.uv.push(...t); this.idx.push(n, n + 1, n + 2, n, n + 2, n + 3); }
   tri(a, b, c) { const n = this.p.length / 3; this.p.push(...a, ...b, ...c); this.uv.push(0, 0, 1, 0, 0.5, 1); this.idx.push(n, n + 1, n + 2); }
