@@ -28,7 +28,8 @@ export const FRONTAGES = {
   1017209829: { addr: '123 (The Alex, brasserie)', photo: '123-brasserie-hamilton-house.png', height: 7.6, roofShape: 'flat', style: { facade: 'brick_red', roof: 'flat', winStyle: 1 }, details: [{ t: 'blueCanopy' }, { t: 'upperGlazing' }] },
   1017209831: { addr: 'Hamilton House', photo: '123-brasserie-hamilton-house.png', height: 9.0, roofShape: 'gabled', style: { facade: 'render', tint: PALE_BLUE, roof: 'concrete_tile', winStyle: 0 }, details: [{ t: 'glassBalcony', level: 1 }, { t: 'whiteFence' }] },
   1017209830: { addr: 'next to Hamilton House', photo: '123-brasserie-hamilton-house.png', height: 9.0, roofShape: 'hipped', style: { facade: 'render', tint: WHITE, roof: 'concrete_tile', winStyle: 0 }, details: [{ t: 'whiteBalcony', level: 1 }, { t: 'whiteFence' }] },
-  506378806: { addr: '129 (One 29, The Cork Bar, Steak & Lobster Co)', photo: '129-cork-bar.png', height: 8.0, style: { facade: 'render', tint: WHITE, roof: 'slate', winStyle: 1 }, details: [{ t: 'ironBalcony', level: 1.3, deep: 2.6 }] },
+  // 129: OSM maps the bar row and The Grand as one footprint; the street face is the two-storey bar row (photo)
+  506378806: { addr: '129 (One 29, The Cork Bar, Steak & Lobster Co)', photo: '129-cork-bar.png', height: 8.0, force: true, roofShape: 'hipped', style: { facade: 'render', tint: WHITE, roof: 'slate', winStyle: 1 }, details: [{ t: 'ironBalcony', level: 1.3, deep: 2.6 }] },
   // --- west of the Town Hall (photos 83 .. 47) ---
   1017204177: { addr: '79-83 (flats over K W Autos)', photo: '83-flats-kw-autos.png', height: 11.0, roofShape: 'flat', style: { facade: 'concrete', tint: [0.93, 0.93, 0.9], roof: 'flat', winStyle: 1 }, details: [{ t: 'slabBalconies', levels: [1, 2, 3] }] },
   1017204178: { addr: '77 (glazed shopfront)', photo: 'winnies.png', height: 3.8, force: true, roofShape: 'flat', style: { facade: 'render', tint: [0.92, 0.92, 0.92], roof: 'flat' }, details: [] },
@@ -40,7 +41,15 @@ export const FRONTAGES = {
   1017204181: { addr: '55-57 (The Skye Lounge)', photo: '53-shops.png', height: 3.9, force: true, roofShape: 'flat', style: { facade: 'render', tint: [0.9, 0.9, 0.9], roof: 'flat' }, details: [] },
   1017204180: { addr: '51-53 (Nithin Express)', photo: '53-shops.png', height: 3.9, force: true, roofShape: 'flat', style: { facade: 'render', tint: [0.94, 0.94, 0.94], roof: 'flat' }, details: [] },
   1017204186: { addr: '49', photo: '53-shops.png', height: 3.9, force: true, roofShape: 'flat', style: { facade: 'render', tint: [0.94, 0.94, 0.94], roof: 'flat' }, details: [] },
+  // --- B1082 near Wilco (photos 31-b1082-wilco, brick-house-by-wilco) ---
+  1017338053: { addr: '31 B1082 (Wilco)', photo: '31-b1082-wilco.png', height: 6.8, force: true, roofShape: 'flat', style: { facade: 'render', tint: WHITE, roof: 'flat', winStyle: 1 }, details: [] },
+  1017338054: { addr: 'red-brick house beside Wilco', photo: 'brick-house-by-wilco.png', height: 9.6, roofShape: 'gabled', style: { facade: 'brick_red', roof: 'clay', winStyle: 0 }, details: [{ t: 'whiteWall', gateToward: [-405, 190], extend: 6 }] }, // gate at the Wilco end; wall also fronts the single-storey wing
   1017204189: { addr: '47 (café)', photo: '47-cafe.png', height: 3.7, force: true, roofShape: 'flat', style: { facade: 'render', tint: YELLOW, roof: 'flat' }, details: [{ t: 'cafeVerandah' }] },
+};
+
+/** Areas with photographed street edges (OSM area ids). */
+export const FRONTAGE_AREAS = {
+  91786047: { addr: '83 car park', photo: '83-car-park.png', details: [{ t: 'carParkWall' }] },
 };
 
 /** Shop fascia styles as photographed (merged into the researched brand styles). */

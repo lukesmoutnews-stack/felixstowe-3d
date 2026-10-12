@@ -65,7 +65,7 @@ export function buildFrontageDetails(b, ctx) {
   const deck = (d, y) => box('deck', sm, d / 2, y, L / 2, d / 2, 0.08);
   const lim = Math.max(1.0, e.front - 0.2); // never out over the pavement or road
   const D = (d) => Math.min(d, lim);
-  for (const it of fr.details) {
+  for (let it of fr.details) {
     if (it.t === 'verandah2') { // two tiers of white fretwork verandahs (raised ground floor + first floor)
       const d = D(1.7), y0 = 0.9, y1 = y0 + storey, top = y1 + storey - 0.2;
       deck(d, y0); deck(d, y1); posts(d, 0, top);
@@ -117,6 +117,16 @@ export function buildFrontageDetails(b, ctx) {
       if (!it.black) G.glass.quad(P(s0, -0.1, y + 0.05), P(s1, -0.1, y + 0.05), P(s1, -0.1, y + 0.98), P(s0, -0.1, y + 0.98));
     } else if (it.t === 'terraceRail') { // steel rail round a ground-floor terrace
       const d = D(3.2); posts(d, 0, 1.0, 'steel', 0.025, 1.8); box('steel', sm, d, 1.0, L / 2, 0.025, 0.025); box('steel', sm, d, 0.5, L / 2, 0.015, 0.015);
+    } else if (it.t === 'whiteWall') { // rendered white boundary wall (~1.15 m) with an iron gate between piers
+      // photo: the wall runs past the facade across the whole plot; the gate is at one end (it.gate 'start'|'end')
+      const d = Math.max(1.2, Math.min(e.front - 0.15, 6)), gap = 1.1, ext = it.extend ?? 0, H = 0.58;
+      if (it.gateToward) { const A = P(s0, d, 0), B = P(s1, d, 0), [tx, tz] = it.gateToward; it = { ...it, gate: Math.hypot(A[0] - tx, A[2] - tz) < Math.hypot(B[0] - tx, B[2] - tz) ? 'start' : 'end' }; }
+      const w0 = s0 - 0.25 - (it.gate === 'start' ? 0 : ext), w1 = s1 + 0.25 + (it.gate === 'end' ? 0 : ext);
+      const gc = it.gate === 'start' ? w0 + 1.6 : it.gate === 'end' ? w1 - 1.6 : sm;
+      for (const [a0, a1] of [[w0, gc - gap / 2], [gc + gap / 2, w1]]) { if (a1 - a0 < 0.2) continue; const mid = (a0 + a1) / 2, h = (a1 - a0) / 2; box('white', mid, d, H, h, 0.15, H); const a = P(a0, d, 0), c = P(a1, d, 0); colliders.push({ type: 'segment', a: [a[0], a[2]], b: [c[0], c[2]], r: 0.15, y0: g - 0.5, top: g + 1.2, kind: 'wall' }); }
+      for (const sg of [-1, 1]) box('white', gc + sg * (gap / 2 + 0.17), d, 0.68, 0.17, 0.2, 0.68); // gate piers
+      for (let k = 0; k <= 8; k++) box('black', gc - gap / 2 + 0.05 + k * (gap - 0.1) / 8, d, 0.5, 0.012, 0.012, 0.5); // railings
+      box('black', gc, d, 0.98, gap / 2, 0.02, 0.02); box('black', gc, d, 0.12, gap / 2, 0.02, 0.02);
     } else if (it.t === 'lowBrickWall' || it.t === 'whiteFence') { // front boundary at the back of the pavement
       const d = Math.max(1.2, Math.min(e.front - 0.15, 6));
       if (it.t === 'lowBrickWall') { box('brick', sm, d, 0.38, L / 2 + 0.25, 0.12, 0.38); box('coping', sm, d, 0.79, L / 2 + 0.28, 0.15, 0.03); }
@@ -127,4 +137,51 @@ export function buildFrontageDetails(b, ctx) {
   const meshes = []; for (const [k, geo] of Object.entries(G)) { const me = geo.mesh(m[k]); if (me) { me.name = 'frontage:' + k; meshes.push(me); } }
   const group = new THREE.Group(); group.name = 'frontage:' + b.id; for (const me of meshes) group.add(me);
   return { group, colliders };
+}
+
+/**
+ * Car park street edge (photo 83): a low red-brick wall with a brick-coped end, and blue bollards across
+ * the entrance where the access road crosses it.
+ * @param area OSM area {id, outer}
+ * @param ctx { nearestRoad, ground, roads }
+ */
+export function buildAreaFrontage(area, ctx) {
+  const m = mats(); const brick = new Geo(), coping = new Geo(), blue = new Geo(); const colliders = [];
+  const R = area.outer, street = (r) => r.car && r.kind !== 'service' && r.kind !== 'track';
+  for (let i = 0; i < R.length; i++) {
+    const a = R[i], c = R[(i + 1) % R.length], L = Math.hypot(c[0] - a[0], c[1] - a[1]); if (L < 2) continue;
+    const ux = (c[0] - a[0]) / L, uz = (c[1] - a[1]) / L, mx = (a[0] + c[0]) / 2, mz = (a[1] + c[1]) / 2;
+    let nx = uz, nz = -ux; if (pointInRing(mx + nx * 0.3, mz + nz * 0.3, R)) { nx = -nx; nz = -nz; }
+    const out = ctx.nearestRoad(mx + nx * 3, mz + nz * 3, 16, street), inn = ctx.nearestRoad(mx - nx * 3, mz - nz * 3, 16, street);
+    if (!out || (inn && inn.d < out.d) || out.d > 12) continue; // only edges along the street
+    // entrances: where an access road crosses this edge
+    const gaps = [];
+    // every segment of the tile's ways (not the road grid, which only holds segments whose midpoint is in a
+    // loaded tile, so an access road mapped mostly in the next tile would be missed)
+    const bx0 = Math.min(a[0], c[0]) - 6, bz0 = Math.min(a[1], c[1]) - 6, bx1 = Math.max(a[0], c[0]) + 6, bz1 = Math.max(a[1], c[1]) + 6;
+    const segs = []; for (const rd of ctx.roads) { if (rd.footOnly) continue; for (let k = 1; k < rd.pts.length; k++) { const p = rd.pts[k - 1], q = rd.pts[k]; if (Math.max(p[0], q[0]) < bx0 || Math.min(p[0], q[0]) > bx1 || Math.max(p[1], q[1]) < bz0 || Math.min(p[1], q[1]) > bz1) continue; segs.push({ a: p, b: q, road: rd }); } }
+    for (const sg of segs) {
+      const p = sg.a, q = sg.b;
+      const sl = Math.hypot(q[0] - p[0], q[1] - p[1]), den = (q[0] - p[0]) * uz - (q[1] - p[1]) * ux;
+      if (sl < 1e-6 || Math.abs(den) / sl < 0.5) continue; // only roads meeting the edge at > 30 degrees
+      // an access road that stops just short of (or just past) the mapped edge still makes an entrance
+      const t = ((a[0] - p[0]) * uz - (a[1] - p[1]) * ux) / den, sAlong = ((p[0] + (q[0] - p[0]) * t) - a[0]) * ux + ((p[1] + (q[1] - p[1]) * t) - a[1]) * uz, tol = 4 / sl;
+      if (t >= -tol && t <= 1 + tol && sAlong > 0 && sAlong < L) gaps.push([sAlong - sg.road.width / 2 - 0.6, sAlong + sg.road.width / 2 + 0.6]);
+    }
+    let runs = [[0, L]]; for (const [g0, g1] of gaps) { const nxr = []; for (const [p0, p1] of runs) { if (g1 <= p0 || g0 >= p1) { nxr.push([p0, p1]); continue; } if (g0 > p0) nxr.push([p0, g0]); if (g1 < p1) nxr.push([g1, p1]); } runs = nxr; }
+    const P = (s, d, y) => [a[0] + ux * s - nx * d, y, a[1] + uz * s - nz * d];
+    for (const [r0, r1] of runs) {
+      if (r1 - r0 < 0.4) continue;
+      for (let s = r0; s < r1 - 0.01; s += 1.5) {
+        const sb = Math.min(r1, s + 1.5), g0 = ctx.ground(...P(s, 0.2, 0).filter((_, k) => k !== 1)), g1 = ctx.ground(...P(sb, 0.2, 0).filter((_, k) => k !== 1)), gg = Math.min(g0, g1);
+        const mid = P((s + sb) / 2, 0.2, gg - 0.2 + 0.47); brick.box(mid[0], mid[1], mid[2], ux, uz, (sb - s) / 2, 0.47, 0.12);
+        const cp = P((s + sb) / 2, 0.2, gg + 0.79); coping.box(cp[0], cp[1], cp[2], ux, uz, (sb - s) / 2 + 0.01, 0.04, 0.16);
+      }
+      const A = P(r0, 0.2, 0), C = P(r1, 0.2, 0); colliders.push({ type: 'segment', a: [A[0], A[2]], b: [C[0], C[2]], r: 0.15, y0: -1e3, top: 1e3, kind: 'wall' });
+    }
+    for (const [g0, g1] of gaps) for (const s of [g0 + 0.3, g1 - 0.3]) { if (s < 0 || s > L) continue; const p = P(s, 0.2, 0); const gy = ctx.ground(p[0], p[2]); blue.box(p[0], gy + 0.45, p[2], ux, uz, 0.07, 0.45, 0.07); colliders.push({ type: 'circle', x: p[0], z: p[2], r: 0.12, y0: gy - 0.5, top: gy + 0.9, kind: 'post' }); }
+  }
+  const group = new THREE.Group(); group.name = 'frontage-area:' + area.id;
+  for (const [geo, mat] of [[brick, m.brick], [coping, m.coping], [blue, m.blue]]) { const me = geo.mesh(mat); if (me) group.add(me); }
+  return group.children.length ? { group, colliders } : null;
 }

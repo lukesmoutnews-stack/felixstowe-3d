@@ -142,9 +142,10 @@ export function addBuilding(b, ctx) {
   roofH = roofH || 0;
   let wallTop = b.height;
   if (b.heightSource === 'osm:height' || b.heightSource === 'lidar') wallTop = Math.max(b.minHeight + 2, b.height - roofH);
-  const base = gAvg + (b.minHeight || 0);
+  // a shop's floor is at street level: on a slope that is the low side of the footprint, not the average
+  const base = (b.shop && !b.minHeight ? Math.min(gAvg, gMin + 0.12) : gAvg) + (b.minHeight || 0);
   const baseBottom = b.minHeight > 0 ? base : gMin - 0.4;
-  const top = gAvg + wallTop;
+  const top = (b.shop && !b.minHeight ? base : gAvg) + wallTop; // shops: measured up from the street-level floor
   const cx = b.cx, cz = b.cz;
 
   const facadeKey = `facade:${style.facade}:${style.windows}:${style.windows ? style.winStyle : 0}`;
@@ -175,8 +176,9 @@ export function addBuilding(b, ctx) {
       const vOf = (y, ref, h) => (y - ref) / h;
       if (shopAcc && ring === outer) {
         const ys = base + shopH;
+        if (y0 < base - 0.01) { plainAcc.quad([a[0], y0, a[1]], [c[0], y0, c[1]], [c[0], base, c[1]], [a[0], base, a[1]], [u0, vOf(y0, base, STOREY_H)], [u1, vOf(y0, base, STOREY_H)], [u1, 0], [u0, 0], tint); y0 = base; } // plinth (no repeated shopfront below the floor)
         shopAcc.quad([a[0], y0, a[1]], [c[0], y0, c[1]], [c[0], ys, c[1]], [a[0], ys, a[1]],
-          [u0, vOf(y0, base, SHOP_H)], [u1, vOf(y0, base, SHOP_H)], [u1, shopH / SHOP_H], [u0, shopH / SHOP_H]);
+          [u0, 0], [u1, 0], [u1, shopH / SHOP_H], [u0, shopH / SHOP_H]);
         y0 = ys;
         const v0 = 0.0;
         wallAcc.quad([a[0], y0, a[1]], [c[0], y0, c[1]], [c[0], top, c[1]], [a[0], top, a[1]],

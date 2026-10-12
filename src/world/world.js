@@ -12,8 +12,8 @@ import { addBuilding } from './buildings.js';
 import { buildRoads, buildRail } from './roads.js';
 import { RoadNetwork } from './road-surface.js';
 import { promenadeWays, buildSeafrontWall, isSeafrontShelter, buildShelter } from './seafront.js';
-import { FRONTAGES } from '../content/frontages.js';
-import { buildFrontageDetails } from './frontage-details.js';
+import { FRONTAGES, FRONTAGE_AREAS } from '../content/frontages.js';
+import { buildFrontageDetails, buildAreaFrontage } from './frontage-details.js';
 import { profileNetwork, buildBridge, buildRamp, BRIDGE } from './bridges.js';
 import { buildGround, buildAreas } from './landcover.js';
 import { placeTrees, buildTreeMeshes } from './vegetation.js';
@@ -312,6 +312,10 @@ export class World extends EventTarget {
       for (const c of out.colliders) this._addPrimitive(tile, c);
       bridgeMeshes.push(...out.meshes);
       for (const c of out.clearances || []) { c.tile = tile.key; tile.clearances.push(c); this.clearances.push(c); }
+    }
+    for (const a of f.areas) { // photographed car park edge (content/frontages.js)
+      if (!FRONTAGE_AREAS[a.id]) continue; const c = a.outer.reduce((s, p) => [s[0] + p[0] / a.outer.length, s[1] + p[1] / a.outer.length], [0, 0]); if (!inTile(c[0], c[1])) continue;
+      const fa = buildAreaFrontage(a, { nearestRoad: ctx.nearestRoad, ground: this.ground, roads: f.roads }); if (fa) { bridgeMeshes.push(fa.group); for (const cl of fa.colliders) this._addPrimitive(tile, cl); }
     }
     if (seaWall) { bridgeMeshes.push(...seaWall.meshes); for (const c of seaWall.colliders) this._addPrimitive(tile, c); tile.gates = seaWall.gates; }
     if (this.gardenPlan && inTile(...this.gardenPlan.c)) {

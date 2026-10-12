@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cp \"/root/.claude/uploads/d33e5217-6073-507d-958b-2c1f1e1346ef/eda6d851-image.png\" icons/felixstowe-news.png)",
+      "Bash(python3 -c ' *)"
+    ]
+  }
+}
