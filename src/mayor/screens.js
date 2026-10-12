@@ -310,6 +310,8 @@ export function profile(app) {
     <section class="card"><h3 class="sec">Career history</h3><ol class="career">${g.p.career.map((c) => `<li><b>${esc(g.config.ranks.find((k) => k.id === c.rank)?.name)}</b><time>${fmtDate(c.ts)}</time></li>`).join('')}</ol>
       ${g.p.seasons.length ? `<h4>Seasons</h4><ul class="history">${g.p.seasons.map((s) => `<li><b>${esc(s.title || s.rank)}</b><span>${esc(s.season)}${s.points != null ? ' · ' + s.points + ' pts' : ''}</span></li>`).join('')}</ul>` : ''}</section>
     <section class="card"><h3 class="sec">3D town</h3><div class="seg"><button class="${app.three?.settings.shadows === 'off' ? 'on' : ''}" data-act="quality" data-val="low">Battery saver</button><button class="${app.three && app.three.settings.shadows !== 'off' ? 'on' : ''}" data-act="quality" data-val="high">High quality</button></div>
+      <h3 class="sec" style="margin-top:12px">Camera look speed</h3><div class="seg">${[['0.6', 'Slow'], ['1', 'Normal'], ['1.6', 'Fast']].map(([v, l]) => `<button class="${Math.abs((app.three?.settings.cameraSensitivity || 1) - +v) < 0.01 ? 'on' : ''}" data-act="camsens" data-val="${v}">${l}</button>`).join('')}</div>
+      <p class="fine">Drag to look around, pinch to zoom.</p>
       <p class="fine">Map data © OpenStreetMap contributors (ODbL). Contains Environment Agency data. Buildings: Overture Maps Foundation.</p></section>
     <section class="card"><h3 class="sec">Privacy and your data</h3>
       <p>This demo stores your name, colour, progress and check-in records in this browser only. It doesn’t use your location, an account or an email address, and nothing is sent to a server. Other players never see your visit history.</p>

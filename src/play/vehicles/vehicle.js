@@ -36,7 +36,7 @@ export class Vehicle {
   hitch() { return this.local(0, -this.s.len / 2 + 1.5); }
 
   place(x, z, heading, y = null) {
-    this.pos.set(x, this.world.surfaceAt(x, z, y), z); this.heading = heading; this.speed = 0; this.steer = 0;
+    this.pos.set(x, this.world.surfaceAt(x, z, y), z); this.heading = heading; this.speed = 0; this.steer = 0; this.visY = null;
     if (this.trailer) { this.trailer.heading = heading; const [hx, hz] = this.hitch(); this.trailer.pos.set(hx, this.pos.y, hz); }
     this.syncMesh(0);
   }
@@ -160,12 +160,15 @@ export class Vehicle {
       const k = 60, c = 9; const S = this.sus;
       S.vp += (k * (tp - S.p) - c * S.vp) * dt; S.p += S.vp * dt; S.vr += (k * (tr - S.r) - c * S.vr) * dt; S.r += S.vr * dt;
     }
-    this.mesh.position.copy(this.pos);
+    // sprung body: the body follows the ground through a damped spring, the wheels stay on the road
+    if (this.visY == null || !dt) { this.visY = this.pos.y; this.visV = 0; }
+    else { const k = 110, c = 2 * Math.sqrt(k) * 0.75; this.visV += (k * (this.pos.y - this.visY) - c * this.visV) * dt; this.visY += this.visV * dt; this.visY = THREE.MathUtils.clamp(this.visY, this.pos.y - 0.1, this.pos.y + 0.1); }
+    this.mesh.position.set(this.pos.x, this.visY, this.pos.z);
     this.mesh.rotation.set(-this.groundPitch, this.heading, this.groundRoll);
     this.parts.body.rotation.set(-this.sus.p, 0, this.sus.r);
     this.wheelSpin += (this.speed * (dt || 0));
     for (const [i, w] of this.parts.wheels.entries()) {
-      const plane = this.pos.y + Math.tan(this.groundPitch) * w.z + Math.tan(this.groundRoll) * w.x;
+      const plane = this.visY + Math.tan(this.groundPitch) * w.z + Math.tan(this.groundRoll) * w.x;
       w.pivot.position.y = w.rest + THREE.MathUtils.clamp(wh[i] - plane, -0.14, 0.14);
       w.spin.rotation.x = this.wheelSpin / w.r; if (w.front) w.pivot.rotation.y = this.steer;
     }

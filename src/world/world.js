@@ -10,6 +10,8 @@ import { pointInRing, pointInPolygon, distToSegment, bounds, clipRingToRect, ens
 import { ChunkedAccum } from './accum.js';
 import { addBuilding } from './buildings.js';
 import { buildRoads, buildRail } from './roads.js';
+import { RoadNetwork } from './road-surface.js';
+import { promenadeWays, buildSeafrontWall, isSeafrontShelter, buildShelter } from './seafront.js';
 import { profileNetwork, buildBridge, buildRamp, BRIDGE } from './bridges.js';
 import { buildGround, buildAreas } from './landcover.js';
 import { placeTrees, buildTreeMeshes } from './vegetation.js';
@@ -48,6 +50,9 @@ export class World extends EventTarget {
     this.lidarTrees = [];
     this.lidarHeights = null;
     this.yardRuns = null; this.yardVersion = 1;                      // LiDAR-measured container stack blocks (OSGB)                  // OSM id -> [median, p90] height from EA DSM-DTM
+    // one smooth road surface for drawing, driving and walking; it also grades the ground under roads
+    this.roads = new RoadNetwork((x, z) => terrain.baseHeightAt ? terrain.baseHeightAt(x, z) : terrain.heightAt(x, z));
+    terrain.grader = (x, z, h) => this.roads.grade(x, z, h);
     this.stats = { tiles: 0, buildMs: [] };
     this.loading = new Set();
   }
@@ -67,9 +72,12 @@ export class World extends EventTarget {
       if (!s.layered) return h;
       if (y != null && h <= y + BRIDGE.step && (best == null || h > best)) best = h;
     }
-    const g = this.ground(x, z);
+    const rs = this.roads.surface(x, z); // carriageway, pavement or path height (smooth, kerbed)
+    const g = rs ? rs.y : this.ground(x, z);
     return best != null && best > g - 0.05 ? best : g;
   };
+  /** Road network surface kind at (x,z): 'road' | 'pavement' | 'path' | null. */
+  roadKindAt(x, z) { return this.roads.surface(x, z)?.kind || null; }
   /** Headroom above a mover at (x,z,y) under any bridge deck (Infinity when open sky). */
   headroomAt(x, z, y) {
     let room = Infinity;
@@ -253,6 +261,18 @@ export class World extends EventTarget {
     // Town Hall Garden: terrace the slope before the ground mesh is built (see town-hall-gardens.js)
     const gardenArea = f.areas.find(isTownHallGarden);
     if (gardenArea && !this.terrain.mods?.some((m) => m.id === 'town-hall-garden')) { this.gardenPlan = gardenPlan(gardenArea, this.terrain, ownBuildings); this.terrain.addModifier('town-hall-garden', this.gardenPlan.ring, this.gardenPlan.fn); }
+    // --- bridge decks and approach ramps: profiled on whole ways so every tile agrees ---
+    const netWays = [...f.roads, ...f.lines.filter((l) => l.kind === 'rail').map((l) => ({ id: l.id, pts: l.pts, nodeIds: l.nodeIds, kind: 'rail', width: 4, bridge: !!l.tags.bridge && l.tags.bridge !== 'no', tunnel: !!l.tags.tunnel && l.tags.tunnel !== 'no', name: l.tags.name || null, tags: l.tags }))];
+    const bridgeWays = netWays.filter((w) => w.bridge && !this.profiles.has(w.id));
+    if (bridgeWays.length && this.terrain.ensureRect) { const pts = bridgeWays.flatMap((w) => w.pts); const b = bounds(pts); await this.terrain.ensureRect({ minX: b.minX, maxX: b.maxX, minZ: b.minZ, maxZ: b.maxZ }, 260); }
+    const base = this.terrain.baseHeightAt ? (x, z) => this.terrain.baseHeightAt(x, z) : this.ground;
+    if (bridgeWays.length) for (const [id, p] of profileNetwork(netWays, base)) if (!this.profiles.has(id)) this.profiles.set(id, p);
+    ctx.profiles = this.profiles;
+    // --- road surface: whole ways (terrain loaded under all of them), before the ground mesh so it can be graded ---
+    if (f.roads.length && this.terrain.ensureRect) { const b = bounds(f.roads.flatMap((w) => w.pts)); await this.terrain.ensureRect({ minX: b.minX, maxX: b.maxX, minZ: b.minZ, maxZ: b.maxZ }, 30); }
+    this.roads.addPoints(f.points);
+    this.roads.addWays(f.roads, this.profiles, tile.key);
+    this.roads.prepareCores(r, tile.key);
     buildGround(tile, ctx);
     buildAreas(f.areas, tile, ctx);
     await yieldFrame();
@@ -265,13 +285,12 @@ export class World extends EventTarget {
         roadsHere.push({ ...rd, pts, nodeIds: pieces.length === 1 && pts.length === rd.pts.length ? rd.nodeIds : nodeIds, _piece: idx });
       });
     }
-    // --- bridge decks and approach ramps: profiled on whole ways so every tile agrees ---
-    const netWays = [...f.roads, ...f.lines.filter((l) => l.kind === 'rail').map((l) => ({ id: l.id, pts: l.pts, nodeIds: l.nodeIds, kind: 'rail', width: 4, bridge: !!l.tags.bridge && l.tags.bridge !== 'no', tunnel: !!l.tags.tunnel && l.tags.tunnel !== 'no', name: l.tags.name || null, tags: l.tags }))];
-    const bridgeWays = netWays.filter((w) => w.bridge && !this.profiles.has(w.id));
-    if (bridgeWays.length && this.terrain.ensureRect) { const pts = bridgeWays.flatMap((w) => w.pts); const b = bounds(pts); await this.terrain.ensureRect({ minX: b.minX, maxX: b.maxX, minZ: b.minZ, maxZ: b.maxZ }, 260); }
-    if (bridgeWays.length) for (const [id, p] of profileNetwork(netWays, this.ground)) if (!this.profiles.has(id)) this.profiles.set(id, p);
-    ctx.profiles = this.profiles;
-    buildRoads(roadsHere, ctx);
+    ctx.net = this.roads; ctx.rect = r; ctx.tileKey = tile.key;
+    tile.roadStats = buildRoads(f.roads, ctx);
+    // seafront: brick flood wall along the landward side of the promenade, with blue flood gates (seafront.js)
+    const promIds = promenadeWays(f.roads, f.coastLines || []);
+    const seaWall = promIds.size ? buildSeafrontWall(promIds, { net: this.roads, rect: r, coastLines: f.coastLines || [] }) : null;
+    tile.seafront = seaWall ? { gates: seaWall.gates.length, wallColliders: seaWall.colliders.length } : null;
     buildRail(f.lines.map((l) => ({ ...l, pts: l.pts })).flatMap((l) => clipPolyline(l.pts, r).map((pts) => ({ ...l, pts }))), ctx);
     await yieldFrame();
     // --- pier decks ---
@@ -289,6 +308,7 @@ export class World extends EventTarget {
       bridgeMeshes.push(...out.meshes);
       for (const c of out.clearances || []) { c.tile = tile.key; tile.clearances.push(c); this.clearances.push(c); }
     }
+    if (seaWall) { bridgeMeshes.push(...seaWall.meshes); for (const c of seaWall.colliders) this._addPrimitive(tile, c); tile.gates = seaWall.gates; }
     if (this.gardenPlan && inTile(...this.gardenPlan.c)) {
       const gd = buildTownHallGardens(this.gardenPlan, ctx);
       bridgeMeshes.push(...gd.meshes); for (const c of gd.colliders) this._addPrimitive(tile, c);
@@ -326,6 +346,10 @@ export class World extends EventTarget {
         tile.interiors = [...(tile.interiors || []), sp.interior]; this.interiors.push(sp.interior);
         b.geom = null; b.customModel = 'spa-pavilion'; b.enterable = true;
         continue;
+      }
+      if (promIds.size && isSeafrontShelter(b, this.roads, promIds)) { // Victorian seafront shelter (seafront.js)
+        const sh = buildShelter(b, ctx);
+        if (sh) { landmarkMeshes.push(sh.group); for (const c of sh.colliders) this._addPrimitive(tile, c); tile.surfaces.push(sh.surface); this.surfaces.push(sh.surface); b.geom = null; b.customModel = 'seafront-shelter'; b.enterable = true; continue; }
       }
       if (this.gardenPlan?.shelter.id != null && b.id === this.gardenPlan.shelter.id) { b.geom = null; b.customModel = 'garden-shelter'; b.enterable = true; b.height = -8; continue; } // built as Mr. Felixstowe's Shelter (open oak shelter you can walk into)
       if (isTownHall(b) && !b.isPart) {
@@ -469,6 +493,7 @@ export class World extends EventTarget {
       t.group.traverse((o) => { if (o.isMesh && o.geometry && !o.isInstancedMesh) o.geometry.dispose(); if (o.isInstancedMesh) o.dispose(); });
       this.root.remove(t.group);
     }
+    this.roads.dropTile(key);
     const pred = (it) => it.tile === key;
     for (const g of [this.edgeGrid, this.circleGrid, this.roadGrid, this.buildingGrid, this.areaGrid]) g.remove(pred);
     this.surfaces = this.surfaces.filter((s) => !(t.surfaces || []).includes(s));

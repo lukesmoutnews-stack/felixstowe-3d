@@ -8,6 +8,7 @@ export const DEFAULT_SETTINGS = {
   masterVolume: 0.5, ambienceVolume: 0.7, effectsVolume: 0.8, muted: false,
   shadows: 'medium', viewDistance: 1800, pixelRatio: Math.min(2, window.devicePixelRatio || 1),
   proceduralTrees: true, gardenTrees: false, proceduralLamps: true, timeOfDay: 11.5, showFps: false,
+  cameraSensitivity: 1, invertY: false,
 };
 export function loadSettings(overrides = {}) { return { ...load(SKEY, DEFAULT_SETTINGS), ...overrides }; }
 export function saveSettings(s) { save(SKEY, s); }

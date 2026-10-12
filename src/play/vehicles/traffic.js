@@ -21,13 +21,13 @@ export class RoadGraph {
   rebuild() {
     const ways = new Map();
     for (const t of this.world.tiles.values()) for (const r of t.features?.roads || []) if (r.car && !r.footOnly && r.nodeIds && r.kind !== 'track' && !r.tunnel && !ways.has(r.id)) ways.set(r.id, r);
-    const deg = new Map(); for (const w of ways.values()) w.nodeIds.forEach((n, i) => deg.set(n, (deg.get(n) || 0) + (i === 0 || i === w.nodeIds.length - 1 ? 1 : 2)));
+    const deg = new Map(); for (const w of ways.values()) w.nodeIds.forEach((n, i) => { if (n != null) deg.set(n, (deg.get(n) || 0) + (i === 0 || i === w.nodeIds.length - 1 ? 1 : 2)); }); // null: a point added when the bend was smoothed
     this.nodes = new Map(); this.edges = [];
     const node = (id, p) => { if (!this.nodes.has(id)) this.nodes.set(id, { id, x: p[0], z: p[1], out: [] }); return this.nodes.get(id); };
     for (const w of ways.values()) {
       let start = 0;
       for (let i = 1; i < w.nodeIds.length; i++) {
-        if (i < w.nodeIds.length - 1 && deg.get(w.nodeIds[i]) <= 2) continue;
+        if (i < w.nodeIds.length - 1 && (w.nodeIds[i] == null || deg.get(w.nodeIds[i]) <= 2)) continue;
         const pts = w.pts.slice(start, i + 1); if (pts.length < 2) { start = i; continue; }
         let len = 0; const cum = [0]; for (let k = 1; k < pts.length; k++) { len += Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]); cum.push(len); }
         const a = node(w.nodeIds[start], pts[0]), b = node(w.nodeIds[i], pts[pts.length - 1]);
@@ -48,7 +48,7 @@ export class RoadGraph {
     let ux = q[0] - p[0], uz = q[1] - p[1]; const L = Math.hypot(ux, uz) || 1; ux /= L; uz /= L; if (dir < 0) { ux = -ux; uz = -uz; }
     const x = p[0] + (q[0] - p[0]) * t + uz * lane, z = p[1] + (q[1] - p[1]) * t - ux * lane;
     const prof = this.world.profiles?.get(e.way.id);
-    return { x, z, ux, uz, heading: Math.atan2(ux, uz), y: prof ? prof.heightAt(x, z) : this.world.ground(x, z) };
+    return { x, z, ux, uz, heading: Math.atan2(ux, uz), y: prof ? prof.heightAt(x, z) : this.world.surfaceAt(x, z) };
   }
 }
 
@@ -112,11 +112,30 @@ export class Traffic {
       ag.speed = Math.max(0, Math.min(want, ag.speed + acc * dt));
       if (ag.speed > want) ag.speed = want;
       ag.s += ag.speed * dt;
+      if (ag.turn) ag.turn.d += ag.speed * dt;
+      // plan the next edge before the junction, and drive a smooth curve from lane to lane through it
+      const TR = (e) => Math.min(9, e.len * 0.45);
+      if (!ag.next && !ag.turn && ag.e.len - ag.s < TR(ag.e)) {
+        ag.next = this.nextEdge(ag);
+        if (ag.next) {
+          const g = this.graph, n = ag.next, lane2 = n.e.oneway ? 0 : Math.min(n.e.way.width / 4, 1.9), t1 = TR(ag.e), t2 = TR(n.e);
+          const P0 = g.sample(ag.e, ag.e.len - t1, ag.dir, ag.lane), A = g.sample(ag.e, ag.e.len, ag.dir, ag.lane), B = g.sample(n.e, 0, n.dir, lane2), P2 = g.sample(n.e, t2, n.dir, lane2);
+          const C = { x: (A.x + B.x) / 2, z: (A.z + B.z) / 2 };
+          const L = Math.hypot(C.x - P0.x, C.z - P0.z) + Math.hypot(P2.x - C.x, P2.z - C.z);
+          ag.turn = { P0, C, P2, L: Math.max(L, 1), d: Math.max(0, ag.s - (ag.e.len - t1)) };
+        }
+      }
       while (ag.s > ag.e.len) {
-        const n = this.nextEdge(ag); if (!n) { ag.s = ag.e.len; ag.speed = 0; break; }
+        const n = ag.next || this.nextEdge(ag); ag.next = null; if (!n) { ag.s = ag.e.len; ag.speed = 0; break; }
         ag.s -= ag.e.len; ag.e = n.e; ag.dir = n.dir; ag.lane = n.e.oneway ? 0 : Math.min(n.e.way.width / 4, 1.9);
       }
-      const p = this.graph.sample(ag.e, ag.s, ag.dir, ag.lane);
+      let p;
+      if (ag.turn && ag.turn.d < ag.turn.L) {
+        const { P0, C, P2 } = ag.turn, u = ag.turn.d / ag.turn.L, a = (1 - u) * (1 - u), b = 2 * u * (1 - u), c = u * u;
+        const x = a * P0.x + b * C.x + c * P2.x, z = a * P0.z + b * C.z + c * P2.z;
+        let ux = 2 * (1 - u) * (C.x - P0.x) + 2 * u * (P2.x - C.x), uz = 2 * (1 - u) * (C.z - P0.z) + 2 * u * (P2.z - C.z); const l = Math.hypot(ux, uz) || 1; ux /= l; uz /= l;
+        p = { x, z, ux, uz, heading: Math.atan2(ux, uz), y: this.app.world.surfaceAt(x, z, v.pos.y) };
+      } else { ag.turn = null; p = this.graph.sample(ag.e, ag.s, ag.dir, ag.lane); }
       // smooth heading changes at corners
       let dh = Math.atan2(Math.sin(p.heading - v.heading), Math.cos(p.heading - v.heading));
       const prevSpeed = v.speed;

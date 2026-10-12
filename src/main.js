@@ -94,7 +94,7 @@ class App {
     this.fleet = new Fleet(this); this.crowd = new Crowd(this); if (params.has('nopeople')) this.crowd.enabled = false; this.npcPositions = () => this.crowd.positions(); this.car = null; this.transit = null; // car = the vehicle being driven (or last driven)
     if (params.has('notraffic') || this.hooks.noTraffic) this.fleet.traffic.enabled = false;
     if (this.settings.viewDistance < 1000) this.fleet.traffic.max = 6;
-    this.rig = new CameraRig(this.camera, this.world);
+    this.rig = new CameraRig(this.camera, this.world, this.settings);
     this.driving = false; this.paused = false; this.entered = false;
 
     this.world.addEventListener('tileloaded', (e) => { const t = e.detail; this.ui.log(`Tile ${t.key}: ${t.features.buildings.length} buildings, ${t.features.roads.length} roads (${t.source}, ${t.timing.fetchMs + t.timing.buildMs} ms)`); this.ui.mapR.drop(t.key); });
@@ -124,7 +124,7 @@ class App {
     this.clock = new THREE.Timer(); this.clock.connect?.(document);
     this.fpsAcc = { frames: 0, t: 0, fps: 0 };
     this.streamTimer = 0; this.hudTimer = 0; this.interactTimer = 0; this.streaming = false;
-    window.__f3d = this.debugApi();
+    window.__f3d = this.debugApi(); window.__THREE = THREE;
     this.renderer.setAnimationLoop(() => this.frameLoop());
     const badge = this.fixture ? 'Synthetic test data – not Felixstowe' : manifest.label ? manifest.label : null;
     if (badge) { const b = document.createElement('div'); b.className = 'fixture-badge'; b.textContent = badge; document.getElementById('ui').append(b); }
@@ -198,7 +198,7 @@ class App {
   _finishEnter(v) {
     this.car = v; this.fleet.driving = v; this.driving = true; this.player.mesh.visible = false; v.doorTarget = 0;
     if (v.owner === 'parked') v.owner = 'taken';
-    this.journal.drives++; this.journal.save(); this.rig.dist = Math.max(8, v.s.len * 0.9 + 4 + (v.trailer ? 10 : 0)); this.rig.transition = 1;
+    this.journal.drives++; this.journal.save(); // the camera eases out to this vehicle's chase distance by itself (camera-rig.js)
     this.ui.toast(`Driving the ${v.s.name}. E to get out, Space handbrake, V for the driver’s-seat view.`);
     this.hooks.onVehicleEnter?.(v);
   }
@@ -299,6 +299,7 @@ class App {
       else if (this.driving && this.car) { const [sx, sz] = this.car.local(this.car.seat.x, this.car.seat.z); this.player.pos.set(sx, this.car.pos.y, sz); }
       else this.player.update(dt, inp, this.rig.moveYaw, active);
       const t = this.driving && this.car ? this.car.pos : this.player.pos;
+      if (active) inp.padLook(dt);
       this.rig.update(dt, inp, t, { driving: this.driving && !!this.car, heading: this.car?.heading || 0, speed: this.car?.speed || 0, vehicle: this.driving ? this.car : null });
       if (this.ui.open === 'card' && this._cardPoi && Math.hypot(this._cardPoi.x - t.x, this._cardPoi.z - t.z) > 60 && !this._cardInside) this.ui.close();
     } else if (!this.entered) {

@@ -2,8 +2,11 @@
 // Sources: OSM footprint; EA LiDAR heights (median 7.0 m, 90th percentile 10.8 m above ground); Theatres
 // Trust database (raked auditorium with proscenium stage, 919 seats; rebuilt 1950; sea-view lounge 1960);
 // photographs supplied by the user (Oct 2026): the landward entrance with its stair, the seaward glazed
-// lounge over a colonnade, the auditorium and the foyer. The user reports that the red elements are now
-// blue. Layout (entrance room -> foyer -> auditorium, doors "SEATS 1 TO 16" / "SEATS 17 TO 33") follows the
+// lounge over a colonnade, the auditorium and the foyer; and (12 Oct 2026) two street views of the
+// landward end from Undercliff Road West (docs/research/undercliff-road-west). The user reports that
+// the red trim in those photos (bands, copings, frames) is now painted blue. The landward end follows
+// them: a two-storey range with a balcony, banners and an undercroft, a raised centre block with the
+// big lettering and hipped pantile roofs, the central stair with brass rails, and the glazed LOUNGE. Layout (entrance room -> foyer -> auditorium, doors "SEATS 1 TO 16" / "SEATS 17 TO 33") follows the
 // user's description; room sizes are estimates fitted inside the OSM footprint.
 //
 // Local frame: u along the seafront from the entrance (SW) end, v from the seaward facade towards the
@@ -30,7 +33,7 @@ function mats() {
     brown: std({ color: 0x5a3e2e, roughness: 0.7 }),
     steps: std({ color: 0xcdcac2, roughness: 0.9 }),
     nosing: std({ color: 0xe8c22a, roughness: 0.6 }),
-    rail: std({ color: 0x6f7f94, roughness: 0.4, metalness: 0.6 }),
+    rail: std({ color: 0xc9a84a, roughness: 0.35, metalness: 0.75 }),   // brass handrails (photo)
     black: std({ color: 0x1b1d20, roughness: 0.5, metalness: 0.4 }),
     door: std({ color: 0x4a2a1f, roughness: 0.6 }),
     glass: std({ color: 0x2a3540, roughness: 0.08, metalness: 0.6, side: THREE.DoubleSide }),
@@ -38,8 +41,13 @@ function mats() {
     blue: std({ color: 0x2c5da8, roughness: 0.5 }),          // exterior panels, frames, planters (were red)
     white: std({ color: 0xf6f6f2, roughness: 0.6 }),
     dark: std({ color: 0x23272c, roughness: 0.9 }),
-    bigLetters: letters('SPA PAVILION', '#1f4fb4', 1536, 192, `700 150px ${SANS}`),
-    smallLetters: letters('SPA PAVILION', '#24489c', 1024, 128, `600 92px ${SANS}`),
+    bigLetters: letters('SPA PAVILION', '#1e3f86', 1536, 192, `700 150px ${SANS}`),
+    smallSign: std({ map: cnv(1024, 128, (g, w, h) => { g.fillStyle = '#1f4f9c'; g.fillRect(0, 0, w, h); g.fillStyle = '#f4efe0'; g.font = `700 88px ${SANS}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('SPA PAVILION', w / 2, h / 2 + 4); }), roughness: 0.5 }),
+    loungeSign: std({ map: cnv(512, 128, (g, w, h) => { g.fillStyle = '#2b2d33'; g.fillRect(0, 0, w, h); g.fillStyle = '#e9c34a'; g.font = `700 86px ${SANS}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('LOUNGE', w / 2, h / 2 + 4); }), roughness: 0.5 }),
+    terraceSign: std({ map: cnv(512, 96, (g, w, h) => { g.fillStyle = '#d9dcdf'; g.fillRect(0, 0, w, h); g.fillStyle = '#2f3338'; g.font = `600 60px ${SANS}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('TERRACE', w / 2, h / 2 + 3); }), roughness: 0.6 }),
+    pantile: std({ color: 0xb4553a, roughness: 0.85, side: THREE.DoubleSide }),
+    window: std({ color: 0x2f3c48, roughness: 0.1, metalness: 0.5 }),
+    banners: posterColours.slice(0, 3).map(([bg, fg], i) => std({ map: cnv(512, 160, (g, w, h) => { const gr = g.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, bg); gr.addColorStop(1, '#111'); g.fillStyle = gr; g.fillRect(0, 0, w, h); g.fillStyle = fg; g.font = `700 54px ${SANS}`; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(posterWords[i], 24, h * 0.42); g.fillStyle = '#fff'; g.font = `500 28px ${SANS}`; g.fillText('SPA PAVILION · BOOK NOW', 26, h * 0.78); }), roughness: 0.7, side: THREE.DoubleSide })),
     restaurant: std({ map: cnv(1024, 128, (g, w, h) => { g.fillStyle = '#f2f0ea'; g.fillRect(0, 0, w, h); g.fillStyle = '#2f3338'; g.font = `500 80px ${SANS}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('RESTAURANT', w / 2, h / 2 + 3); }), roughness: 0.6 }),
     cafe: std({ map: cnv(512, 128, (g, w, h) => { g.fillStyle = '#2b3642'; g.fillRect(0, 0, w, h); g.fillStyle = 'rgba(255,230,190,0.25)'; g.fillRect(0, h * 0.2, w, h * 0.7); g.strokeStyle = '#2c5da8'; g.lineWidth = 10; g.strokeRect(5, 5, w - 10, h - 10); for (let x = 0; x <= w; x += w / 4) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); } g.beginPath(); g.moveTo(0, h * 0.3); g.lineTo(w, h * 0.3); g.stroke(); }), roughness: 0.2, metalness: 0.2 }),
     lounge: std({ map: cnv(256, 256, (g, w, h) => { g.fillStyle = '#3a4955'; g.fillRect(0, 0, w, h); g.fillStyle = 'rgba(200,220,235,0.25)'; g.fillRect(0, 0, w, h * 0.5); g.strokeStyle = '#c8cdd1'; g.lineWidth = 8; g.strokeRect(4, 4, w - 8, h - 8); for (const y of [0.33, 0.66]) { g.beginPath(); g.moveTo(0, h * y); g.lineTo(w, h * y); g.stroke(); } g.beginPath(); g.moveTo(w / 2, 0); g.lineTo(w / 2, h); g.stroke(); }), roughness: 0.1, metalness: 0.5, side: THREE.DoubleSide }),
@@ -146,7 +154,6 @@ export function buildSpaPavilion(b, ctx) {
   }
   { const { verts, tris } = triangulate(prev); for (const [i, j, k] of tris) roofAcc.triFlat([verts[i][0], y, verts[i][1]], [verts[k][0], y, verts[k][1]], [verts[j][0], y, verts[j][1]], [0, 0], [1, 0], [0, 1], rt); }
   // big lettering on the landward end of the theatre block
-  facePlane(m.bigLetters, -6.75, 22.5, 31, E - 1.5, E - 0.45);
 
   // ---------- exterior: seaward lounge (1960) over a colonnade ----------
   box(m.render, 0, 36, Gp - 0.3, LF, 3, 9);                     // cafe block behind the colonnade
@@ -169,7 +176,7 @@ export function buildSpaPavilion(b, ctx) {
   box(m.white, -0.3, 36.3, LT + 0.5, LT + 0.7, -0.3, 9);          // flat roof edge
   facePlane(m.lounge, -0.05, 1.3, 8.8, LF + 0.35, LT - 0.1);       // SW end glazing
   box(m.blue, -0.15, 0.0, LT - 0.9, LT + 0.5, 1.3, 5.5);
-  facePlane(m.restaurant, -0.25, 1.0, 5.5, LF - 0.38, LF + 0.2);
+  facePlane(m.terraceSign, -0.25, 1.6, 5.0, LF - 0.42, LF + 0.16);
   for (let u = 3; u < 34; u += 3.2) box(m.blue, u, u + 2.6, Gp, Gp + 0.5, -3.4, -2.8); // planters along the promenade (were red)
 
   // ---------- exterior: entrance block, stair, terrace ----------
@@ -180,9 +187,9 @@ export function buildSpaPavilion(b, ctx) {
   box(m.render, bu0 - 0.3, bu0, Gf - 0.3, F + 4.9, dv1, bv1 + 0.3);
   box(m.render, bu0 - 0.3, bu0, F + 2.4, F + 4.9, dv0, dv1);
   box(m.render, bu0, bu1, F + 4.7, F + 4.9, bv0, bv1);           // roof of the block
-  box(m.brown, bu0 - 0.45, bu1, F + 3.4, F + 3.72, bv0 - 0.45, bv1 + 0.45);
-  box(m.brown, bu0 - 0.45, bu1, F + 4.5, F + 4.95, bv0 - 0.45, bv1 + 0.45);
-  facePlane(m.smallLetters, bu0 - 0.32, bv0 + 1.2, bv1 - 1.2, F + 3.8, F + 4.42);
+  box(m.blue, bu0 - 0.45, bu1, F + 3.4, F + 3.72, bv0 - 0.45, bv1 + 0.45);
+  box(m.blue, bu0 - 0.45, bu1, F + 4.5, F + 4.95, bv0 - 0.45, bv1 + 0.45);
+  facePlane(m.smallSign, bu0 - 0.32, bv0 + 1.0, bv1 - 1.0, F + 3.76, F + 4.46);
   for (let k = 0; k < 3; k++) { const v0 = 13.0 + k * 2.4; facePlane(m.glass, bu0 - 0.31, v0, v0 + 2.1, F + 2.75, F + 3.3); }
   box(m.white, bu0 - 1.0, bu0, F + 2.45, F + 2.6, dv0 - 1.2, dv1 + 1.2);   // door canopy
   const leaf = (hv, sgn) => { const g = new THREE.BoxGeometry(0.06, 2.35, 1.28); g.translate(0, 0, Z(sgn * 0.64)); const me = new THREE.Mesh(g, m.door); me.position.set(bu0 - 0.15, F + 1.18, Z(hv)); me.rotation.y = sgn * zs * 1.3; return add(me); };
@@ -192,15 +199,53 @@ export function buildSpaPavilion(b, ctx) {
   for (let k = 0; k < nSteps; k++) { const uTop = land - k * 0.3, yT = F - k * rise; box(m.steps, uTop - 0.3, uTop, Gf - 0.3, yT, sv0, sv1, false); box(m.nosing, uTop - 0.3, uTop - 0.22, yT, yT + 0.01, sv0, sv1, false); }
   box(m.steps, land, bu0 - 0.3, Gf - 0.3, F, sv0, sv1, false);
   const cheek = (v0, v1, mat, yb, yt, th) => { const sh = new THREE.Shape([new THREE.Vector2(sBot - 0.4, yb), new THREE.Vector2(land, yt), new THREE.Vector2(land, yt + th), new THREE.Vector2(sBot - 0.4, yb + th)]); const g = new THREE.ExtrudeGeometry(sh, { depth: v1 - v0, bevelEnabled: false }); g.translate(0, 0, Math.min(Z(v0), Z(v1))); return add(new THREE.Mesh(g, mat)); };
-  for (const [v0, v1] of [[sv0 - 0.4, sv0], [sv1, sv1 + 0.4]]) { cheek(v0, v1, m.render, Gf - 0.3, F - 0.3, 1.3 + 0.3); cheek(v0 - 0.03, v1 + 0.03, m.brown, Gf + 1.0, F + 1.0, 0.12); }
+  for (const [v0, v1] of [[sv0 - 0.4, sv0], [sv1, sv1 + 0.4]]) { cheek(v0, v1, m.render, Gf - 0.3, F - 0.3, 1.3 + 0.3); cheek(v0 - 0.03, v1 + 0.03, m.blue, Gf + 1.0, F + 1.0, 0.12); }
   const rail = (v, yOff) => { const pts = [new THREE.Vector3(sBot, Gf + yOff, Z(v)), new THREE.Vector3(land, F + yOff, Z(v)), new THREE.Vector3(land + 0.6, F + yOff, Z(v))]; add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.05), 24, 0.03, 6), m.rail)); };
   rail(16.3, 0.95); rail(sv0 + 0.15, 1.85); rail(sv1 - 0.15, 1.85);
   for (let k = 0; k <= nSteps; k += 4) { const uu = land - k * 0.3, yy = F - k * rise; box(m.rail, uu - 0.03, uu + 0.03, yy, yy + 0.95, 16.27, 16.33); }
-  // terrace in front of the theatre block with black railings and a dark undercroft
-  box(m.render, -10.05, -6.6, Gf - 0.3, F, 21.2, 31, false); box(m.steps, -10.05, -6.6, F - 0.05, F + 0.02, 21.2, 31, false);
-  facePlane(m.dark, -10.06, 22, 30, Gf + 0.2, F - 0.5);
+  // balcony terrace in front of the landward range: railings with show banners, an undercroft of white piers below
+  box(m.render, -10.05, -6.6, F - 0.35, F, 21.2, 31, false); box(m.steps, -10.05, -6.6, F - 0.05, F + 0.02, 21.2, 31, false);
+  box(m.blue, -10.12, -9.9, F - 0.35, F - 0.12, 21.2, 31, false);                                   // blue band along the balcony edge
+  facePlane(m.dark, -7.0, 21.5, 30.8, Gf, F - 0.35);                                                  // shadowed undercroft
+  for (const v of [21.45, 24.6, 27.8, 30.75]) box(m.render, -10.05, -9.6, Gf - 0.3, F - 0.35, v - 0.25, v + 0.25);
   for (let v = 21.4; v <= 31; v += 0.25) box(m.black, -10.0, -9.96, F, F + 1.05, v - 0.015, v + 0.015, false);
   box(m.black, -10.03, -9.93, F + 1.0, F + 1.06, 21.3, 31);
+  m.banners.forEach((bm, i) => facePlane(bm, -10.07, 21.9 + i * 3.0, 21.9 + i * 3.0 + 2.6, F + 0.12, F + 0.95));
+  // two-storey landward range: blue-framed windows and doors onto the balcony, blue bands, hipped pantile roof
+  const fr = { u0: -6.75, u1: -1.2, v0: 21.2, v1: 31.0, top: F + 3.9 };
+  box(m.render, fr.u0, fr.u1, F - 0.3, fr.top, fr.v0, fr.v1);
+  box(m.blue, fr.u0 - 0.12, fr.u1, F + 3.05, F + 3.3, fr.v0 - 0.1, fr.v1 + 0.1);                   // band under the eaves
+  box(m.blue, fr.u0 - 0.12, fr.u1, fr.top - 0.18, fr.top, fr.v0 - 0.1, fr.v1 + 0.1);
+  for (const [v0, v1, door] of [[21.8, 23.3, false], [24.0, 25.6, true], [26.6, 28.2, true], [28.9, 30.4, false]]) {
+    const y0 = door ? F + 0.05 : F + 0.9; facePlane(m.window, fr.u0 - 0.02, v0, v1, y0, F + 2.6);
+    box(m.blue, fr.u0 - 0.1, fr.u0, y0 - 0.08, F + 2.68, v0 - 0.08, v0); box(m.blue, fr.u0 - 0.1, fr.u0, y0 - 0.08, F + 2.68, v1, v1 + 0.08);
+    box(m.blue, fr.u0 - 0.1, fr.u0, F + 2.6, F + 2.68, v0, v1); box(m.blue, fr.u0 - 0.1, fr.u0, y0 - 0.08, y0, v0, v1);
+    box(m.blue, fr.u0 - 0.1, fr.u0, y0, F + 2.6, (v0 + v1) / 2 - 0.03, (v0 + v1) / 2 + 0.03);
+  }
+  const hip = (u0, u1, v0, v1, y0, pitch, mat) => { // hipped roof over a local rectangle (ridge along the longer side)
+    const ov = 0.35; u0 -= ov; u1 += ov; v0 -= ov; v1 += ov; const du = u1 - u0, dv = v1 - v0, t = Math.tan(pitch);
+    const pos = []; const P = (u, y, v) => [u, y, Z(v)];
+    const tri = (a, b, c) => pos.push(...a, ...b, ...c), quad = (a, b, c, d) => { tri(a, b, c); tri(a, c, d); };
+    if (dv >= du) { const h = du / 2 * t, rv0 = v0 + du / 2, rv1 = v1 - du / 2, um = (u0 + u1) / 2;
+      quad(P(u0, y0, v0), P(u0, y0, v1), P(um, y0 + h, rv1), P(um, y0 + h, rv0)); quad(P(u1, y0, v1), P(u1, y0, v0), P(um, y0 + h, rv0), P(um, y0 + h, rv1));
+      tri(P(u1, y0, v0), P(u0, y0, v0), P(um, y0 + h, rv0)); tri(P(u0, y0, v1), P(u1, y0, v1), P(um, y0 + h, rv1));
+    } else { const h = dv / 2 * t, ru0 = u0 + dv / 2, ru1 = u1 - dv / 2, vm = (v0 + v1) / 2;
+      quad(P(u0, y0, v0), P(u1, y0, v0), P(ru1, y0 + h, vm), P(ru0, y0 + h, vm)); quad(P(u1, y0, v1), P(u0, y0, v1), P(ru0, y0 + h, vm), P(ru1, y0 + h, vm));
+      tri(P(u0, y0, v1), P(u0, y0, v0), P(ru0, y0 + h, vm)); tri(P(u1, y0, v0), P(u1, y0, v1), P(ru1, y0 + h, vm)); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals(); return add(new THREE.Mesh(g, mat));
+  };
+  hip(fr.u0, fr.u1, fr.v0, fr.v1, fr.top, 30 * Math.PI / 180, m.pantile);
+  // raised centre block carrying the big lettering, with its own hipped roof
+  const cb = { u0: -7.05, u1: -2.6, v0: 22.6, v1: 29.6, top: F + 5.7 };
+  box(m.render, cb.u0, cb.u1, fr.top - 0.3, cb.top, cb.v0, cb.v1);
+  box(m.blue, cb.u0 - 0.12, cb.u1, cb.top - 0.22, cb.top, cb.v0 - 0.12, cb.v1 + 0.12);
+  box(m.blue, cb.u0 - 0.12, cb.u0, fr.top + 0.15, cb.top - 0.22, cb.v0 - 0.12, cb.v0 + 0.05); box(m.blue, cb.u0 - 0.12, cb.u0, fr.top + 0.15, cb.top - 0.22, cb.v1 - 0.05, cb.v1 + 0.12);
+  facePlane(m.bigLetters, cb.u0 - 0.03, cb.v0 + 0.25, cb.v1 - 0.25, fr.top + 0.35, fr.top + 1.25);
+  hip(cb.u0, cb.u1, cb.v0, cb.v1, cb.top, 32 * Math.PI / 180, m.pantile);
+  // seaward lounge end: blue mullions on the glazing and the LOUNGE sign above it
+  for (const v of [1.3, 3.2, 5.1, 7.0, 8.8]) box(m.blue, -0.16, 0.0, LF + 0.3, LT - 0.05, v - 0.06, v + 0.06);
+  box(m.blue, -0.16, 0.0, LF + 0.25, LF + 0.4, 1.2, 8.9); box(m.blue, -0.16, 0.0, LT - 0.15, LT, 1.2, 8.9);
+  facePlane(m.loungeSign, -0.2, 3.0, 7.0, LT + 0.75, LT + 1.75); box(m.dark, -0.12, 0.2, LT + 0.7, LT + 1.8, 2.9, 7.1);
 
   // ---------- interior ----------
   const IN = { e0: bu0, e1: -3.0, f1: 4.5, a1: 30.0, s1: 37.5, v0: 9.6, v1: 30.2 }; // kept inside the OSM footprint

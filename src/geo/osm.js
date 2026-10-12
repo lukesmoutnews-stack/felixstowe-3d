@@ -3,6 +3,7 @@
 // Anything estimated (heights, roofs, materials) is flagged with a *Source field.
 
 import { closeless, area, centroid, pointInRing, hash01, orientedBox } from './polygon.js';
+import { smoothRoads } from './road-smooth.js';
 
 // ---------- raw parsing ----------
 
@@ -204,7 +205,7 @@ export function classifyBuilding(id, t, ring, context = {}) {
     roofMaterial: t['roof:material'] || null,
     name: t.name || null, industrial, area: a,
     shop: !!(t.shop || t.amenity === 'restaurant' || t.amenity === 'cafe' || t.amenity === 'pub' || kind === 'retail' || kind === 'commercial'),
-    isPart: !!t['building:part'],
+    isPart: !!t['building:part'], amenity: t.amenity || null,
   };
 }
 
@@ -357,6 +358,8 @@ export function buildFeatures(parsed) {
       pushPoi(p.tags.name, poiKind(p.tags), p.p, 'n' + p.id, p.tags);
     }
   }
+  // bends become arcs; junctions, crossings and signals stay on their OSM nodes (road-smooth.js)
+  smoothRoads(out.roads, out.lines, out.points.filter((p) => p.kind === 'crossing' || p.kind === 'signals').map((p) => p.id));
   out.stats = summarise(out);
   return out;
 }

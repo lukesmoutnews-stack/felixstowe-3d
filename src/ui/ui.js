@@ -242,6 +242,9 @@ export class UI {
       const sel = h('select', { onchange: (e) => { s.shadows = e.target.value; this.app.applySettings(); } }, ...['off', 'low', 'medium', 'high'].map((q) => h('option', { value: q, ...(s.shadows === q ? { selected: '' } : {}) }, q)));
       page.append(h('h3', {}, 'Sound'),
         slider('masterVolume', 'Master', 0, 1, 0.05), slider('ambienceVolume', 'Sea & wind', 0, 1, 0.05), slider('effectsVolume', 'Effects', 0, 1, 0.05),
+        h('h3', {}, 'Camera'),
+        slider('cameraSensitivity', 'Look sensitivity', 0.3, 2.5, 0.05, (v) => v.toFixed(2) + '×'),
+        check('invertY', 'Invert up/down look'),
         h('h3', {}, 'Graphics'), h('label', { class: 'row' }, h('span', {}, 'Shadows'), sel),
         slider('viewDistance', 'View distance', 400, 3000, 100, (v) => `${(v / 1000).toFixed(1)} km`),
         slider('timeOfDay', 'Time of day', 5, 21, 0.25, (v) => `${String(Math.floor(v)).padStart(2, '0')}:${String(Math.round((v % 1) * 60)).padStart(2, '0')}`),
@@ -251,7 +254,7 @@ export class UI {
         check('gardenTrees', 'Garden trees in residential areas', 'Invented positions – off by default.'),
         check('proceduralLamps', 'Street lamps where none are mapped', 'Regular spacing, not real positions.'));
     } else if (tab === 'Controls') {
-      page.append(h('div', { class: 'keys big' }, ...[['W A S D / arrows', 'Walk, or drive when in a car'], ['Shift', 'Run'], ['Space', 'Jump / handbrake'], ['Mouse drag', 'Look around (left or right button)'], ['Scroll', 'Zoom camera'], ['E', 'Inspect landmark · get in or out of the car'], ['V', 'Cycle view: third person → first person → overview'], ['M', 'Map (click to travel)'], ['J', 'Pocketbook / journal'], ['Esc', 'Pause menu']].map(([k, v]) => h('div', {}, h('kbd', {}, k), h('span', {}, v)))));
+      page.append(h('div', { class: 'keys big' }, ...[['W A S D / arrows', 'Walk, or drive when in a car'], ['Shift', 'Run'], ['Space', 'Jump / handbrake'], ['Mouse drag', 'Look around (left or right button)'], ['Scroll / + −', 'Zoom camera'], ['Touch', 'Drag to look, pinch to zoom'], ['E', 'Inspect landmark · get in or out of the car'], ['V', 'Cycle view: third person → first person → overview'], ['M', 'Map (click to travel)'], ['J', 'Pocketbook / journal'], ['Esc', 'Pause menu']].map(([k, v]) => h('div', {}, h('kbd', {}, k), h('span', {}, v)))));
     } else if (tab === 'Data') {
       const q = this.app.world.qualityReport(); const T = q.totals;
       const pct = (a) => (T.buildings ? Math.round((100 * (a || 0)) / T.buildings) + '%' : '–');

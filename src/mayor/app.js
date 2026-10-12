@@ -231,6 +231,7 @@ class MayorApp {
       }
       case 'admin': this.admin.open(b.dataset.section || 'overview'); break;
       case 'quality': this.setQuality(b.dataset.val); break;
+      case 'camsens': if (this.three) { this.three.settings.cameraSensitivity = +b.dataset.val; this.three.applySettings(); this.render(); } break;
       case 'world-act': this.three?.interact(); this.layer?.updateAction(true); break;
       case 'garage-bring': { const r = this.layer?.bringVehicle(id, b.dataset.colour ? Number(b.dataset.colour) : null); this.toast(r ? `Your ${esc(r)} is parked nearby. Open Explore to drive it.` : 'Open Explore first so the 3D town is loaded.', r ? 'good' : 'bad'); break; }
       case 'talk-answer': this.answerTalk(id, b.dataset.node, Number(b.dataset.i)); break;

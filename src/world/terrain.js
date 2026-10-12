@@ -65,8 +65,10 @@ export class Terrain {
   /** Reshape the ground inside a ring with fn(x, z, h) -> h (e.g. a terraced garden). fn may read rawHeightAt. */
   addModifier(id, ring, fn) { if (this.mods?.some((m) => m.id === id)) return; let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity; for (const [x, z] of ring) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); } (this.mods ||= []).push({ id, ring, fn, x0, x1, z0, z1 }); }
   rawHeightAt(x, z) { const h = this._heightAt(x, z); return this.clamps.length ? this._clamp(x, z, h) : h; }
-  /** Height (m ODN) at world x,z. */
-  heightAt(x, z) {
+  /** Height (m ODN) at world x,z, including the road grading (the ground the terrain mesh shows). */
+  heightAt(x, z) { const h = this.baseHeightAt(x, z); return this.grader ? this.grader(x, z, h) : h; }
+  /** Height without road grading (LiDAR + clamps + modifiers): what road profiles are sampled from. */
+  baseHeightAt(x, z) {
     let h = this._heightAt(x, z); if (this.clamps.length) h = this._clamp(x, z, h);
     if (this.mods) for (const m of this.mods) { if (x < m.x0 || x > m.x1 || z < m.z0 || z > m.z1) continue; let ins = false; const r = m.ring; for (let i = 0, j = r.length - 1; i < r.length; j = i++) { if ((r[i][1] > z) !== (r[j][1] > z) && x < (r[j][0] - r[i][0]) * (z - r[i][1]) / (r[j][1] - r[i][1]) + r[i][0]) ins = !ins; } if (ins) h = m.fn(x, z, h); }
     return h;

@@ -56,8 +56,8 @@ export function buildBridge(way, prof, ctx) {
     const cw = way.width / 2, pw = way.sidewalk && way.sidewalk !== 'no' ? 1.9 : 0.6;
     ribbon(acc.get(mx, mz, `ground:asphalt:${LAYER.deck}`), pts, -cw, cw, H, GROUND_TEX_SIZE.asphalt, 0.0);
     for (const sg of [-1, 1]) {
-      ribbon(acc.get(mx, mz, `ground:paving:${LAYER.deck}`), offsetLine(pts, sg * (cw + pw / 2)), -pw / 2, pw / 2, (x, z) => H(x, z) + 0.13, GROUND_TEX_SIZE.paving, 0.0);
-      ribbon(acc.get(mx, mz, 'plain:kerbface'), offsetLine(pts, sg * cw), -0.06, 0.06, (x, z) => H(x, z) + 0.13, 1, 0.0);
+      ribbon(acc.get(mx, mz, `ground:paving:${LAYER.deck}`), offsetLine(pts, sg * (cw + pw / 2)), -pw / 2, pw / 2, (x, z) => H(x, z) + 0.12, GROUND_TEX_SIZE.paving, 0.0);
+      ribbon(acc.get(mx, mz, 'plain:kerbface'), offsetLine(pts, sg * cw), -0.06, 0.06, (x, z) => H(x, z) + 0.12, 1, 0.0);
     }
     if (way.markings && !way.oneway && way.width >= 5) { // dashed centre line
       for (let i = 0; i + 2 < pts.length; i += 4) ribbon(acc.get(mx, mz, 'plain:roadpaint'), [pts[i], pts[i + 1], pts[i + 2]], -0.06, 0.06, H, 1, 0.012);
