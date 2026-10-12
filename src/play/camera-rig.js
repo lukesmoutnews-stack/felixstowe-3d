@@ -2,7 +2,7 @@
 // The third-person camera is pulled in when a building wall is between it and the player.
 
 import * as THREE from 'three';
-import { pointInRing } from '../geo/polygon.js';
+import { pointInRing, distToSegment } from '../geo/polygon.js';
 
 export const MODES = ['third', 'first', 'overview'];
 
@@ -18,6 +18,12 @@ export class CameraRig {
   _blocked(x, y, z) {
     const room = this._room; // inside an enterable building: stay within its walls and under its ceiling
     if (room) return !pointInRing(x, z, room.ring) || y > room.ceilingAt(x, z) - 0.25;
+    // bridge decks, abutments, parapets and ramp walls
+    for (const s of this.world.surfaces || []) if (s.bridge && pointInRing(x, z, s.ring)) { const top = s.heightAt(x, z); if (y > top - s.depth - 0.3 && y < top + 0.2) return true; }
+    for (const c of this.world.edgeGrid.query(x - 0.5, z - 0.5, x + 0.5, z + 0.5)) {
+      if (!(c.kind === 'abutment' || c.kind === 'ramp-wall' || c.kind === 'parapet') || y < c.y0 - 0.2 || y > c.top + 0.2) continue;
+      if (distToSegment(x, z, c.a[0], c.a[1], c.b[0], c.b[1]).d < 0.5) return true;
+    }
     for (const b of this.world.buildingGrid.query(x, z, x, z)) {
       if (b.b.enterable && this.world.interiorAt(x, z, y)) continue;
       if (!pointInRing(x, z, b.outer)) continue;
@@ -28,7 +34,7 @@ export class CameraRig {
   }
 
   update(dt, input, target, opts = {}) {
-    const { driving = false, heading = 0, speed = 0 } = opts;
+    const { driving = false, heading = 0, speed = 0, vehicle = null } = opts;
     const sens = 0.0042;
     this.yaw -= input.mouseDX * sens;
     this.pitch = THREE.MathUtils.clamp(this.pitch - input.mouseDY * sens, this.mode === 'overview' ? -1.45 : -1.3, this.mode === 'first' ? 1.2 : 0.45);
@@ -43,13 +49,17 @@ export class CameraRig {
       this.yaw += d * Math.min(1, dt * (1.5 + Math.abs(speed) * 0.12));
     }
     let eye, look;
-    const head = target.clone(); head.y += driving ? 1.5 : 1.55;
+    const head = target.clone(); head.y += driving ? (vehicle ? Math.max(1.5, vehicle.s.hgt * 0.85) : 1.5) : 1.55;
     const dir = new THREE.Vector3(-Math.sin(this.yaw) * Math.cos(this.pitch), Math.sin(this.pitch), -Math.cos(this.yaw) * Math.cos(this.pitch));
     if (this.mode === 'first') {
-      eye = head.clone(); if (driving) { eye.x += Math.sin(heading) * 0.2 - Math.cos(heading) * 0.35; eye.z += Math.cos(heading) * 0.2 + Math.sin(heading) * 0.35; eye.y -= 0.25; }
+      eye = head.clone();
+      if (driving && vehicle) { // driver's seat: from the vehicle's own seat position, looking where it points unless you look around
+        const [sx, sz] = vehicle.local(vehicle.seat.x, vehicle.seat.z + 0.05); eye.set(sx, vehicle.pos.y + vehicle.seat.eye, sz);
+        if (!input.dragging) { let d = heading - this.yaw - Math.PI; d = Math.atan2(Math.sin(d), Math.cos(d)); this.yaw += d * Math.min(1, dt * 4); }
+      } else if (driving) { eye.x += Math.sin(heading) * 0.2 - Math.cos(heading) * 0.35; eye.z += Math.cos(heading) * 0.2 + Math.sin(heading) * 0.35; eye.y -= 0.25; }
       look = eye.clone().add(dir);
     } else {
-      const D = this.mode === 'overview' ? this.overDist : (driving ? Math.max(this.dist, 7.5) : this.dist);
+      const D = this.mode === 'overview' ? this.overDist : (driving ? Math.max(this.dist, vehicle ? vehicle.s.len * 0.9 + 4 + (vehicle.trailer ? 9 : 0) : 7.5) : this.dist);
       let d = D;
       this._room = this.mode !== 'overview' && !driving ? this.world.interiorAt?.(head.x, head.z, head.y) : null;
       if (this.mode !== 'overview') {
@@ -60,7 +70,7 @@ export class CameraRig {
         }
       }
       eye = head.clone().addScaledVector(dir, -d);
-      const g = this.world.surfaceAt(eye.x, eye.z) + 0.4; if (eye.y < g) eye.y = g;
+      const g = this.world.surfaceAt(eye.x, eye.z, eye.y) + 0.4; if (eye.y < g) eye.y = g;
       look = head;
     }
     if (!this.initialised) { this.cur.copy(eye); this.look.copy(look); this.initialised = true; }

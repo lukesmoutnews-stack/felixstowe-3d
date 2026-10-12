@@ -1,0 +1,17 @@
+{
+  "name": "Felixstowe – The Game: Race to Be Mayor",
+  "short_name": "Race to Be Mayor",
+  "description": "Explore Felixstowe in 3D, then visit real places to earn stamps and race to become the (fictional) Mayor.",
+  "start_url": "mayor.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fbf3e3",
+  "theme_color": "#10233f",
+  "icons": [
+    { "src": "icons/mayor-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/mayor-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/mayor-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/mayor-icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

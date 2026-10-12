@@ -26,12 +26,21 @@ export class Input {
     // virtual keys for on-screen buttons / tests
     this.virtual = new Set();
   }
+  /** Analog stick (-1..1) from an on-screen joystick; null when idle. */
+  setAnalog(f, s) { this.analog = f || s ? { f, s } : null; }
   down(code) { return this.enabled && (this.keys.has(code) || this.virtual.has(code)); }
   hit(code) { return this.enabled && this.pressed.has(code); }
   axis() {
+    if (this.enabled && this.analog && (this.analog.f || this.analog.s)) return { f: this.analog.f, s: this.analog.s }; // on-screen joystick
     const f = (this.down('KeyW') || this.down('ArrowUp') ? 1 : 0) - (this.down('KeyS') || this.down('ArrowDown') ? 1 : 0);
     const s = (this.down('KeyD') || this.down('ArrowRight') ? 1 : 0) - (this.down('KeyA') || this.down('ArrowLeft') ? 1 : 0);
     return { f, s };
+  }
+  /** First connected gamepad (standard mapping): left stick, triggers, A button. Null when none. */
+  pad() {
+    const g = this.enabled && navigator.getGamepads ? [...navigator.getGamepads()].find(Boolean) : null; if (!g) return null;
+    const dz = (v) => (Math.abs(v) < 0.12 ? 0 : v);
+    return { lx: dz(g.axes[0] || 0), ly: dz(g.axes[1] || 0), lt: g.buttons[6]?.value || 0, rt: g.buttons[7]?.value || 0, a: !!g.buttons[0]?.pressed };
   }
   endFrame() { this.pressed.clear(); this.mouseDX = 0; this.mouseDY = 0; this.wheel = 0; }
 }

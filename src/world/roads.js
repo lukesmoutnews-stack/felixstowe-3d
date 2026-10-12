@@ -72,7 +72,7 @@ function surfaceTex(surface, foot) {
  * @param ctx { acc: ChunkedAccum, ground, points: crossing nodes }
  */
 export function buildRoads(roads, ctx) {
-  const { acc, ground } = ctx;
+  const { acc } = ctx;
   const hasTerrain = !!ctx.hasTerrain;
   // Junction detection via shared OSM node ids (falls back to coordinates).
   const use = new Map();
@@ -84,6 +84,9 @@ export function buildRoads(roads, ctx) {
   const layerKey = (tex, layer) => `ground:${tex}:${layer}`;
   for (const r of roads) {
     if (r.tunnel) continue;
+    // bridge decks are built by bridges.js; approach ramps follow their raised profile
+    const prof = ctx.profiles?.get(r.id); if (prof && !prof.ramp) continue;
+    const ground = prof ? prof.heightAt : ctx.ground;
     const pts = hasTerrain ? densify(r.pts, 4) : r.pts;
     const [mx, mz] = r.pts[Math.floor(r.pts.length / 2)];
     const hw = r.width / 2;
@@ -119,7 +122,7 @@ export function buildRoads(roads, ctx) {
     const a = best.r.pts[best.i - 1], b = best.r.pts[best.i];
     const L = Math.hypot(b[0] - a[0], b[1] - a[1]); const ux = (b[0] - a[0]) / L, uz = (b[1] - a[1]) / L;
     const vx = uz, vz = -ux; const hw = best.r.width / 2;
-    const ma = acc.get(p.x, p.z, layerKey('markings', LAYER.marking));
+    const ma = acc.get(p.x, p.z, layerKey('markings', LAYER.marking)); const ground = ctx.ground;
     for (let s = -hw + 0.3; s < hw - 0.3; s += 1.0) {
       const c = [p.x + vx * (s + 0.25), p.z + vz * (s + 0.25)];
       ribbon(ma, [[c[0] - ux * 1.5, c[1] - uz * 1.5], [c[0] + ux * 1.5, c[1] + uz * 1.5]], -0.25, 0.25, ground, 2);
@@ -153,9 +156,11 @@ function centreLine(acc, r, junctions, ground) {
 
 /** Railway: ballast bed + two 3D rails. */
 export function buildRail(lines, ctx) {
-  const { acc, ground } = ctx;
+  const { acc } = ctx;
   for (const l of lines) {
     if (l.kind !== 'rail' || l.tags.tunnel) continue;
+    const prof = ctx.profiles?.get(l.id); if (prof && !prof.ramp) continue;
+    const ground = prof ? prof.heightAt : ctx.ground;
     const pts = ctx.hasTerrain ? densify(l.pts, 4) : l.pts;
     const [mx, mz] = l.pts[Math.floor(l.pts.length / 2)];
     ribbon(acc.get(mx, mz, `ground:ballast:${LAYER.paved}`), pts, -1.6, 1.6, ground, 3);

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#10233f"/>
+<path d="M0 360 Q 128 330 256 360 T 512 360 V512 H0Z" fill="#0e7c7b"/><path d="M0 400 Q 128 375 256 400 T 512 400 V512 H0Z" fill="#13a3a0" opacity=".7"/>
+<g transform="translate(256 210)"><path d="M-46 40 L-80 170 L-22 132 L0 182 L22 50Z" fill="#ef6a56"/><path d="M46 40 L80 170 L22 132 L0 182 L-22 50Z" fill="#d9543f"/>
+<g fill="#f2b632">
+<circle cx="0" cy="-92" r="48"/><circle cx="46" cy="-80" r="48"/><circle cx="80" cy="-46" r="48"/><circle cx="92" cy="0" r="48"/><circle cx="80" cy="46" r="48"/><circle cx="46" cy="80" r="48"/>
+<circle cx="0" cy="92" r="48"/><circle cx="-46" cy="80" r="48"/><circle cx="-80" cy="46" r="48"/><circle cx="-92" cy="0" r="48"/><circle cx="-80" cy="-46" r="48"/><circle cx="-46" cy="-80" r="48"/></g>
+<circle r="92" fill="#fffaf0"/><text y="40" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="120" fill="#10233f">F</text></g></svg>

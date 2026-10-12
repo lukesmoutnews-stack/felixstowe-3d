@@ -13,7 +13,10 @@ import { updateMaterials, allMaterials } from './world/materials.js';
 import { Input } from './play/input.js';
 import { Collision } from './play/collision.js';
 import { Player } from './play/player.js';
-import { Vehicle } from './play/vehicle.js';
+import { Vehicle } from './play/vehicles/vehicle.js';
+import { Fleet } from './play/vehicles/fleet.js';
+import { Crowd } from './play/people/crowd.js';
+import { VEHICLES } from './play/vehicles/specs.js';
 import { CameraRig } from './play/camera-rig.js';
 import { AudioEngine } from './audio/audio.js';
 import { UI } from './ui/ui.js';
@@ -28,6 +31,9 @@ class App {
   async init() {
     this.t0 = performance.now();
     this.settings = loadSettings(params.has('fixture') ? { proceduralTrees: true } : {});
+    // ?quality=low (phones / the mayor game): no shadows, shorter view, 1x pixels
+    if (params.get('quality') === 'low') Object.assign(this.settings, { shadows: 'off', viewDistance: 900, pixelRatio: 1, proceduralTrees: false });
+    this.hooks = window.F3D_HOOKS || {};
     this.fixture = params.get('fixture');
     let origin = CONFIG.origin, spawn = CONFIG.spawn;
     // Data directory: 'data/' (Felixstowe) or another prepared region via ?data=<dir>/ (tests).
@@ -85,7 +91,9 @@ class App {
     this.sea = makeSea(this.terrain); this.scene.add(this.sea);
     this.player = new Player(this.scene, this.world, this.collision);
     this.player.onStep = (v) => this.audio.step(this.surfaceKind(), v / 2);
-    this.car = new Vehicle(this.scene, this.world, this.collision); this.car.mesh.visible = false;
+    this.fleet = new Fleet(this); this.crowd = new Crowd(this); if (params.has('nopeople')) this.crowd.enabled = false; this.npcPositions = () => this.crowd.positions(); this.car = null; this.transit = null; // car = the vehicle being driven (or last driven)
+    if (params.has('notraffic') || this.hooks.noTraffic) this.fleet.traffic.enabled = false;
+    if (this.settings.viewDistance < 1000) this.fleet.traffic.max = 6;
     this.rig = new CameraRig(this.camera, this.world);
     this.driving = false; this.paused = false; this.entered = false;
 
@@ -121,6 +129,7 @@ class App {
     const badge = this.fixture ? 'Synthetic test data – not Felixstowe' : manifest.label ? manifest.label : null;
     if (badge) { const b = document.createElement('div'); b.className = 'fixture-badge'; b.textContent = badge; document.getElementById('ui').append(b); }
     if (params.has('autoenter')) this.enter();
+    this.hooks.onReady?.(this);
   }
 
   /** Spawn on a pavement next to the nearest real road to the named landmark (or search point). */
@@ -145,27 +154,30 @@ class App {
     }
     return { x: road.cx, z: road.cz, yaw: Math.atan2(-dx, -dz) };
   }
+  /** Your own car near where you start, plus a few parked vehicles of other kinds to try. */
   parkCar(x, z) {
-    const road = this.world.nearestRoad(x, z, 300, (r) => r.car && !r.footOnly && r.width >= 4.5);
-    if (!road) { this.car.mesh.visible = false; this.carAvailable = false; return; }
-    const dx = road.b[0] - road.a[0], dz = road.b[1] - road.a[1], L = Math.hypot(dx, dz) || 1;
-    const off = road.road.width / 2 - 1.1, ux = dx / L, uz = dz / L;
-    const px = road.cx + uz * off + ux * 6, pz = road.cz - ux * off + uz * 6;
-    this.car.place(px, pz, Math.atan2(ux, uz)); this.car.mesh.visible = true; this.carAvailable = true;
+    const f = this.fleet;
+    let mine = f.vehicles.find((v) => v.owner === 'yours');
+    if (!mine || Math.hypot(mine.pos.x - x, mine.pos.z - z) > 200) { if (mine) f.remove(mine); mine = f.parkNear(x, z, this.hooks.ownCar || 'hatchback', { owner: 'yours', along: 6, colour: this.hooks.ownColour }); }
+    if (!this._seeded && !this.hooks.noParked) {
+      this._seeded = true;
+      [['taxi', 22], ['van', -16], ['sports', 34], ['parcel', -30], ['boxtruck', 50], ['bus', -48], ['doubledecker', 70], ['artic', 95], ['suv', 44], ['refuse', -70], ['roadworks', 82], ['flatbed', -88]].forEach(([t, a]) => f.parkNear(x, z, t, { owner: 'parked', along: a }));
+    }
+    this.carAvailable = f.vehicles.length > 0; if (!this.car) this.car = mine;
   }
 
   enter() {
     if (this.entered) return;
     this.entered = true; this.ui.hideLoading(); this.audio.start(); this.audio.applyVolumes();
     this.rig.mode = 'third'; this.rig.pitch = -0.28; this.rig.yaw = this.spawnYaw ?? this.rig.yaw; this.rig.transition = 1;
-    this.ui.toast('Welcome to Felixstowe. Press M for the map, J for your pocketbook.');
+    if (!this.hooks.quietEnter) this.ui.toast('Welcome to Felixstowe. Press M for the map, J for your pocketbook.');
   }
   action(id) {
     if (id === 'map') this.ui.toggle('map'); else if (id === 'journal') this.ui.toggle('journal');
     else if (id === 'menu') this.ui.toggle('menu'); else if (id === 'view') { this.rig.cycle(); this.ui.toast('View: ' + { third: 'third person', first: 'first person', overview: 'overview' }[this.rig.mode]); }
   }
-  focusPos() { return this.driving ? this.car.pos : this.player.pos; }
-  focusHeading() { return this.driving ? this.car.heading : this.player.heading; }
+  focusPos() { return this.driving && this.car ? this.car.pos : this.player.pos; }
+  focusHeading() { return this.driving && this.car ? this.car.heading : this.player.heading; }
 
   async travelTo(x, z) {
     this.ui.toast('Travelling…');
@@ -175,14 +187,53 @@ class App {
     this.player.place(p.x, p.z); this.rig.yaw = p.yaw ?? this.rig.yaw; this.rig.initialised = false;
     this.parkCar(p.x, p.z);
   }
-  enterCar() { this.driving = true; this.player.mesh.visible = false; this.journal.drives++; this.journal.save(); this.rig.dist = 8; this.ui.toast('Driving. E to get out, Space for handbrake.'); }
+  /** Get in: walk to the door, door opens, sit down, door closes (about a second). */
+  enterCar(v = this.fleet.nearestEnterable(this.player.pos)) {
+    if (!v || this.transit) return;
+    const [dx, dz] = v.local(v.door.x, v.door.z);
+    this.transit = { kind: 'enter', v, t: 0, from: this.player.pos.clone(), door: { x: dx, z: dz } };
+    v.doorTarget = 1; this.player.heading = Math.atan2(v.pos.x - dx, v.pos.z - dz);
+    if (v.owner === 'parked') { this.hooks.onVehicleTaken?.(v); if (!this.hooks.onVehicleTaken) this.ui.toast('This isn’t your vehicle. In the game you can borrow it; never do this in real life.'); }
+  }
+  _finishEnter(v) {
+    this.car = v; this.fleet.driving = v; this.driving = true; this.player.mesh.visible = false; v.doorTarget = 0;
+    if (v.owner === 'parked') v.owner = 'taken';
+    this.journal.drives++; this.journal.save(); this.rig.dist = Math.max(8, v.s.len * 0.9 + 4 + (v.trailer ? 10 : 0)); this.rig.transition = 1;
+    this.ui.toast(`Driving the ${v.s.name}. E to get out, Space handbrake, V for the driver’s-seat view.`);
+    this.hooks.onVehicleEnter?.(v);
+  }
+  /** Get out on the driver's side if it's clear and on the same level, otherwise the other side or behind. */
   exitCar() {
-    const [fx, fz] = this.car.forward();
-    for (const s of [-2.0, 2.0, -3, 3]) {
-      const x = this.car.pos.x - fz * s, z = this.car.pos.z + fx * s;
-      if (this.world.isWalkable(x, z) && !this.collision.resolve(x, z, 0.35, this.car.pos.y, this.car.pos.y + 1.7).hit) { this.player.place(x, z); break; }
+    const v = this.car; if (!v || this.transit) return;
+    if (Math.abs(v.speed) > 1.2) { this.ui.toast('Slow down and stop before getting out.'); return; }
+    v.speed = 0;
+    const cands = [[v.door.x, v.door.z], [-v.door.x, v.door.z], [v.door.x * 1.4, v.door.z - 1], [0, -v.s.len / 2 - 1.2 - (v.trailer ? 14 : 0)]];
+    let spot = null;
+    for (const [lx, lz] of cands) {
+      const [x, z] = v.local(lx, lz); const y = this.world.surfaceAt(x, z, v.pos.y + 0.5);
+      if (Math.abs(y - v.pos.y) > 0.8 || !this.world.isWalkable(x, z, v.pos.y)) continue;
+      if (this.collision.resolve(x, z, 0.35, y, y + 1.7).hit || this.collision.insideBuilding(x, z, y + 0.5)) continue;
+      if (this.fleet.vehicles.some((o) => o !== v && o.circles().some((c) => Math.hypot(c.x - x, c.z - z) < c.r + 0.4 && Math.abs(c.y0 - y) < 2))) continue;
+      spot = { x, z, y }; break;
     }
-    this.driving = false; this.player.mesh.visible = true; this.car.speed = 0;
+    if (!spot) { this.ui.toast('There’s no safe space to get out here.'); return; }
+    v.doorTarget = 1; const [sx, sz] = v.local(v.seat.x, v.seat.z);
+    this.transit = { kind: 'exit', v, t: 0, from: { x: sx, z: sz, y: v.pos.y }, spot };
+    this.driving = false; this.fleet.driving = null;
+  }
+  _updateTransit(dt) {
+    const tr = this.transit; if (!tr) return; tr.t += dt; const v = tr.v;
+    if (tr.kind === 'enter') {
+      const k = Math.min(1, tr.t / 0.45);
+      this.player.pos.x = tr.from.x + (tr.door.x - tr.from.x) * k; this.player.pos.z = tr.from.z + (tr.door.z - tr.from.z) * k; this.player.mesh.position.copy(this.player.pos);
+      if (tr.t > 0.55) this.player.mesh.visible = false;
+      if (tr.t > 0.9) { this.transit = null; this._finishEnter(v); }
+    } else {
+      if (tr.t > 0.3 && !this.player.mesh.visible) { this.player.place(tr.from.x, tr.from.z, tr.from.y + 0.5); this.player.mesh.visible = true; }
+      if (tr.t > 0.3) { const k = Math.min(1, (tr.t - 0.3) / 0.4); this.player.pos.x = tr.from.x + (tr.spot.x - tr.from.x) * k; this.player.pos.z = tr.from.z + (tr.spot.z - tr.from.z) * k; this.player.pos.y = tr.spot.y; this.player.mesh.position.copy(this.player.pos); }
+      if (tr.t > 0.8) v.doorTarget = 0;
+      if (tr.t > 1.0) { this.player.place(tr.spot.x, tr.spot.z, tr.spot.y + 0.3); this.transit = null; this.hooks.onVehicleExit?.(v); }
+    }
   }
 
   applySettings(reloadTiles = false) {
@@ -220,6 +271,7 @@ class App {
   // ---------- per-frame ----------
   frameLoop() {
     this.clock.update(); const dt = Math.min(0.05, this.clock.getDelta());
+    if (this.suspended) return; // a full-screen page covers the 3D view (saves battery)
     if (this.holdSim) { this.renderer.render(this.scene, this.camera); return; }
     this.update(dt);
     this.renderer.render(this.scene, this.camera);
@@ -237,16 +289,24 @@ class App {
       else if (inp.hit('F1') || inp.hit('Slash')) { this.ui.show('menu'); this.ui._menuTab('Controls'); }
       const active = !this.ui.open || this.ui.open === 'card';
       if (inp.hit('KeyE') && active) this.interact();
-      if (this.driving) { this.car.update(dt, inp, active); this.player.pos.copy(this.car.pos); }
-      else { this.player.update(dt, inp, this.rig.moveYaw, active); if (this.carAvailable) this.car.update(dt, inp, false); }
-      const t = this.driving ? this.car.pos : this.player.pos;
-      this.rig.update(dt, inp, t, { driving: this.driving, heading: this.car.heading, speed: this.car.speed });
+      const ctrl = Vehicle.controls(inp, active && this.driving && !this.transit);
+      const night = this.settings.timeOfDay < 7.6 || this.settings.timeOfDay > 18.8;
+      for (const v of this.fleet.vehicles) v.headOn = night && (v.owner === 'traffic' || v === this.car);
+      const peds = [...(this.driving ? [] : [this.player.pos]), ...(this.npcPositions?.() || [])];
+      this.fleet.update(dt, ctrl, this.focusPos(), peds);
+      this.crowd.update(dt, this.focusPos());
+      if (this.transit) this._updateTransit(dt);
+      else if (this.driving && this.car) { const [sx, sz] = this.car.local(this.car.seat.x, this.car.seat.z); this.player.pos.set(sx, this.car.pos.y, sz); }
+      else this.player.update(dt, inp, this.rig.moveYaw, active);
+      const t = this.driving && this.car ? this.car.pos : this.player.pos;
+      this.rig.update(dt, inp, t, { driving: this.driving && !!this.car, heading: this.car?.heading || 0, speed: this.car?.speed || 0, vehicle: this.driving ? this.car : null });
       if (this.ui.open === 'card' && this._cardPoi && Math.hypot(this._cardPoi.x - t.x, this._cardPoi.z - t.z) > 60 && !this._cardInside) this.ui.close();
     } else if (!this.entered) {
       // slow orbit behind the loading screen
       this.rig.yaw += dt * 0.05; this.rig.mode = 'overview'; this.rig.pitch = -0.6; this.rig.overDist = 380;
       this.rig.update(dt, { mouseDX: 0, mouseDY: 0, wheel: 0, dragging: false }, this.player.pos, {});
     } else if (inp.hit('Escape')) this.ui.close();
+    if (this.entered) this.hooks.onUpdate?.(this, dt);
     inp.endFrame();
 
     const focus = this.focusPos();
@@ -298,7 +358,7 @@ class App {
     for (const poi of this.world.pois.values()) if (poi.ring && poi.kind !== 'building' && pointInRing(p.x, p.z, poi.ring)) { area = poi.name; break; }
     const deck = this.world.onDeck(p.x, p.z);
     this.ui.setPlace(deck?.name || road?.road.name || null, area || (this.world.isLand(p.x, p.z) ? '' : 'Beach / foreshore'), p.x, p.z);
-    this.ui.setMode(this.driving ? `${Math.round(Math.abs(this.car.speed) * 2.237)} mph${this.car.offRoad ? ' · off road' : ''}` : '');
+    this.ui.setMode(this.driving && this.car ? `${Math.round(Math.abs(this.car.speed) * 2.237)} mph${this.car.offRoad ? ' · off road' : ''}` : '');
     this.ui.drawMinimap(p.x, p.z, this.focusHeading(), this.rig.yaw);
     if (road && road.d < 10 && road.road.name && this.journal.walk(road.road.name)) {
       for (const g of STREET_GOALS) if (g.street.test(road.road.name) && this.journal.complete(g.id)) { this.ui.toast('Objective complete: ' + g.title, 'good'); this.audio.chime(); }
@@ -306,13 +366,13 @@ class App {
     if (!this.driving) this.journal.distance = (this.journal._d0 ??= this.journal.distance) + this.player.distance;
     // audio: proximity to sea (sampled ring)
     let sea = 0; for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2; for (const r of [25, 70, 160]) if (!this.world.isLand(p.x + Math.cos(a) * r, p.z + Math.sin(a) * r)) { sea += r === 25 ? 1 : r === 70 ? 0.6 : 0.3; break; } }
-    this.audio.update({ seaProximity: Math.min(1, sea / 6), altitude: this.rig.mode === 'overview' ? this.rig.overDist : this.camera.position.y - p.y, engineOn: this.driving, speed: this.car.speed });
+    this.audio.update({ seaProximity: Math.min(1, sea / 6), altitude: this.rig.mode === 'overview' ? this.rig.overDist : this.camera.position.y - p.y, engineOn: this.driving, speed: this.car ? this.car.speed * 22 / this.car.s.vmax : 0 });
   }
 
   /** Find the best interactable near the player (contextual: distance + line of sight). */
   nearbyInteractable() {
     const p = this.focusPos();
-    if (!this.driving && this.carAvailable && Math.hypot(this.car.pos.x - p.x, this.car.pos.z - p.z) < 3.4) return { type: 'car' };
+    if (!this.driving && !this.transit) { const n = this.crowd.nearestTalkable(this.player.pos); if (n) return { type: 'npc', npc: n }; const v = this.fleet.nearestEnterable(this.player.pos); if (v) return { type: 'car', v }; }
     let best = null;
     for (const poi of this.world.pois.values()) {
       let d = Math.hypot(poi.x - p.x, poi.z - p.z), inside = false;
@@ -329,9 +389,10 @@ class App {
   updateInteractions() {
     if (!this.entered || this.ui.open) { if (!this.ui.open) this.ui.prompt(null); return; }
     const it = this.nearbyInteractable(); this._near = it;
-    if (this.driving) this.ui.prompt('<kbd>E</kbd> Get out of the car');
+    if (this.driving) this.ui.prompt(`<kbd>E</kbd> Get out of the ${escapeHtml(this.car?.s.name.split(' (')[0].toLowerCase() || 'vehicle')}`);
     else if (!it) this.ui.prompt(null);
-    else if (it.type === 'car') this.ui.prompt('<kbd>E</kbd> Get in the car');
+    else if (it.type === 'npc') this.ui.prompt(`<kbd>E</kbd> Talk to ${escapeHtml(it.npc.name)}`);
+    else if (it.type === 'car') this.ui.prompt(`<kbd>E</kbd> ${it.v.owner === 'yours' || it.v.owner === 'taken' ? 'Get in' : 'Take'} the ${escapeHtml(it.v.s.name.split(' (')[0].toLowerCase())}${it.v.owner === 'parked' ? ' (not yours, in the game only)' : ''}`);
     else this.ui.prompt(`<kbd>E</kbd> ${it.poi.landmark ? 'Read about' : 'Inspect'} ${escapeHtml(it.poi.name)}`);
     // discovery (no key press needed)
     if (it?.type === 'poi') {
@@ -344,7 +405,8 @@ class App {
   interact() {
     if (this.driving) { this.exitCar(); return; }
     const it = this.nearbyInteractable(); if (!it) return;
-    if (it.type === 'car') { this.enterCar(); return; }
+    if (it.type === 'car') { this.enterCar(it.v); return; }
+    if (it.type === 'npc') { if (this.hooks.onTalk) this.hooks.onTalk(it.npc); else this.ui.toast(`${escapeHtml(it.npc.name)}: “Morning! Lovely day for it.”`); return; }
     const lm = LANDMARKS.find((l) => l.id === it.poi.landmark) || null;
     this._cardPoi = it.poi; this._cardInside = it.inside;
     this.ui.showCard(it.poi, lm);
@@ -358,7 +420,8 @@ class App {
       state: () => ({
         loadFailed: !!app.loadFailed, entered: app.entered, loadMs: app.loadMs, fps: app.fpsAcc?.fps,
         player: app.player && { x: +app.player.pos.x.toFixed(2), y: +app.player.pos.y.toFixed(2), z: +app.player.pos.z.toFixed(2) },
-        car: app.car && { x: +app.car.pos.x.toFixed(2), z: +app.car.pos.z.toFixed(2), speed: +app.car.speed.toFixed(2), bumps: app.car.bumps },
+        car: app.car && { type: app.car.type, x: +app.car.pos.x.toFixed(2), y: +app.car.pos.y.toFixed(2), z: +app.car.pos.z.toFixed(2), heading: +app.car.heading.toFixed(3), speed: +app.car.speed.toFixed(2), bumps: app.car.bumps, impacts: app.car.impacts, trailerAngle: app.car.trailer ? +Math.atan2(Math.sin(app.car.heading - app.car.trailer.heading), Math.cos(app.car.heading - app.car.trailer.heading)).toFixed(3) : null },
+        traffic: app.fleet ? app.fleet.traffic.agents.length : 0, vehicles: app.fleet ? app.fleet.vehicles.length : 0,
         driving: app.driving, mode: app.rig?.mode, tiles: app.world ? [...app.world.tiles.keys()] : [],
         render: app.renderer && { calls: app.renderer.info.render.calls, triangles: app.renderer.info.render.triangles, geometries: app.renderer.info.memory.geometries, textures: app.renderer.info.memory.textures, programs: app.renderer.info.programs?.length },
         memoryMB: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : null,
@@ -366,6 +429,15 @@ class App {
       }),
       quality: () => app.world.qualityReport(),
       teleport: (x, z) => app.travelTo(x, z),
+      /** Spawn a vehicle of a type at (x,z,heading) on the surface at height y (or the ground), and get in. */
+      driveVehicle: async (type, x, z, heading, y = null) => { await app.world.ensureAround(x, z, 400); if (app.driving) { app.car.speed = 0; app.driving = false; app.fleet.driving = null; } const v = app.fleet.spawn(type, x, z, heading, { owner: 'yours', y }); app._finishEnter(v); return { y: v.pos.y }; },
+      /** Hold controls for `seconds` of simulation (throttle -1..1, steer -1..1 left positive). */
+      hold: (throttle, steer, seconds, handbrake = false) => { const s = { f: throttle, s: -steer }; app.input.setAnalog(s.f, s.s); if (handbrake) app.input.virtual.add('Space'); const n = Math.round(seconds * 30); for (let i = 0; i < n; i++) app.update(1 / 30); app.input.setAnalog(0, 0); app.input.virtual.delete('Space'); return app.debugApi().state().car; },
+      vehicles: () => app.fleet.vehicles.map((v) => ({ id: v.id, type: v.type, owner: v.owner, x: +v.pos.x.toFixed(1), y: +v.pos.y.toFixed(2), z: +v.pos.z.toFixed(1), speed: +v.speed.toFixed(2) })),
+      graph: () => ({ nodes: app.fleet.traffic.graph.nodes.size, edges: app.fleet.traffic.graph.edges.length }),
+      /** Load the area and stand at (x,z); with y, on whichever surface is at that level (e.g. a bridge deck). */
+      placeAt: async (x, z, y = null) => { await app.world.ensureAround(x, z, 400); app.player.place(x, z, y); app.rig.initialised = false; return { y: app.player.pos.y, ground: app.world.ground(x, z), deck: app.world.onDeck(x, z, app.player.pos.y)?.name || null }; },
+      bridges: () => [...new Set(app.world.profiles.values())].filter((p) => !p.ramp).map((p) => ({ id: p.id, name: p.name, kind: p.kind, L: Math.round(p.L), mid: p.pts[Math.floor(p.pts.length / 2)], crossings: p.crossings.map((c) => ({ kind: c.kind, name: c.name, under: c.id, clearance: +c.clearance.toFixed(2), x: c.x, z: c.z })) })),
       key: (code, down) => { if (down) { app.input.virtual.add(code); app.input.pressed.add(code); } else app.input.virtual.delete(code); },
       look: (dx, dy) => { app.input.mouseDX += dx; app.input.mouseDY += dy; },
       setView: (mode, yaw, pitch, dist) => { app.rig.mode = mode; if (yaw != null) app.rig.yaw = yaw; if (pitch != null) app.rig.pitch = pitch; if (dist != null) { if (mode === 'overview') app.rig.overDist = dist; else app.rig.dist = dist; } app.rig.initialised = false; },

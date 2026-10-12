@@ -95,16 +95,18 @@ export function buildProps(features, tile, ctx) {
   let mappedLamps = 0;
   for (const p of features.points) {
     if (!inRect(p.x, p.z)) continue;
-    const y = surf(p.x, p.z);
+    // mapped street furniture on a bridge stands on the deck; its collider only spans that level
+    const y = surf(p.x, p.z, Infinity), onDeck = y > ctx.ground(p.x, p.z) + 1;
+    const lvl = onDeck ? { y0: y - 0.3, top: y + 6 } : {};
     const nr = nearestRoad(p.x, p.z, ctx.roadGrid);
     const rot = faceRoad(p.x, p.z, nr);
     switch (p.kind) {
-      case 'lamp': mappedLamps++; add('lamp', { x: p.x, y, z: p.z, rot: rot - Math.PI / 2 }); colliders.push({ type: 'circle', x: p.x, z: p.z, r: 0.15 }); break;
+      case 'lamp': mappedLamps++; add('lamp', { x: p.x, y, z: p.z, rot: rot - Math.PI / 2 }); colliders.push({ type: 'circle', x: p.x, z: p.z, r: 0.15, ...lvl }); break;
       case 'bench': add('bench', { x: p.x, y, z: p.z, rot: rot + Math.PI }); break;
       case 'bus_stop': add('bus_stop', { x: p.x, y, z: p.z, rot }); if (p.tags.shelter === 'yes') add('shelter', { x: p.x, y, z: p.z, rot: rot + Math.PI }); break;
-      case 'post_box': add('post_box', { x: p.x, y, z: p.z }); colliders.push({ type: 'circle', x: p.x, z: p.z, r: 0.3 }); break;
-      case 'phone_box': add('phone_box', { x: p.x, y, z: p.z, rot }); colliders.push({ type: 'circle', x: p.x, z: p.z, r: 0.6 }); break;
-      case 'bollard': add('bollard', { x: p.x, y, z: p.z }); colliders.push({ type: 'circle', x: p.x, z: p.z, r: 0.12 }); break;
+      case 'post_box': add('post_box', { x: p.x, y, z: p.z }); colliders.push({ type: 'circle', x: p.x, z: p.z, r: 0.3, ...lvl }); break;
+      case 'phone_box': add('phone_box', { x: p.x, y, z: p.z, rot }); colliders.push({ type: 'circle', x: p.x, z: p.z, r: 0.6, ...lvl }); break;
+      case 'bollard': add('bollard', { x: p.x, y, z: p.z }); colliders.push({ type: 'circle', x: p.x, z: p.z, r: 0.12, ...lvl }); break;
       case 'bin': add('bin', { x: p.x, y, z: p.z }); break;
       case 'signals': add('signals', { x: p.x, y, z: p.z, rot }); break;
       case 'mast': add('mast', { x: p.x, y, z: p.z, sy: Math.max(0.5, (parseFloat(p.tags.height) || 10) / 10) }); break;
@@ -132,7 +134,7 @@ export function buildProps(features, tile, ctx) {
   let procLamps = 0;
   if (ctx.settings.proceduralLamps && mappedLamps === 0) {
     for (const rd of features.roads) {
-      if (rd.footOnly || rd.sidewalk === 'no' || rd.tunnel) continue;
+      if (rd.footOnly || rd.sidewalk === 'no' || rd.tunnel || rd.bridge) continue; // no procedural lamps on decks
       let acc = hash01(rd.id) * 30;
       for (let i = 1; i < rd.pts.length; i++) {
         const [x0, z0] = rd.pts[i - 1], [x1, z1] = rd.pts[i]; const L = Math.hypot(x1 - x0, z1 - z0); if (L < 0.1) continue;

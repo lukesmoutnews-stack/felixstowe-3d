@@ -1,0 +1,23 @@
+<!doctype html><meta charset="utf-8"><title>Character renders (dev tool)</title>
+<script type="importmap">{ "imports": { "three": "../vendor/three/three.module.js", "three/addons/": "../vendor/three/addons/" } }</script>
+<canvas id="c" width="600" height="800" style="width:600px;height:800px"></canvas>
+<script type="module">
+import * as THREE from 'three';
+import { buildHumanoid, animateHumanoid, stageLook, DEFAULT_LOOK } from '../src/play/people/humanoid.js';
+const canvas = document.getElementById('c');
+const r = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true }); r.setPixelRatio(1); r.outputColorSpace = THREE.SRGBColorSpace; r.shadowMap.enabled = true;
+const scene = new THREE.Scene(); scene.add(new THREE.HemisphereLight(0xfff6e6, 0x9ab8c0, 1.7)); const sun = new THREE.DirectionalLight(0xffffff, 2.3); sun.position.set(2, 4, 4); sun.castShadow = true; scene.add(sun);
+const fill = new THREE.DirectionalLight(0xbfd8ff, 0.7); fill.position.set(-3, 2, -2); scene.add(fill);
+const cam = new THREE.PerspectiveCamera(22, 600 / 800, 0.1, 50);
+let model = null;
+window.render = ({ look = {}, stage = null, yaw = 0, expression = 'neutral', posture = 'upright', face = false, wave = false, w = 600, h = 800 }) => {
+  if (model) scene.remove(model.group);
+  const L = { ...DEFAULT_LOOK, ...look }; model = buildHumanoid(stage == null ? L : stageLook(L, stage)); scene.add(model.group);
+  model.setExpression(expression); model.setPosture(posture); model.group.rotation.y = yaw;
+  animateHumanoid(model, 0, 0, 0.016, { wave });
+  r.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
+  if (face) { cam.fov = 12; cam.position.set(Math.sin(yaw) * 0 + 0, 1.66, 3.2); cam.lookAt(0, 1.62, 0); } else { cam.fov = 22; cam.position.set(0, 1.05, 5.4); cam.lookAt(0, 0.92, 0); }
+  cam.updateProjectionMatrix(); r.render(scene, cam); return canvas.toDataURL('image/png');
+};
+window.ready = true;
+</script>

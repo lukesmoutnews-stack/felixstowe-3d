@@ -27,6 +27,7 @@ export class Collision {
         }
       }
       for (const c of w.circleGrid.query(x - r - 1, z - r - 1, x + r + 1, z + r + 1)) {
+        if (c.top != null && c.top < yFeet + 0.45) continue; if (c.y0 != null && c.y0 > yHead) continue; // bridge piers etc.
         const dx = x - c.x, dz = z - c.z, L = Math.hypot(dx, dz), minD = r + c.r;
         if (L < minD && L > 1e-6) { x += (dx / L) * (minD - L); z += (dz / L) * (minD - L); nx += dx / L; nz += dz / L; hit = moved = true; }
       }

@@ -300,7 +300,7 @@ export function buildFeatures(parsed) {
     if (road && !(t.area === 'yes')) { out.roads.push({ id: w.id, pts: w.pts, nodeIds: w.nodeIds, ...road }); }
     else if (road && t.highway === 'pedestrian' && t.area === 'yes') { /* handled as area */ }
     const lk = LINE_KINDS(t);
-    if (lk && !(lk === 'pier' && isClosed(w.pts) && t.area !== 'no')) out.lines.push({ id: w.id, kind: lk, pts: w.pts, tags: t, width: num(t.width) });
+    if (lk && !(lk === 'pier' && isClosed(w.pts) && t.area !== 'no')) out.lines.push({ id: w.id, kind: lk, pts: w.pts, nodeIds: w.nodeIds, tags: t, width: num(t.width) });
     if (t.name && !road) {
       const closed = isClosed(w.pts);
       const c = closed ? centroid(closeless(w.pts)) : w.pts[Math.floor(w.pts.length / 2)];
