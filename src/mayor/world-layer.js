@@ -206,18 +206,19 @@ export class WorldLayer {
       if (!down) return; const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y), dt = performance.now() - down.t; down = null;
       if (moved < 10 && dt < 500) this.pick(e.clientX, e.clientY);
     });
-    let pinch = null;
-    canvas.addEventListener('touchstart', (e) => { if (e.touches.length === 2) pinch = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); }, { passive: true });
-    canvas.addEventListener('touchmove', (e) => { if (e.touches.length === 2 && pinch) { const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); if (Math.abs(d - pinch) > 18) { this.app.input.wheel += d < pinch ? 1 : -1; pinch = d; } } }, { passive: true });
-    canvas.addEventListener('touchend', () => { pinch = null; }, { passive: true });
-    const stick = document.getElementById('stick'); if (!stick) return;
-    const knob = stick.querySelector('.knob'); let id = null, cx = 0, cy = 0;
-    const R = 46;
-    const move = (x, y) => { let dx = x - cx, dy = y - cy; const L = Math.hypot(dx, dy); if (L > R) { dx *= R / L; dy *= R / L; } knob.style.transform = `translate(${dx}px, ${dy}px)`; const f = -dy / R, s = dx / R; const m = Math.hypot(f, s); this.app.input.setAnalog(m > 0.15 ? f : 0, m > 0.15 ? s : 0); if (m > 0.85) this.app.input.virtual.add('ShiftLeft'); else this.app.input.virtual.delete('ShiftLeft'); };
-    const end = () => { id = null; knob.style.transform = ''; this.app.input.setAnalog(0, 0); this.app.input.virtual.delete('ShiftLeft'); };
-    stick.addEventListener('pointerdown', (e) => { id = e.pointerId; stick.setPointerCapture(id); const r = stick.getBoundingClientRect(); cx = r.left + r.width / 2; cy = r.top + r.height / 2; move(e.clientX, e.clientY); e.preventDefault(); });
-    stick.addEventListener('pointermove', (e) => { if (e.pointerId === id) move(e.clientX, e.clientY); });
-    stick.addEventListener('pointerup', end); stick.addEventListener('pointercancel', end);
+    // pinch zoom is handled by play/input.js, which only counts fingers on the 3D view (not the joystick finger)
+    // The joystick is re-created whenever the explore screen re-renders, so listen at the document level
+    // and look the current #stick up on each touch (listeners bound to one element were lost after a re-render).
+    let id = null, cx = 0, cy = 0, stick = null; const R = 46;
+    const knob = () => stick?.querySelector('.knob');
+    const move = (x, y) => { let dx = x - cx, dy = y - cy; const L = Math.hypot(dx, dy); if (L > R) { dx *= R / L; dy *= R / L; } const k = knob(); if (k) k.style.transform = `translate(${dx}px, ${dy}px)`; const f = -dy / R, s = dx / R; const m = Math.hypot(f, s); this.app.input.setAnalog(m > 0.15 ? f : 0, m > 0.15 ? s : 0); if (m > 0.85) this.app.input.virtual.add('ShiftLeft'); else this.app.input.virtual.delete('ShiftLeft'); };
+    const end = (e) => { if (e && e.pointerId !== id) return; id = null; const k = knob(); if (k) k.style.transform = ''; stick = null; this.app.input.setAnalog(0, 0); this.app.input.virtual.delete('ShiftLeft'); };
+    document.addEventListener('pointerdown', (e) => {
+      const el = e.target?.closest?.('#stick'); if (!el || id !== null) return;
+      stick = el; id = e.pointerId; const r = el.getBoundingClientRect(); cx = r.left + r.width / 2; cy = r.top + r.height / 2; move(e.clientX, e.clientY); e.preventDefault();
+    });
+    document.addEventListener('pointermove', (e) => { if (e.pointerId === id) move(e.clientX, e.clientY); });
+    document.addEventListener('pointerup', end); document.addEventListener('pointercancel', end);
   }
   pick(x, y) {
     const v = new THREE.Vector2((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1);
