@@ -44,7 +44,21 @@ export const FRONTAGES = {
   // --- B1082 near Wilco (photos 31-b1082-wilco, brick-house-by-wilco) ---
   1017338053: { addr: '31 B1082 (Wilco)', photo: '31-b1082-wilco.png', height: 6.8, force: true, roofShape: 'flat', style: { facade: 'render', tint: WHITE, roof: 'flat', winStyle: 1 }, details: [] },
   1017338054: { addr: 'red-brick house beside Wilco', photo: 'brick-house-by-wilco.png', height: 9.6, roofShape: 'gabled', style: { facade: 'brick_red', roof: 'clay', winStyle: 0 }, details: [{ t: 'whiteWall', gateToward: [-405, 190], extend: 6 }] }, // gate at the Wilco end; wall also fronts the single-storey wing
+  // --- Seaton Road (photo 57-seaton-road.png, Street View, supplied 13 Oct 2026) ---
+  // OSM has no house numbers here. Placed from the postcode (IP11 9BS centroid on the south, odd side),
+  // numbering rising westward (91 is in IP11 9BT to the west) and a count of houses from the east end.
+  '506411934:w': { addr: '55/57 Seaton Road (pair)', photo: '../seaton-road/57-seaton-road.png', height: 6.0, force: true, roofShape: 'hipped', style: { facade: 'brick_red', roof: 'clay', roofTint: [0.78, 0.6, 0.5], winStyle: 0 }, details: [{ t: 'bays', at: [0.32, 0.68], panelEast: 'cream', panelWest: 'panel' }, { t: 'porches', at: [0.09, 0.91] }, { t: 'resinDrive' }] },
+  '506411934:e': { addr: 'pair east of 55/57 (left of the photo)', photo: '../seaton-road/57-seaton-road.png', height: 6.0, force: true, roofShape: 'hipped', style: { facade: 'brick_red', roof: 'clay', winStyle: 0 }, details: [{ t: 'lowBrickWall' }] },
   1017204189: { addr: '47 (café)', photo: '47-cafe.png', height: 3.7, force: true, roofShape: 'flat', style: { facade: 'render', tint: YELLOW, roof: 'flat' }, details: [{ t: 'cafeVerandah' }] },
+};
+
+/**
+ * Footprints that OSM draws as one block over several houses, split where a photo shows them (world.js
+ * splitFootprint): 'at' is the split fraction from the west end; the parts are '<id>:w' and '<id>:e'.
+ */
+export const SPLITS = {
+  // Seaton Road, south side: two semi-detached pairs in one footprint. The west pair is 55/57 (photo).
+  506411934: { at: 0.5 },
 };
 
 /** Areas with photographed street edges (OSM area ids). */

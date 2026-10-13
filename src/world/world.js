@@ -12,7 +12,7 @@ import { addBuilding } from './buildings.js';
 import { buildRoads, buildRail } from './roads.js';
 import { RoadNetwork } from './road-surface.js';
 import { promenadeWays, buildSeafrontWall, isSeafrontShelter, buildShelter } from './seafront.js';
-import { FRONTAGES, FRONTAGE_AREAS } from '../content/frontages.js';
+import { FRONTAGES, FRONTAGE_AREAS, SPLITS } from '../content/frontages.js';
 import { buildFrontageDetails, buildAreaFrontage } from './frontage-details.js';
 import { profileNetwork, buildBridge, buildRamp, BRIDGE } from './bridges.js';
 import { buildGround, buildAreas } from './landcover.js';
@@ -222,9 +222,12 @@ export class World extends EventTarget {
         this.roadGrid.insert(Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1]), { a, b, road: rd, tile: tile.key });
       }
     }
+    // OSM footprints drawn as one block over several houses, split where a photo shows the houses differ
+    // (content/frontages.js SPLITS): the halves get ids '<id>:w' / '<id>:e' and keep the source id for LiDAR
+    for (let i = 0; i < f.buildings.length; i++) { const b = f.buildings[i], sp = SPLITS[b.id]; if (sp && !b.srcId) f.buildings.splice(i, 1, ...splitFootprint(b, sp)); }
     const ownBuildings = f.buildings.filter((b) => inTile(b.cx, b.cz));
     if (this.lidarHeights) for (const b of ownBuildings) {
-      const h = this.lidarHeights.get(b.id);
+      const h = this.lidarHeights.get(b.srcId ?? b.id);
       if (!h || b.heightSource === 'osm:height' || b.isPart) continue;
       b.height = Math.max(2.2, h[1]); b.heightSource = 'lidar';
       if (b.roofShape !== 'flat' && h[1] - h[0] < 0.6 && b.roofShapeSource !== 'osm') b.roofShape = 'flat'; // flat in the DSM
@@ -581,4 +584,17 @@ export function clipPolyline(pts, r) {
   }
   if (cur && cur.length > 1) out.push(cur);
   return out;
+}
+
+/** Split a four-cornered footprint across its long axis into west and east parts (fraction sp.at from the west). */
+function splitFootprint(b, sp) {
+  const R = b.outer; if (R.length !== 4) return [b];
+  const L = (i) => Math.hypot(R[(i + 1) % 4][0] - R[i][0], R[(i + 1) % 4][1] - R[i][1]);
+  const i0 = L(0) + L(2) >= L(1) + L(3) ? 0 : 1; // long edges i0 and i0+2
+  let A = R[i0], B = R[(i0 + 1) % 4], C = R[(i0 + 2) % 4], D = R[(i0 + 3) % 4]; // A-B and C-D are the long edges (D-C runs the same way as A-B)
+  if (B[0] < A[0]) { [A, B] = [B, A]; [C, D] = [D, C]; } // A and D at the west end
+  const t = sp.at ?? 0.5, lerp = (p, q) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
+  const q1 = lerp(A, B), q2 = lerp(D, C);
+  const make = (outer, tag) => { const cx = outer.reduce((a, p) => a + p[0], 0) / 4, cz = outer.reduce((a, p) => a + p[1], 0) / 4; let ar = 0; for (let k = 0; k < 4; k++) { const p = outer[k], q = outer[(k + 1) % 4]; ar += p[0] * q[1] - q[0] * p[1]; } return { ...b, id: `${b.id}:${tag}`, srcId: b.id, outer, cx, cz, area: Math.abs(ar) / 2 }; };
+  return [make([A, q1, q2, D], 'w'), make([q1, B, C, q2], 'e')];
 }

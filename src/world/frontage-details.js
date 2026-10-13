@@ -20,6 +20,9 @@ function mats() {
     steel: std({ color: 0xb8bcc0, roughness: 0.35, metalness: 0.7 }), deck: std({ color: 0xdedbd2, roughness: 0.9 }),
     brick: std({ map: brick.map, normalMap: brick.normalMap, roughness: 1 }), coping: std({ color: 0xcfcac0, roughness: 0.9 }),
     yellowWall: std({ color: 0xe9d46a, roughness: 0.8 }),
+    pane: std({ color: 0x5f7480, roughness: 0.12, metalness: 0.35, side: THREE.DoubleSide }), // opaque window glass (bays are not hollow)
+    tile: std({ color: 0x8a5a44, roughness: 0.85, side: THREE.DoubleSide }), cream: std({ color: 0xe8dcb8, roughness: 0.8, side: THREE.DoubleSide }),
+    panel: std({ color: 0xf2f0ea, roughness: 0.7, side: THREE.DoubleSide }), resin: std({ color: 0xb48f72, roughness: 0.95, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
   };
   return M;
 }
@@ -48,7 +51,7 @@ export function streetEdge(b, nearestRoad) {
 export function buildFrontageDetails(b, ctx) {
   const fr = b.frontage; if (!fr?.details?.length) return null;
   const e = streetEdge(b, ctx.nearestRoad); if (!e) return null;
-  const m = mats(); const G = { white: new Geo(), black: new Geo(), glass: new Geo(), blue: new Geo(), timber: new Geo(), steel: new Geo(), deck: new Geo(), brick: new Geo(), coping: new Geo(), yellowWall: new Geo() };
+  const m = mats(); const G = { white: new Geo(), black: new Geo(), glass: new Geo(), blue: new Geo(), timber: new Geo(), steel: new Geo(), deck: new Geo(), brick: new Geo(), coping: new Geo(), yellowWall: new Geo(), pane: new Geo(), tile: new Geo(), cream: new Geo(), panel: new Geo(), resin: new Geo() };
   let g = Infinity; for (let t = 0; t <= 1; t += 0.25) g = Math.min(g, ctx.ground(e.a[0] + (e.c[0] - e.a[0]) * t, e.a[1] + (e.c[1] - e.a[1]) * t));
   const H = b.height, storey = Math.max(2.6, Math.min(3.2, H / Math.max(1, Math.round(H / 3)))), colliders = [];
   // local frame: s along the edge (0..L), d out from the facade, y above the ground at the edge
@@ -127,6 +130,40 @@ export function buildFrontageDetails(b, ctx) {
       for (const sg of [-1, 1]) box('white', gc + sg * (gap / 2 + 0.17), d, 0.68, 0.17, 0.2, 0.68); // gate piers
       for (let k = 0; k <= 8; k++) box('black', gc - gap / 2 + 0.05 + k * (gap - 0.1) / 8, d, 0.5, 0.012, 0.012, 0.5); // railings
       box('black', gc, d, 0.98, gap / 2, 0.02, 0.02); box('black', gc, d, 0.12, gap / 2, 0.02, 0.02);
+    } else if (it.t === 'bays') { // two-storey canted bay windows (1930s semis): brick plinth, glazing, a panel between floors, tiled cap
+      const w = it.width || 2.4, dd = D(it.deep || 0.75), side = 0.45;
+      for (const f of it.at) {
+        const sc = s0 + L * f, west = P(sc, 0, 0)[0] < P(sc + 1, 0, 0)[0] ? e.ux > 0 : e.ux < 0;
+        const C = [[sc - w / 2 - side, 0.02], [sc - w / 2, dd], [sc + w / 2, dd], [sc + w / 2 + side, 0.02]];
+        const pnl = (P(sc, 0, 0)[0] < (P(s0, 0, 0)[0] + P(s1, 0, 0)[0]) / 2 ? it.panelWest : it.panelEast) || 'panel';
+        for (let k = 0; k < 3; k++) {
+          const [sa, da] = C[k], [sb, db] = C[k + 1];
+          const band = (mat, y0, y1) => G[mat].quad(P(sa, da, y0), P(sb, db, y0), P(sb, db, y1), P(sa, da, y1));
+          band('brick', 0, 0.42); band('pane', 0.42, 2.3); band(pnl, 2.3, 3.0); band('pane', 3.0, 4.85); band('white', 4.85, 5.1);
+          for (const y of [0.42, 1.85, 2.3, 3.0, 4.45]) { const pa = P(sa, da + 0.02, y), pb = P(sb, db + 0.02, y); G.white.quad(pa, pb, [pb[0], pb[1] + 0.06, pb[2]], [pa[0], pa[1] + 0.06, pa[2]]); } // sills, transoms
+        }
+        for (const [cs, cd] of C) box('white', cs, cd + 0.02, 2.63, 0.05, 0.05, 2.22); // corner posts
+        for (const q of [1 / 3, 2 / 3]) for (const [y0, y1] of [[0.42, 2.3], [3.0, 4.85]]) box('white', sc - w / 2 + w * q, dd + 0.03, (y0 + y1) / 2, 0.035, 0.03, (y1 - y0) / 2); // mullions
+        const cap = (y, i0, i1) => P(C[i0][0], C[i0][1] + (i0 === 1 || i0 === 2 ? 0.08 : 0), y);
+        G.tile.quad(cap(5.1, 0), cap(5.1, 1), cap(5.1, 2), cap(5.1, 3)); // flat-ish tiled cap
+        G.tile.quad(P(C[0][0], 0.02, 5.1), P(C[1][0], dd + 0.08, 5.1), P(C[1][0] + 0.3, 0.02, 5.55), P(C[0][0], 0.02, 5.55));
+        G.tile.quad(P(C[1][0], dd + 0.08, 5.1), P(C[2][0], dd + 0.08, 5.1), P(C[2][0] - 0.3, 0.02, 5.55), P(C[1][0] + 0.3, 0.02, 5.55));
+        G.tile.quad(P(C[2][0], dd + 0.08, 5.1), P(C[3][0], 0.02, 5.1), P(C[3][0], 0.02, 5.55), P(C[2][0] - 0.3, 0.02, 5.55));
+        void west;
+      }
+    } else if (it.t === 'porches') { // small tiled lean-to canopies over the front doors, on white brackets
+      const d = D(it.deep || 0.95), w = it.width || 2.1;
+      for (const f of it.at) {
+        const sc = s0 + L * f;
+        G.tile.quad(P(sc - w / 2, 0.02, 2.95), P(sc + w / 2, 0.02, 2.95), P(sc + w / 2, d, 2.6), P(sc - w / 2, d, 2.6));
+        box('white', sc, d, 2.55, w / 2, 0.03, 0.08);
+        for (const sg of [-1, 1]) box('black', sc + sg * (w / 2 - 0.15), d / 2, 2.5, 0.03, d / 2, 0.03);
+        box('black', sc, 0.03, 1.08, 0.48, 0.03, 1.05); // door
+      }
+    } else if (it.t === 'resinDrive') { // resin-bound driveway across the front garden
+      const d = Math.max(1.5, e.front - 0.1), q = (ss, dd) => { const r = P(ss, dd, 0); r[1] = ctx.ground(r[0], r[2]) + 0.14; return r; };
+      const n = Math.max(1, Math.ceil(d / 2)), m2 = Math.max(1, Math.ceil(L / 2)); // small cells so it follows the ground
+      for (let i = 0; i < m2; i++) for (let j = 0; j < n; j++) { const sa = s0 - 0.25 + (L + 0.5) * i / m2, sb = s0 - 0.25 + (L + 0.5) * (i + 1) / m2, da = 0.05 + (d - 0.05) * j / n, db = 0.05 + (d - 0.05) * (j + 1) / n; G.resin.quad(q(sa, da), q(sb, da), q(sb, db), q(sa, db)); }
     } else if (it.t === 'lowBrickWall' || it.t === 'whiteFence') { // front boundary at the back of the pavement
       const d = Math.max(1.2, Math.min(e.front - 0.15, 6));
       if (it.t === 'lowBrickWall') { box('brick', sm, d, 0.38, L / 2 + 0.25, 0.12, 0.38); box('coping', sm, d, 0.79, L / 2 + 0.28, 0.15, 0.03); }
