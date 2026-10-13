@@ -81,14 +81,13 @@ class MayorApp {
   renderSelect() {
     const st = this.csState(); st.ctx = 'onboard';
     this.root.innerHTML = CS.selectScreen(st);
-    this.preview?.dispose(); this.preview = new CS.Preview(document.getElementById('cs-canvas'), 'select');
+    this.preview?.dispose(); this.preview = new CS.Preview(document.getElementById('cs-canvas'), 'single'); // just the player's character
     this.refreshPreview();
   }
   refreshPreview() {
     const st = this.cs; if (!this.preview || !st) return;
     if (st.ctx === 'sheet') { this.preview.setLooks([CS.stageLook(st.look, this.game.rankIndex())]); return; }
-    const keys = Object.keys(CS.PRESETS), i = keys.indexOf(st.preset);
-    this.preview.setLooks(keys.map((k) => (k === st.preset ? st.look : CS.PRESETS[k].look)), i);
+    this.preview.setLooks([st.look], 0); // one character: the chosen starting look with your edits
   }
   refreshEditor() {
     const st = this.cs, ed = document.querySelector('.cs-edit'); if (!ed) return; const open = ed.open;
@@ -194,7 +193,7 @@ class MayorApp {
     switch (a) {
       case 'tab': this.go(b.dataset.tab); break;
       case 'demo-profile': this.finishSelect('Demo Resident'); break;
-      case 'cs-pick': { const st = this.csState(); st.preset = id; st.look = structuredClone(CS.PRESETS[id].look); st.pronouns = CS.PRESETS[id].pronouns; this.refreshPreview(); this.preview?.select(Object.keys(CS.PRESETS).indexOf(id)); this.refreshEditor(); break; }
+      case 'cs-pick': { const st = this.csState(); st.preset = id; st.look = structuredClone(CS.PRESETS[id].look); st.pronouns = CS.PRESETS[id].pronouns; this.refreshPreview(); this.preview?.select(0); this.refreshEditor(); break; }
       case 'cs-opt': { const st = this.csState(); CS.applyOpt(st, b.dataset.key, b.dataset.val); this.refreshPreview(); this.refreshEditor(); break; }
       case 'cs-face': this.preview?.models[0]?.setExpression(id); break;
       case 'appearance-open': { const p = g.p; this.cs = { preset: p.identity || 'other', look: structuredClone({ ...CS.PRESETS.male.look, ...(p.look || {}) }), pronouns: p.pronouns || 'they', ctx: 'sheet' }; this.openSheet(CS.appearanceSheet(this.cs), 'appearance'); this.preview?.dispose(); this.preview = new CS.Preview(document.getElementById('cs-canvas'), 'single'); this.refreshPreview(); break; }
