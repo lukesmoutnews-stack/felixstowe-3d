@@ -89,12 +89,29 @@ export class WorldLayer {
     if (!this.newsTex) { this.newsTex = new THREE.CanvasTexture(c); this.newsTex.colorSpace = THREE.SRGBColorSpace; } else this.newsTex.needsUpdate = true;
     return this.newsTex;
   }
+  /** A pavement spot for a news board near a location, at least 7 m from where players arrive (the start
+   *  point and the travel spot for that location both come from findStandingSpot, which a board used to share). */
+  boardSpot(w) {
+    const a = this.app, base = a.findStandingSpot(w.x + 6, w.z + 6); if (!base) return null;
+    const avoid = [a.player.pos, a.findStandingSpot(w.x, w.z), a.car?.pos].filter(Boolean);
+    const yaw = base.yaw ?? 0, fx = -Math.sin(yaw), fz = -Math.cos(yaw); // along the road
+    const ok = [];
+    for (const d of [0, 9, -9, 14, -14, 20, -20]) {
+      const x = base.x + fx * d, z = base.z + fz * d;
+      if (avoid.some((p) => Math.hypot(p.x - x, p.z - z) < 7)) continue;
+      if (d && (!a.world.isWalkable(x, z) || a.collision.insideBuilding(x, z) || a.collision.resolve(x, z, 0.7, 0, 1.7).hit)) continue;
+      ok.push({ x, z, yaw });
+    }
+    // prefer a spot that is not in front of the player's starting view, so the first steps don't walk into it
+    const p = a.player.pos, py = a.spawnYaw ?? a.rig.yaw, ahead = (c) => (c.x - p.x) * -Math.sin(py) + (c.z - p.z) * -Math.cos(py) > 0 && Math.hypot(c.x - p.x, c.z - p.z) < 40;
+    return ok.find((c) => !ahead(c)) || ok[0] || null;
+  }
   buildNewsBoards() {
     this.newsBoards = []; const tex = this.newsTexture(); this.newsShown = this.game.latestHeadline()?.id || null;
     const screen = new THREE.MeshBasicMaterial({ map: tex }), frame = new THREE.MeshStandardMaterial({ color: 0x15151a, roughness: 0.5, metalness: 0.4 });
     for (const id of NEWS_SPOTS) {
       const loc = this.game.loc(id); if (!loc) continue; const w = this.app.frame.toWorld(loc.lat, loc.lon);
-      const spot = this.app.findStandingSpot(w.x + 6, w.z + 6); if (!spot) continue;
+      const spot = this.boardSpot(w); if (!spot) continue;
       const g = new THREE.Group(); const y = this.app.world.surfaceAt(spot.x, spot.z);
       const body = new THREE.Mesh(new THREE.BoxGeometry(1.25, 2.3, 0.22), frame); body.position.y = 1.35; g.add(body);
       for (const side of [1, -1]) { const s = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.375), screen); s.position.set(0, 1.55, side * 0.115); if (side < 0) s.rotation.y = Math.PI; g.add(s); }
