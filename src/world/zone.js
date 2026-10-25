@@ -43,3 +43,20 @@ export function zoneMargin(x, z) {
 
 export const ZONE = Z;
 export const CLOSURES = Z.closures || [];
+
+// ---- the closure lines ----
+// Beyond each closure's barrier line, across a band either side of the road, counts as closed even where that
+// ground is still inside the corridor buffer: so driving or walking round the end of a barrier (over a pavement,
+// verge or garden) stops at the barrier line, the same as hitting it.
+const CL = CLOSURES.map((c) => ({ ...c, half: c.kind === 'foot' ? (c.hw === 'pedestrian' ? 14 : 6) : 16 }));
+/** True when (x, z) is past a closure's barrier line (within `slack` metres before it) and across its band. */
+export function pastClosure(x, z, slack = 0.3) {
+  for (const c of CL) {
+    const dx = x - c.x, dz = z - c.z; if (Math.abs(dx) > 30 || Math.abs(dz) > 30) continue;
+    const d = dx * c.ux + dz * c.uz, l = -dx * c.uz + dz * c.ux;
+    if (d > -slack && d < 18 && Math.abs(l) < c.half) return true;
+  }
+  return false;
+}
+/** Where the player may be: inside the zone and not past a closure. */
+export function playable(x, z, slack) { return inZone(x, z) && !pastClosure(x, z, slack); }

@@ -11,7 +11,7 @@ import { Environment } from './world/environment.js';
 import { makeSea } from './world/landcover.js';
 import { updateMaterials, allMaterials } from './world/materials.js';
 import { TEX } from './world/textures.js';
-import { inZone } from './world/zone.js';
+import { inZone, playable } from './world/zone.js';
 import { Input } from './play/input.js';
 import { Collision } from './play/collision.js';
 import { Player } from './play/player.js';
@@ -195,12 +195,13 @@ class App {
   _zoneSnapshot() {
     if (!this.zoneOn) return null;
     const v = this.driving && this.car ? this.car : null, p = v ? v.pos : this.player.pos;
-    return { v, x: p.x, z: p.z, h: v ? v.heading : 0, inside: inZone(p.x, p.z) };
+    const slack = v ? (VEHICLES[v.type]?.len || 4.2) / 2 + 0.4 : 0.35; // a car's centre stays half a car length back from the line
+    return { v, x: p.x, z: p.z, h: v ? v.heading : 0, slack, inside: playable(p.x, p.z, slack) };
   }
   _keepInZone(b) {
     if (!b || !b.inside) return;
     const v = this.driving && this.car ? this.car : null; if (v !== b.v) return; // got in or out this frame
-    const p = v ? v.pos : this.player.pos; if (inZone(p.x, p.z)) return;
+    const p = v ? v.pos : this.player.pos; if (playable(p.x, p.z, b.slack)) return;
     p.x = b.x; p.z = b.z; if (v) { v.heading = b.h; v.speed = 0; }
     const now = performance.now(); if (!this._zoneToast || now - this._zoneToast > 6000) { this._zoneToast = now; this.ui.toast('This part of Felixstowe is closed for now. The race is in the town centre and on the seafront.'); this.hooks.onZoneEdge?.(); }
   }

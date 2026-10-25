@@ -72,6 +72,10 @@ write({ corridors, shore, closures: [] });
 // ---- 2. closures (using the game's own inZone) ----
 const { inZone } = await import(pathToFileURL(path.join(root, 'src/world/zone.js')).href + '?v=' + Date.now());
 const closures = [];
+// where other car-going ways join each way (not at the way's own ends), for the back-lane rule below
+const joinPts = new Map();
+{ const byNode = new Map(); for (const r of roads.values()) if (r.car && !r.footOnly) (r.nodeIds || []).forEach((n, i) => { if (n == null) return; if (!byNode.has(n)) byNode.set(n, []); byNode.get(n).push([r, i]); });
+  for (const list of byNode.values()) if (list.length > 1) for (const [r, i] of list) { if (!joinPts.has(r.id)) joinPts.set(r.id, []); joinPts.get(r.id).push(r.pts[i]); } }
 const nodeUse = new Map(); for (const r of roads.values()) for (const id of r.nodeIds || []) if (id != null) nodeUse.set(id, (nodeUse.get(id) || 0) + 1);
 for (const r of roads.values()) {
   if (r.tunnel) continue;
@@ -87,6 +91,13 @@ for (const r of roads.values()) {
     // never in the junction the way leaves from: at least 9 m (4-5 samples) up the side road from its inner end,
     // even if that puts the closure a few metres beyond the zone edge (the soft boundary covers the gap)
     const MIN = 6; if (ia && j < MIN) j = Math.min(P.length - 1, MIN); if (!ia && P.length - 1 - j < MIN) j = Math.max(0, P.length - 1 - MIN);
+    // a car-going way that branches off just inside the closure (a back lane, a drive) must stay reachable: move the
+    // closure out until it is at least 8 m (4 samples) beyond any such junction
+    if (!r.footOnly) for (let guard = 0; guard < 20; guard++) {
+      const k = Math.round(j), lo = ia ? Math.max(0, k - 4) : k, hi = ia ? k : Math.min(P.length - 1, k + 4);
+      const hit = joinPts.get(r.id)?.some(([jx, jz]) => { for (let q = lo; q <= hi; q++) if (Math.hypot(P[q][0] - jx, P[q][1] - jz) < 1.2) return true; return false; });
+      if (!hit) break; const nj = ia ? j + 1 : j - 1; if (nj < 0 || nj > P.length - 1) break; j = nj;
+    }
     const x = P[Math.round(j)][0], z = P[Math.round(j)][1];
     { const k2 = Math.round(j), nb = ia ? Math.min(P.length - 1, k2 + 1) : Math.max(0, k2 - 1); let vx = P[nb][0] - x, vz = P[nb][1] - z; const vl = Math.hypot(vx, vz); if (vl > 1e-6) { ux = vx / vl; uz = vz / vl; } } // the way's own direction there
     closures.push({ road: r.id, name: r.name || '', kind: r.footOnly ? 'foot' : r.car ? (r.kind === 'service' || r.kind === 'track' ? 'service' : 'road') : 'foot', hw: r.kind, width: +(r.width || 5).toFixed(1), x: +x.toFixed(2), z: +z.toFixed(2), ux: +ux.toFixed(4), uz: +uz.toFixed(4), bridge: !!r.bridge });

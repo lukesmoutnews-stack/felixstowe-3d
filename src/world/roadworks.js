@@ -139,8 +139,12 @@ export function buildClosures(list, ctx) {
       aframe(c.x - ux * 0.5, c.z - uz * 0.5, -ux, -uz, 'foot', 0.6, 0.45, 0.45);
       continue;
     }
-    const hw = (c.width || 5) / 2, span = hw + (c.kind === 'service' ? 0.6 : side);
-    barrier(c.x, c.z, rx, rz, -span, span, 0, ux, uz);
+    // barriers across the carriageway, both pavements and the verges beyond, out to MAXV either side unless a
+    // building is in the way, so there is no way round the end over a pavement or the grass
+    const hw = (c.width || 5) / 2, MAXV = c.kind === 'service' ? hw + 4 : hw + 9;
+    const reach = (sg) => { let s = hw + 0.5; while (s < MAXV && !(ctx.inBuilding && ctx.inBuilding(c.x + rx * sg * (s + 0.5), c.z + rz * sg * (s + 0.5)))) s += 0.5; return Math.max(hw + Math.max(side, 2.3), s); };
+    const sL = -reach(-1), sR = reach(1);
+    barrier(c.x, c.z, rx, rz, sL, sR, 0, ux, uz);
     aframe(c.x - ux * 0.7, c.z - uz * 0.7, -ux, -uz, 'closed');
     // a line of cones across the carriageway in front of the barrier
     const n = Math.max(2, Math.round((2 * hw - 0.6) / 1.1));

@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import { LocalFrame } from '../src/geo/projection.js';
 import { parseOverpass, buildFeatures } from '../src/geo/osm.js';
 import { CONFIG } from '../src/config.js';
-import { inZone, CLOSURES } from '../src/world/zone.js';
+import { inZone, CLOSURES, playable } from '../src/world/zone.js';
 import { LOCATIONS } from '../src/mayor/content.js';
 
 const frame = new LocalFrame(CONFIG.origin.lat, CONFIG.origin.lon), dir = new URL('../fx/tiles/', import.meta.url);
@@ -43,7 +43,7 @@ function graph(filter) {
     for (let i = 1; i < r.pts.length; i++) {
       const a = r.nodeIds[i - 1] ?? `${r.id}:${i - 1}`, b = r.nodeIds[i] ?? `${r.id}:${i}`;
       const m = [(r.pts[i - 1][0] + r.pts[i][0]) / 2, (r.pts[i - 1][1] + r.pts[i][1]) / 2];
-      if (!inZone(r.pts[i - 1][0], r.pts[i - 1][1]) || !inZone(r.pts[i][0], r.pts[i][1]) || !inZone(m[0], m[1])) continue;
+      const sl = filter.car ? 2.8 : 0.35; if (!playable(r.pts[i - 1][0], r.pts[i - 1][1], sl) || !playable(r.pts[i][0], r.pts[i][1], sl) || !playable(m[0], m[1], sl)) continue;
       add(a, b); if (!(r.oneway && filter.car)) add(b, a);
     }
   }
@@ -60,6 +60,18 @@ for (const [label, filter] of [['car', car], ['foot', foot]]) {
     const n = nearestNode(filter, ...W(id)); ok(n.d < 90 && seen.has(n.id), `${label}: Triangle -> ${id} not connected inside the zone (nearest node ${Math.round(n.d)} m)`);
   }
 }
+
+// 2b. no open road is cut by a closure's blocked band: every car road segment that is inside the zone along its
+//     whole length (an open road, not a stub up to a closure) stays playable, with a car's slack
+{ let cut = 0; const seen = [];
+  for (const r of roads.values()) { if (!car(r)) continue; const P = densify(r.pts, 3); if (r.kind === 'service' && P.length < 8) continue; // a driveway stub off a closed road
+    // split into runs of in-zone points; a run that touches a crossing is a stub to a closure, so skip runs at the ends of a crossing
+    let run = []; const flush = (endsAtEdge) => { if (run.length > 2 && !endsAtEdge.some(Boolean)) for (const p of run) if (!playable(p[0], p[1], 2.8)) { cut++; if (seen.length < 5) seen.push(`${r.name || r.id} ${p.map(Math.round)}`); } run = []; };
+    let startEdge = false;
+    for (let i = 0; i < P.length; i++) { const inside = inZone(P[i][0], P[i][1]); if (inside) { if (!run.length) startEdge = i > 0; run.push(P[i]); } else if (run.length) flush([startEdge, true]); }
+    if (run.length) flush([startEdge, false]);
+  }
+  ok(cut === 0, `open roads cut by a closure band at ${cut} points: ${seen.join('; ')}`); }
 
 // 3. town-centre and seafront locations are inside; the rest are outside
 for (const l of LOCATIONS) { const [x, z] = W(l.id), want = /Town centre|^Seafront/.test(l.area); ok(inZone(x, z) === want, `${l.id} (${l.area}) inZone=${inZone(x, z)}`); }

@@ -327,7 +327,7 @@ export class World extends EventTarget {
     const here = CLOSURES.filter((c) => inTile(c.x, c.z));
     if (here.length) {
       const byId = new Map(f.roads.map((rd) => [rd.id, rd]));
-      const rw = buildClosures(here, { surfaceAt: (x, z) => this.surfaceAt(x, z), roadById: (id) => byId.get(id) });
+      const rw = buildClosures(here, { surfaceAt: (x, z) => this.surfaceAt(x, z), roadById: (id) => byId.get(id), inBuilding: (x, z) => [...this.buildingGrid.query(x - 0.1, z - 0.1, x + 0.1, z + 0.1)].some((it) => pointInRing(x, z, it.outer)) });
       if (rw) { bridgeMeshes.push(...rw.meshes); for (const c of rw.colliders) this._addPrimitive(tile, c); tile.closures = { count: rw.count, cones: rw.cones }; }
     }
     if (this.gardenPlan && inTile(...this.gardenPlan.c)) {
