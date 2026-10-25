@@ -10,6 +10,7 @@ import * as CS from './character.js';
 import * as TS from './talk-screens.js';
 import { CheckinFlow } from './checkin-ui.js';
 import { Admin } from './admin.js';
+import { inClosedArea, CLOSED_TITLE } from './closed-areas.js';
 
 const TABS = ['home', 'explore', 'missions', 'news', 'leaderboard', 'profile'];
 
@@ -206,8 +207,9 @@ class MayorApp {
         const r = g.accept(id); if (!r.ok) { this.afterAction({ found: r.found }); this.toast(esc(r.message), 'bad'); this.refreshSheet(); break; }
         this.toast(`Mission accepted: <b>${esc(g.mission(id).title)}</b>`, 'good'); this.afterAction(r); this.refreshSheet(); if (!this.sheetOpen) this.render(); break;
       }
-      case 'guide': this.closeSheet(true); this.layer?.setTarget(id); this.go('explore'); this.layer?.setTarget(id); break;
-      case 'travel': this.closeSheet(true); this.go('explore'); this.toast('Travelling to the area…'); this.whenLayer(() => this.layer.travelNear(id)); break;
+      case 'reveal': { const r = g.discover(id); if (r) this.toast(`Revealed: ${esc(g.loc(id).name)}`); this.openLocation(id); break; }
+      case 'guide': if (inClosedArea(g.loc(id))) { this.toast(CLOSED_TITLE + '.'); break; } this.closeSheet(true); this.layer?.setTarget(id); this.go('explore'); this.layer?.setTarget(id); break;
+      case 'travel': if (inClosedArea(g.loc(id))) { this.toast(CLOSED_TITLE + '.'); break; } this.closeSheet(true); this.go('explore'); this.toast('Travelling to the area…'); this.whenLayer(() => this.layer.travelNear(id)); break;
       case 'checkin': this.checkin.open({ locationId: b.dataset.loc || null, eventId: b.dataset.event || null }); break;
       case 'simulate': this.checkin.simulate(b.dataset.type, id); break;
       case 'checkin-photo': document.getElementById('qr-file')?.click(); break;

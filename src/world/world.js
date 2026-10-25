@@ -13,6 +13,8 @@ import { buildRoads, buildRail } from './roads.js';
 import { RoadNetwork } from './road-surface.js';
 import { promenadeWays, buildSeafrontWall, isSeafrontShelter, buildShelter } from './seafront.js';
 import { FRONTAGES, FRONTAGE_AREAS, SPLITS } from '../content/frontages.js';
+import { CLOSURES, inZone } from './zone.js';
+import { buildClosures } from './roadworks.js';
 import { buildFrontageDetails, buildAreaFrontage } from './frontage-details.js';
 import { profileNetwork, buildBridge, buildRamp, BRIDGE } from './bridges.js';
 import { buildGround, buildAreas } from './landcover.js';
@@ -321,6 +323,13 @@ export class World extends EventTarget {
       const fa = buildAreaFrontage(a, { nearestRoad: ctx.nearestRoad, ground: this.ground, roads: f.roads }); if (fa) { bridgeMeshes.push(fa.group); for (const cl of fa.colliders) this._addPrimitive(tile, cl); }
     }
     if (seaWall) { bridgeMeshes.push(...seaWall.meshes); for (const c of seaWall.colliders) this._addPrimitive(tile, c); tile.gates = seaWall.gates; }
+    // road closures at the edge of the playable zone (world/zone.js, world/roadworks.js)
+    const here = CLOSURES.filter((c) => inTile(c.x, c.z));
+    if (here.length) {
+      const byId = new Map(f.roads.map((rd) => [rd.id, rd]));
+      const rw = buildClosures(here, { surfaceAt: (x, z) => this.surfaceAt(x, z), roadById: (id) => byId.get(id) });
+      if (rw) { bridgeMeshes.push(...rw.meshes); for (const c of rw.colliders) this._addPrimitive(tile, c); tile.closures = { count: rw.count, cones: rw.cones }; }
+    }
     if (this.gardenPlan && inTile(...this.gardenPlan.c)) {
       const gd = buildTownHallGardens(this.gardenPlan, ctx);
       bridgeMeshes.push(...gd.meshes); for (const c of gd.colliders) this._addPrimitive(tile, c);

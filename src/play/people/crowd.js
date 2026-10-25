@@ -4,6 +4,7 @@
 // The active count is capped for performance; people far from the player are culled.
 
 import * as THREE from 'three';
+import { inZone } from '../../world/zone.js';
 import { buildHumanoid, animateHumanoid, SKIN, HAIR, HAIR_COLOURS } from './humanoid.js';
 
 const RADIUS = 0.3, WALK = 1.25;
@@ -36,6 +37,7 @@ export class Crowd {
   /** Is this a sensible place to stand or walk? (walkable, not in a building, not on a carriageway) */
   ok(x, z, y = null) {
     const W = this.app.world;
+    if (this.app.zoneOn && !inZone(x, z)) return false; // passers-by stay in the playable zone
     if (!W.isWalkable(x, z, y)) return false;
     if (this.app.collision.insideBuilding(x, z)) return false;
     const r = W.nearestRoad(x, z, 12, (rd) => rd.car && !rd.footOnly);

@@ -423,3 +423,4 @@ td input { min-height: 36px !important; width: 80px !important; padding: 4px 8px
 .inf-row.ok .v { color: var(--good); }
 .people { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; } .people li { display: flex; flex-direction: column; padding: 8px 10px; border-radius: 12px; background: var(--cream); border: 1px solid var(--line); } .people small { color: var(--muted); font-size: 12px; }
 @media (max-width: 420px) { .inf-row { grid-template-columns: 1fr auto; } .inf-row .bar { grid-column: 1 / -1; grid-row: 2; } }
+.closed-note { background: #fff1e6; border: 1px solid #f0b48a; border-left: 4px solid #e2531b; border-radius: 12px; padding: 10px 12px; font-size: 13.5px; color: var(--navy); }

@@ -6,6 +6,7 @@ import { repStrip, repCard, storiesList, guidelines } from './rep-screens.js';
 import { homeNewsCard } from './news-screens.js';
 import { influenceCard } from './talk-screens.js';
 import { VEHICLES } from '../play/vehicles/specs.js';
+import { inClosedArea, CLOSED_TITLE, CLOSED_NOTE } from './closed-areas.js';
 
 // Garage: earned by rank, never bought. Paint is cosmetic.
 const GARAGE = [['hatchback', 'newcomer'], ['family', 'explorer'], ['van', 'explorer'], ['suv', 'champion'], ['parcel', 'champion'], ['saloon', 'champion'], ['sports', 'advocate'], ['boxtruck', 'advocate'], ['flatbed', 'advocate'], ['bus', 'candidate'], ['doubledecker', 'candidate'], ['artic', 'candidate']];
@@ -153,6 +154,12 @@ export function locationSheet(app, id) {
       <p class="fine">${esc(l.story)}</p>
       <div class="actions"><button class="btn primary" data-act="guide" data-id="${id}">${icon('guide')}Guide me there in 3D</button><button class="btn" data-act="travel" data-id="${id}">Travel to the area</button></div>`;
   }
+  if (st === 'undiscovered' && inClosedArea(l)) {
+    return `<p class="eyebrow">Undiscovered place \u00b7 ${esc(l.area)}</p><h2>Something is waiting in ${esc(l.area)}</h2>
+      ${stepper(st)}
+      <p class="closed-note"><b>${CLOSED_TITLE}.</b> ${CLOSED_NOTE}</p>
+      <div class="actions"><button class="btn primary" data-act="reveal" data-id="${id}">${icon('search')}Reveal it here</button></div>`;
+  }
   if (st === 'undiscovered') {
     return `<p class="eyebrow">Undiscovered place</p><h2>Something is waiting on ${esc(l.street || l.area)}</h2>
       ${stepper(st)}
@@ -186,7 +193,7 @@ export function locationSheet(app, id) {
       <button class="btn demo" data-act="simulate" data-type="location" data-id="${id}">Simulated check-in (demo)</button></div>
       <p class="fine">The simulated check-in exists only to test the game without travelling. It is recorded as simulated and never counts as proof of a real visit.</p>
     </div>
-    <div class="actions"><button class="btn" data-act="guide" data-id="${id}">${icon('guide')}Show in 3D</button></div>
+    ${inClosedArea(l) ? `<p class="closed-note"><b>${CLOSED_TITLE}.</b> The roads there are closed in the 3D town; real-world visits still count.</p>` : `<div class="actions"><button class="btn" data-act="guide" data-id="${id}">${icon('guide')}Show in 3D</button></div>`}
     ${directions}`;
 }
 function stepper(st) {

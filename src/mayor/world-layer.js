@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { BRAND } from './news.js';
 import { DEFAULT_LOOK, stageLook } from '../play/people/humanoid.js';
 import { RESIDENTS } from './residents.js';
+import { inClosedArea, CLOSED_TITLE } from './closed-areas.js';
 import { GULL } from './news-screens.js';
 
 // In-world Felixstowe News screens (fictional game headlines), placed on pavements near busy spots.
@@ -53,7 +54,8 @@ export class WorldLayer {
       const lab = this.labelTexture(loc.name); const lm = new THREE.SpriteMaterial({ map: lab.t, depthTest: false, transparent: true, sizeAttenuation: false });
       const label = new THREE.Sprite(lm); label.center.set(0.5, 1.15); label.renderOrder = 1001; label.visible = false; label.userData.aspect = lab.aspect;
       this.group.add(sprite, label);
-      this.pins.set(loc.id, { loc, x: w.x, z: w.z, sprite, label, status: null, yBase: null });
+      const closed = inClosedArea(loc); if (closed) mat.opacity = 0.55; // beyond the road closures
+      this.pins.set(loc.id, { loc, x: w.x, z: w.z, sprite, label, status: null, yBase: null, closed });
     }
     this.refresh();
   }
@@ -178,7 +180,7 @@ export class WorldLayer {
   distanceTo(id) { const p = this.pins.get(id); if (!p) return null; const pp = this.app.player.pos; return Math.hypot(p.x - pp.x, p.z - pp.z); }
 
   // ---------- guide arrow ----------
-  setTarget(id) { this.target = id; this.updateGuide(); }
+  setTarget(id) { if (this.pins.get(id)?.closed) { this.ui.toast(CLOSED_TITLE + '.'); return; } this.target = id; this.updateGuide(); }
   updateGuide() {
     const el = document.getElementById('guide'); if (!el) return;
     const p = this.target && this.pins.get(this.target);
@@ -195,7 +197,7 @@ export class WorldLayer {
   // ---------- camera helpers ----------
   toggleView() { const r = this.app.rig; if (r.mode === 'overview') { r.mode = 'third'; r.pitch = -0.3; } else { r.mode = 'overview'; r.pitch = -1.15; r.overDist = 320; } r.transition = 1; return r.mode; }
   async travelNear(id, metres = 110) {
-    const p = this.pins.get(id); if (!p) return;
+    const p = this.pins.get(id); if (!p) return; if (p.closed) { this.ui.toast(CLOSED_TITLE + '.'); return; }
     const pp = this.app.player.pos; let dx = pp.x - p.x, dz = pp.z - p.z; const L = Math.hypot(dx, dz) || 1; dx /= L; dz /= L;
     await this.app.travelTo(p.x + dx * metres, p.z + dz * metres);
     this.app.rig.yaw = Math.atan2(-(p.x - this.app.player.pos.x), -(p.z - this.app.player.pos.z)); this.app.rig.initialised = false;

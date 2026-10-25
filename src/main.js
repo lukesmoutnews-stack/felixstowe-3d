@@ -11,6 +11,7 @@ import { Environment } from './world/environment.js';
 import { makeSea } from './world/landcover.js';
 import { updateMaterials, allMaterials } from './world/materials.js';
 import { TEX } from './world/textures.js';
+import { inZone } from './world/zone.js';
 import { Input } from './play/input.js';
 import { Collision } from './play/collision.js';
 import { Player } from './play/player.js';
@@ -36,6 +37,7 @@ class App {
     if (params.get('quality') === 'low') Object.assign(this.settings, { shadows: 'off', viewDistance: 900, pixelRatio: 1, proceduralTrees: false }); if (params.get('quality') === 'low') { TEX.low = true; CONFIG.streamRadius = 650; CONFIG.unloadRadius = 1400; } // phones: fewer 1 km tiles in memory (view distance is 900 m)
     this.hooks = window.F3D_HOOKS || {};
     this.fixture = params.get('fixture');
+    this.zoneOn = !this.fixture && !params.has('nozone') && /^(data|fx)?\/?$/.test(params.get('data') || ''); // Felixstowe data only (data/ or the published fx/), not test regions
     let origin = CONFIG.origin, spawn = CONFIG.spawn;
     // Data directory: 'data/' (Felixstowe) or another prepared region via ?data=<dir>/ (tests).
     this.dataDir = (params.get('data') || 'data/').replace(/\/?$/, '/');
@@ -186,6 +188,22 @@ class App {
     if (id === 'map') this.ui.toggle('map'); else if (id === 'journal') this.ui.toggle('journal');
     else if (id === 'menu') this.ui.toggle('menu'); else if (id === 'view') { this.rig.cycle(); this.ui.toast('View: ' + { third: 'third person', first: 'first person', overview: 'overview' }[this.rig.mode]); }
   }
+  // ---------- playable zone (world/zone.js) ----------
+  // Roads out of the town centre and seafront are physically closed (cones, signs, barriers). Between the closures
+  // (back gardens, fields, the beach) this turns the player back: a step from inside the zone to outside is undone.
+  // Only crossings are stopped, so a teleport or a test placement outside the zone is not trapped.
+  _zoneSnapshot() {
+    if (!this.zoneOn) return null;
+    const v = this.driving && this.car ? this.car : null, p = v ? v.pos : this.player.pos;
+    return { v, x: p.x, z: p.z, h: v ? v.heading : 0, inside: inZone(p.x, p.z) };
+  }
+  _keepInZone(b) {
+    if (!b || !b.inside) return;
+    const v = this.driving && this.car ? this.car : null; if (v !== b.v) return; // got in or out this frame
+    const p = v ? v.pos : this.player.pos; if (inZone(p.x, p.z)) return;
+    p.x = b.x; p.z = b.z; if (v) { v.heading = b.h; v.speed = 0; }
+    const now = performance.now(); if (!this._zoneToast || now - this._zoneToast > 6000) { this._zoneToast = now; this.ui.toast('This part of Felixstowe is closed for now. The race is in the town centre and on the seafront.'); this.hooks.onZoneEdge?.(); }
+  }
   focusPos() { return this.driving && this.car ? this.car.pos : this.player.pos; }
   focusHeading() { return this.driving && this.car ? this.car.heading : this.player.heading; }
 
@@ -305,9 +323,11 @@ class App {
       const peds = [...(this.driving ? [] : [this.player.pos]), ...(this.npcPositions?.() || [])];
       this.fleet.update(dt, ctrl, this.focusPos(), peds);
       this.crowd.update(dt, this.focusPos());
+      const before = this._zoneSnapshot();
       if (this.transit) this._updateTransit(dt);
       else if (this.driving && this.car) { const [sx, sz] = this.car.local(this.car.seat.x, this.car.seat.z); this.player.pos.set(sx, this.car.pos.y, sz); }
       else this.player.update(dt, inp, this.rig.moveYaw, active);
+      this._keepInZone(before);
       const t = this.driving && this.car ? this.car.pos : this.player.pos;
       if (active) inp.padLook(dt);
       this.rig.update(dt, inp, t, { driving: this.driving && !!this.car, heading: this.car?.heading || 0, speed: this.car?.speed || 0, vehicle: this.driving ? this.car : null });
@@ -454,6 +474,7 @@ class App {
       setView: (mode, yaw, pitch, dist) => { app.rig.mode = mode; if (yaw != null) app.rig.yaw = yaw; if (pitch != null) app.rig.pitch = pitch; if (dist != null) { if (mode === 'overview') app.rig.overDist = dist; else app.rig.dist = dist; } app.rig.initialised = false; },
       setTime: (h) => { app.settings.timeOfDay = h; app.applySettings(); },
       /** Run game logic for `seconds` at 30 Hz without rendering (rendering is paused meanwhile). */
+      zone: () => ({ on: !!app.zoneOn, inside: inZone(app.focusPos().x, app.focusPos().z), toastAt: app._zoneToast || null }),
       advance: (seconds) => { app.holdSim = true; const n = Math.round(seconds * 30); for (let i = 0; i < n; i++) app.update(1 / 30); app.holdSim = false; },
       /** Render one frame and time it (ms). */
       renderTime: (n = 5) => { const t = performance.now(); for (let i = 0; i < n; i++) app.renderer.render(app.scene, app.camera); app.renderer.getContext().finish(); return (performance.now() - t) / n; },

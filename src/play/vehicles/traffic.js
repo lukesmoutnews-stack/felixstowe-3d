@@ -8,12 +8,19 @@
 // is too low for its height.
 
 import { VEHICLES } from './specs.js';
+import { inZone } from '../../world/zone.js';
 import { Vehicle } from './vehicle.js';
 
 const LIMIT = { motorway: 31, trunk: 26, primary: 13.4, secondary: 13.4, tertiary: 13.4, unclassified: 11, residential: 8.9, living_street: 4.5, service: 6.7, road: 8.9,
   motorway_link: 18, trunk_link: 18, primary_link: 13, secondary_link: 13, tertiary_link: 11 }; // m/s (20/30 mph in town, 60 on the A14)
 const MIX = [['hatchback', 20], ['saloon', 14], ['family', 12], ['suv', 10], ['taxi', 4], ['sports', 2], ['van', 10], ['parcel', 5], ['boxtruck', 4], ['flatbed', 2], ['refuse', 1], ['roadworks', 1], ['bus', 4], ['doubledecker', 3], ['artic', 4]];
 const BIG_ROADS = new Set(['trunk', 'primary', 'secondary', 'trunk_link', 'primary_link', 'motorway', 'motorway_link']);
+
+/** Is test(x, z) true every `step` metres along a polyline (not just at its vertices)? */
+function alongAll(pts, step, test) {
+  for (let k = 0; k < pts.length; k++) { if (!test(pts[k][0], pts[k][1])) return false; if (k === 0) continue; const a = pts[k - 1], b = pts[k], n = Math.floor(Math.hypot(b[0] - a[0], b[1] - a[1]) / step); for (let j = 1; j < n; j++) if (!test(a[0] + (b[0] - a[0]) * j / n, a[1] + (b[1] - a[1]) * j / n)) return false; }
+  return true;
+}
 
 export class RoadGraph {
   constructor(world) { this.world = world; this.nodes = new Map(); this.edges = []; this.wayIds = new Set(); }
@@ -30,6 +37,7 @@ export class RoadGraph {
         if (i < w.nodeIds.length - 1 && (w.nodeIds[i] == null || deg.get(w.nodeIds[i]) <= 2)) continue;
         const pts = w.pts.slice(start, i + 1); if (pts.length < 2) { start = i; continue; }
         let len = 0; const cum = [0]; for (let k = 1; k < pts.length; k++) { len += Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]); cum.push(len); }
+        if (this.keep && !alongAll(pts, 3, this.keep)) { start = i; continue; } // outside the playable zone, or the stub up to a closure
         const a = node(w.nodeIds[start], pts[0]), b = node(w.nodeIds[i], pts[pts.length - 1]);
         const e = { id: this.edges.length, way: w, a, b, pts, cum, len, oneway: w.oneway, limit: LIMIT[w.kind] || 8.9, big: BIG_ROADS.has(w.kind), headroom: Infinity };
         this.edges.push(e); a.out.push({ e, dir: 1 }); if (!w.oneway) b.out.push({ e, dir: -1 });
@@ -87,7 +95,7 @@ export class Traffic {
   }
   update(dt, focus, pedestrians = []) {
     if (!this.enabled) return;
-    if (this.dirty) { this.graph.rebuild(); this.dirty = false; for (const a of this.agents.slice()) if (!this.graph.wayIds.has(a.e.way.id)) this.despawn(a); }
+    if (this.dirty) { this.graph.keep = this.app.zoneOn ? inZone : null; this.graph.rebuild(); this.dirty = false; for (const a of this.agents.slice()) if (!this.graph.wayIds.has(a.e.way.id)) this.despawn(a); }
     this.timer += dt;
     if (this.timer > 0.6) { this.timer = 0; if (this.agents.length < this.max) this.spawnOne(focus); for (const a of this.agents.slice()) if (Math.hypot(a.v.pos.x - focus.x, a.v.pos.z - focus.z) > 330) this.despawn(a); }
     const all = this.fleet.vehicles;
