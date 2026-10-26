@@ -62,3 +62,18 @@ are what the photos show on the day they were taken.
 | Photo | What it shows |
 |---|---|
 | g-corner-bank-park-road-1, g-corner-bank-park-road-2 | Three-storey interwar brick corner building with stone banding and a stone entrance surround, pyramidal clay-tile roof, tall narrow windows on the corner, low single-storey brick wing with white pilasters and sash windows along Park Road; lime trees in front. The first photo of the group repeats the Conkers/1930s block already saved. |
+
+## The Triangle: the central island between Hamilton Road and the A1021 (h-*.png)
+
+| Photo (file name after `h-`) | What it shows |
+|---|---|
+| triangle-from-hamilton-south, triangle-canopy-van | Raised planted island with a low brick retaining wall, paved walkway, benches and bins, mature trees, a white tensile shelter on four navy posts, navy railings along the kerb of the A1021 side |
+| triangle-canopy-palace-behind, triangle-canopy-gsk | The shelter in a paved circular seating area with curved low walls and wooden benches. Palace Cinema brick block with its roof railing behind, GSK News & Booze terrace beyond. Navy information board, bollards, lamp posts (navy, with hanging baskets) |
+| triangle-palace-poundland-tesco, triangle-evolved-tesco-canopy, triangle-tesco-block-palms | Planting beds (lavender, grasses), cordylines and palms, navy lamp posts with flower baskets. The 1960s Poundland/Tesco Express block: three storeys, red-brick bands under white window strips, a blue fascia over the shops. Edwardian terrace with shaped gable (Evolved) next to it |
+| triangle-railings-a1021 | Navy guard railing with square posts along the island edge, A1021 road marking |
+
+## Palace Cinema rear from the car park (i-*.png)
+
+| Photo | What it shows |
+|---|---|
+| i-palace-rear-led-tower, i-palace-rear-fire-escape-canopy, i-palace-rear-auditorium-wall | Auditorium is a huge weathered cream/white render box with shallow vertical pilasters, a brick course under the roofline, a rounded white ventilation duct, and a satellite dish. A low single-storey annexe (cream, brick-capped) has blue steel doors. Steel-framed fire escape with stairs beside a white tensile canopy. Narrow brick tower (white cap) at the Hamilton Road end carries the LED screen. Corrugated roof visible behind. |

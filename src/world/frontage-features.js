@@ -141,17 +141,15 @@ function ledScreen() { // an abstract bright advert (not a copy of any real one)
  */
 export function cinemaSide(K) {
   const { P, box, G, L, H } = K, block = Math.min(0.46 * L, 15);
-  // single-storey white annexe along the whole pavement edge, brick parapet on top, red-framed poster boxes
-  const AH = 4.3;
-  box('gw', L / 2, 0.06, AH / 2, L / 2, 0.08, AH / 2);
-  box('brick', L / 2, 0.1, AH + 0.35, L / 2, 0.14, 0.35);
-  for (let s = block + 1.4; s < L - 2.2; s += 3.0) {
-    box('red', s, 0.15, 2.0, 0.78, 0.02, 0.62); box('white', s, 0.17, 2.0, 0.7, 0.02, 0.54);
-  }
-  // rear: bare brick for the first stretch behind the block, cream render above; cream all the way up beyond that
-  const nb = Math.min(block + 5.5, L);
-  box('gw', nb + (L - nb) / 2, 0.07, AH + 0.7 + (H - AH - 0.7) / 2, (L - nb) / 2, 0.08, (H - AH - 0.7) / 2);
-  box('gw', block + (nb - block) / 2, 0.07, 0.62 * H + (H - 0.62 * H) / 2, (nb - block) / 2, 0.08, (H - 0.62 * H) / 2);
+  // rear auditorium: one huge weathered cream render box with shallow pilasters, a brick course under the roofline,
+  // and a low brick-capped annexe along the pavement with blue steel doors (as photographed from the car park)
+  const AH = 4.0, aud0 = block;
+  box('gw', aud0 + (L - aud0) / 2, 0.07, H / 2, (L - aud0) / 2, 0.08, H / 2);
+  box('brick', aud0 + (L - aud0) / 2, 0.16, H - 0.35, (L - aud0) / 2, 0.1, 0.3);              // brick course under the roof
+  box('gw', L / 2, 0.14, AH / 2, L / 2, 0.14, AH / 2);                                         // annexe, projects a little
+  box('brick', L / 2, 0.2, AH + 0.12, L / 2, 0.16, 0.12);                                      // its brick cap
+  for (let q = aud0 + 4; q < L - 3; q += 7.5) box('gw', q, 0.2, (H + AH) / 2, 0.35, 0.12, (H - AH) / 2);   // pilasters
+  for (const q of [aud0 + 3, aud0 + 12]) if (q < L - 1) { box('blue', q, 0.3, 1.2, 0.8, 0.04, 1.2); box('black', q, 0.33, 1.2, 0.02, 0.02, 1.2); }
   box('gw', block, 0.1, H / 2, 0.14, 0.12, H / 2);                                           // pilaster where block meets tower
   const sw = block * 0.8, sx = block / 2, y0 = H - 9.2, y1 = H - 3.2;                          // LED screen
   box('black', sx, 0.1, (y0 + y1) / 2, sw / 2 + 0.12, 0.1, (y1 - y0) / 2 + 0.12);
