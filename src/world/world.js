@@ -21,7 +21,8 @@ import { profileNetwork, buildBridge, buildRamp, BRIDGE } from './bridges.js';
 import { buildGround, buildAreas } from './landcover.js';
 import { placeTrees, buildTreeMeshes } from './vegetation.js';
 import { buildProps, buildBarriers, buildPiers } from './furniture.js';
-import { isPierBuilding, buildPierBuilding, pierStepsGap, pierStepsZone } from './pier-building.js';
+import { isPierBuilding, buildPierBuilding, pierStepsGap, pierStepsZone, pierFrame } from './pier-building.js';
+import { forecourtPlan, buildForecourt, FORECOURT_ID, FORECOURT_ROAD_EDGE } from './forecourt.js';
 import { isFishDish, buildFishDish } from './fish-dish.js';
 import { isRegal, buildRegal } from './regal.js';
 import { isTownHall, buildTownHall } from './town-hall.js';
@@ -336,6 +337,8 @@ export class World extends EventTarget {
       if (!FRONTAGE_AREAS[a.id]) continue; const c = a.outer.reduce((s, p) => [s[0] + p[0] / a.outer.length, s[1] + p[1] / a.outer.length], [0, 0]); if (!inTile(c[0], c[1])) continue;
       const fa = buildAreaFrontage(a, { nearestRoad: ctx.nearestRoad, ground: this.ground, roads: f.roads }); if (fa) { bridgeMeshes.push(fa.group); for (const cl of fa.colliders) this._addPrimitive(tile, cl); }
     }
+    { const pb3 = ownBuildings.find((b) => isPierBuilding(b) && !b.isPart), fc = f.areas.find((a) => a.id === FORECOURT_ID);
+      if (pb3 && fc) { const fo = buildForecourt(forecourtPlan(fc.outer, pierFrame(pb3, this.ground)), this.ground, FORECOURT_ROAD_EDGE); bridgeMeshes.push(...fo.meshes); for (const c of fo.colliders) this._addPrimitive(tile, c); tile.surfaces.push(...fo.surfaces); this.surfaces.push(...fo.surfaces); } }
     if (pierBight) { const pbo = buildPierBight(pierBight, this.ground); bridgeMeshes.push(...pbo.meshes); for (const c of pbo.colliders) this._addPrimitive(tile, c); }
     if (seaWall) { bridgeMeshes.push(...seaWall.meshes); for (const c of seaWall.colliders) this._addPrimitive(tile, c); tile.gates = seaWall.gates; }
     // road closures at the edge of the playable zone (world/zone.js, world/roadworks.js)
