@@ -15,7 +15,7 @@ export function ukHour(ts) { return Number(new Intl.DateTimeFormat('en-GB', { ti
 
 export const STATUS_LABEL = {
   undiscovered: 'Undiscovered', discovered: 'Discovered', accepted: 'Mission accepted',
-  visit_required: 'Discovered — real-world visit required', visited: 'Visited', completed: 'Mission completed',
+  visit_required: 'Discovered — visit it in the 3D town', visited: 'Visited', completed: 'Mission completed',
 };
 
 export function newPlayerState() {
@@ -108,7 +108,7 @@ export class Game {
     const [k, a, b] = step.split(':'); const n = (id) => this.loc(id)?.name || id;
     const hidden = m?.hideTarget && !this.stepDone(step);
     if (k === 'discover') return `Find ${n(a)} in the 3D town`;
-    if (k === 'visit') return hidden ? 'Check in at the place the riddle describes' : `Visit ${n(a)} in person and scan its QR code`;
+    if (k === 'visit') return hidden ? 'Visit the place the riddle describes' : `Visit ${n(a)} in the 3D town`;
     if (k === 'stop') return `${n(a)}: check in, or answer the stop question`;
     if (k === 'visitAny') return `Check in at ${a} different ${b}s (${this.visitedIds(b).size}/${a})`;
     if (k === 'quiz') return `Pass the ${QUIZZES[a]?.title || a}`;
@@ -174,11 +174,11 @@ export class Game {
     const c = r.checkin, rewards = [];
     if (c.type === 'location') {
       const l = this.loc(c.target);
-      if (!this.p.discovered[c.target]) { this.p.discovered[c.target] = this.now(); } // a real visit also discovers it (no discovery XP)
+      if (!this.p.discovered[c.target]) { this.p.discovered[c.target] = this.now(); } // a visit also discovers it (no discovery XP)
       const xp = l.kind === 'business' ? this.config.xp.businessVisit : this.config.xp.landmarkVisit;
-      const g = this._grant('visit:' + c.target, xp, `Verified visit: ${l.name}`); if (g) rewards.push(g);
-      this._feed(`${c.simulated ? 'Simulated check-in' : 'Checked in'} at ${l.name}.`);
-    } else { const e = EVENTS.find((x) => x.id === c.target); this._feed(`${c.simulated ? 'Simulated check-in' : 'Checked in'} at ${e.name}.`); }
+      const g = this._grant('visit:' + c.target, xp, `Visited ${l.name}`); if (g) rewards.push(g);
+      this._feed(`Visited ${l.name}.`);
+    } else { const e = EVENTS.find((x) => x.id === c.target); this._feed(`Joined in at ${e.name}.`); }
     const repApplied = this.repOnCheckin(c, r.first); this.influenceOnCheckin(c, r.first);
     if (this.myCheckins().length === 1) this.publish('first_checkin', { place: c.type === 'event' ? this.eventName(c.target) : this.loc(c.target)?.name, link: { kind: 'loc', id: c.target } });
     const out = this._after(rewards); this.save();

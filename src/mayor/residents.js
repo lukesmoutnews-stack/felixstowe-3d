@@ -24,8 +24,8 @@ export const RESIDENTS = [
         { label: 'I mean it. Small shops are the heart of a town.', reply: 'We’ll see. Words are cheap; sourdough isn’t.', eff: { business: 3 }, next: 'ask' },
         { label: 'Prices are a bit steep, though.', reply: 'Butter costs what butter costs. Good luck with your campaign.', mood: 'disappointed', eff: { business: -4 }, end: true },
       ] },
-      ask: { say: 'Tell you what. Pop in properly some time, scan the code by the till, and I’ll know you’re not all talk.', mood: 'neutral', choices: [
-        { label: 'I promise I’ll visit this week.', promise: { id: 'maggie_visit', text: 'Visit The Kittiwake Bakehouse in person (QR check-in)', check: 'visit:kittiwake', days: 7, keep: { business: 8 }, broke: { business: -6 } }, reply: 'Hold you to that.', mood: 'happy', end: true },
+      ask: { say: 'Tell you what. Pop in properly some time, have a proper look round, and I’ll know you’re not all talk.', mood: 'neutral', choices: [
+        { label: 'I promise I’ll visit this week.', promise: { id: 'maggie_visit', text: 'Visit The Kittiwake Bakehouse in the 3D town', check: 'visit:kittiwake', days: 7, keep: { business: 8 }, broke: { business: -6 } }, reply: 'Hold you to that.', mood: 'happy', end: true },
         { label: 'I can’t promise, but I’ll try.', reply: 'Honest, at least.', eff: { business: 1 }, end: true },
       ] },
       again: { say: 'Busy morning. The queue was out the door before the gulls were up.', mood: 'neutral', choices: [
@@ -55,7 +55,7 @@ export const RESIDENTS = [
         { label: 'Tell me what it was like here in the old days.', reply: 'The pier used to go half a mile out, with a little electric tram. Look it up.', discover: 'pier', eff: { longstanding: 3 }, set: ['bill_story'], end: true },
       ] },
       ask: { say: 'Up at the Town Hall Garden there’s a proper shelter now. Mr. Felixstowe’s, they call it. Go and sit in it. Then tell me I’m wrong.', mood: 'neutral', choices: [
-        { label: 'I promise I’ll go and see it.', promise: { id: 'bill_shelter', text: 'Visit the Town Hall Garden and Mr. Felixstowe’s Shelter (QR check-in)', check: 'visit:town_hall_garden', days: 10, keep: { longstanding: 8 }, broke: { longstanding: -5 } }, reply: 'We’ll see.', end: true },
+        { label: 'I promise I’ll go and see it.', promise: { id: 'bill_shelter', text: 'Visit the Town Hall Garden and Mr. Felixstowe’s Shelter in the 3D town', check: 'visit:town_hall_garden', days: 10, keep: { longstanding: 8 }, broke: { longstanding: -5 } }, reply: 'We’ll see.', end: true },
         { label: 'Maybe another time.', end: true },
       ] },
       again: { say: 'Still here, then.', mood: 'neutral', choices: [{ label: 'Still here, Bill.', eff: { longstanding: 1 }, end: true }] },

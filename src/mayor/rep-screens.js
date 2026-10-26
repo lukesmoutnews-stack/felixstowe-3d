@@ -109,8 +109,8 @@ export function reportSheet() {
 export function guidelines() {
   return `<details class="card guidelines"><summary>Play the town, respect the town</summary><ul>
     <li><b>Mischief stays on screen.</b> The roadsters, envelopes and pranks are part of the story. Never try any of it for real.</li>
-    <li><b>Be a good visitor.</b> Scan the code and carry on. Don’t block doorways or ask staff for freebies. You never need to buy anything.</li>
-    <li><b>Stay safe.</b> Stick to pavements and public places. Keep away from cliff edges, sea defences, the railway and the port. Real-world check-ins run 08:00–20:00.</li>
+    <li><b>Be a good neighbour.</b> Be polite to the people and shops you meet, and help where you can. Nobody ever has to buy anything.</li>
+    <li><b>It’s all in the game.</b> You never need to go anywhere in real life to play. Everything happens in the 3D town.</li>
     <li><b>Keep it to yourself.</b> Don’t share codes, post your location or try to find other players.</li>
     <li><b>Be kind.</b> The rivals are fictional. Real people deserve respect.</li></ul>
     <p class="fine">The game is independent and isn’t endorsed by Felixstowe Town Council. Being Mayor in the game has no real authority.</p></details>`;

@@ -21,7 +21,7 @@ export const DEFAULT_CONFIG = {
   discoverRadius: 40,        // metres in the 3D town
   season: { id: 's1-2026', name: 'Season 1 · Autumn 2026', start: '2026-10-01', end: '2026-12-31' },
   sponsorshipTiers: [ // illustrative test prices only, not market rates; nothing is charged in this demo
-    { id: 'founding', name: 'Founding partner', price: '£100–£200', perks: ['Business profile', 'QR check-in point', 'Stamp in the collection'] },
+    { id: 'founding', name: 'Founding partner', price: '£100–£200', perks: ['Business profile', 'Visit point in the game', 'Stamp in the collection'] },
     { id: 'featured', name: 'Featured partner', price: '£300–£500', perks: ['Featured marker', 'Home-screen spot', 'Optional offer'] },
     { id: 'campaign', name: 'Campaign sponsor', price: '£750–£1,500', perks: ['Sponsored mission or trail', 'Campaign report', 'Seasonal mention'] },
   ],

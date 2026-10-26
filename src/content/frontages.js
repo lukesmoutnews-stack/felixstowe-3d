@@ -8,6 +8,7 @@
 // details: street-side additions built by world/frontage-details.js.
 
 import { BRAND_STYLES } from './shops.js';
+import { PART_FRONTAGES, PART_SPLITS, PART_AREAS, PART_FASCIAS } from './frontage-parts/index.js';
 
 const WHITE = [1, 1, 1], CREAM = [1, 0.96, 0.86], PALE_BLUE = [0.84, 0.91, 1.0], BLACK = [0.2, 0.2, 0.22], YELLOW = [1, 0.92, 0.55];
 
@@ -58,6 +59,14 @@ export const FRONTAGES = {
   688756410: { addr: 'Treasure Chest Books / Felixstowe Mini Market (Cobbold Road and Crescent Road corner)', photo: 'treasure-chest-abbeygate.png', height: 6.9, force: true, roofShape: 'hipped', style: { facade: 'brick_red', tint: [1, 0.93, 0.88], roof: 'concrete_tile', roofTint: [0.46, 0.4, 0.38], winStyle: 0 }, details: [{ t: 'dormers', at: [0.28, 0.72] }, { t: 'chimneys', at: [0.12, 0.88] }] },
   // Abbeygate: red brick upper floor over a wide shopfront, dark slate roof, gable end to the east
   732472280: { addr: 'Abbeygate Lighting, Cobbold Road', photo: 'treasure-chest-abbeygate.png', height: 6.3, force: true, roofShape: 'gabled', style: { facade: 'brick_red', tint: [1, 0.95, 0.9], roof: 'slate', roofTint: [0.5, 0.5, 0.54], winStyle: 0 }, details: [] },
+  // ---- south end of Hamilton Road, from the user's Street View photos (Sept 2026) ----
+  492767243: { addr: 'Methodist (Trinity) church', photo: 'j-methodist-church-corner.png', height: 9.4, force: true, roofShape: 'gabled', style: { facade: 'flint', roof: 'slate', roofTint: [0.42, 0.43, 0.47], winStyle: 0 }, details: [] },
+  506378835: { addr: 'Former post office, Victoria Street corner', photo: 'j-former-post-office-corner-oriel.png', height: 13.5, force: true, roofShape: 'hipped', style: { facade: 'brick_red', tint: [1, 0.86, 0.78], roof: 'clay', roofTint: [0.8, 0.5, 0.4], winStyle: 0 }, details: [{ t: 'dormers', at: [0.3, 0.7] }, { t: 'chimneys', at: [0.15, 0.85] }] },
+  733112166: { addr: 'The Cafe on the Corner', photo: 'j-cafe-on-the-corner.png', height: 7.4, force: true, roofShape: 'hipped', style: { facade: 'render', tint: [1, 0.96, 0.84], roof: 'slate', roofTint: [0.3, 0.3, 0.34], winStyle: 0 }, details: [] },
+  733112165: { addr: 'Vogue / GlowGetter', photo: 'j-vogue-glowgetter.png', height: 9.0, force: true, roofShape: 'flat', style: { facade: 'render', tint: [0.8, 0.82, 0.82], roof: 'flat', winStyle: 0 }, details: [] },
+  733112164: { addr: "Tony's Nails & Spa / China China", photo: 'j-tonys-nails-china-china.png', height: 7.6, force: true, roofShape: 'hipped', style: { facade: 'render', tint: [1, 0.95, 0.8], roof: 'slate', roofTint: [0.3, 0.3, 0.34], winStyle: 0 }, details: [] },
+  733112163: { addr: 'The Card Centre', photo: 'j-card-centre-coastal-taxis.png', height: 7.8, force: true, roofShape: 'flat', style: { facade: 'render', tint: [0.8, 0.82, 0.82], roof: 'flat', winStyle: 0 }, details: [] },
+  506378826: { addr: 'A&B Glass Home Improvements', photo: 'j-abglass-corner-1.png', height: 9.6, force: true, roofShape: 'gabled', style: { facade: 'render', tint: [1, 0.98, 0.93], roof: 'slate', roofTint: [0.3, 0.32, 0.36], winStyle: 1 }, details: [] },
 };
 
 /**
@@ -94,3 +103,10 @@ export const PHOTO_FASCIAS = {
 };
 for (const v of Object.values(PHOTO_FASCIAS)) Object.assign(v, { confidence: 'photo', sources: ['User-supplied Street View capture, June 2022 (docs/research/undercliff-road-west)'] });
 Object.assign(BRAND_STYLES, PHOTO_FASCIAS); // signs on these shops use the photographed fascia colours
+
+// ---- per-area parts (content/frontage-parts/*.js) ----
+Object.assign(FRONTAGES, PART_FRONTAGES);
+Object.assign(SPLITS, PART_SPLITS);
+Object.assign(FRONTAGE_AREAS, PART_AREAS);
+for (const v of Object.values(PART_FASCIAS)) Object.assign(v, { confidence: v.confidence || 'photo', sources: v.sources || ['User-supplied Street View capture, 2026 (docs/research/hamilton-road-streetview)'] });
+Object.assign(BRAND_STYLES, PART_FASCIAS);

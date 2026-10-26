@@ -6,7 +6,7 @@ import { escapeHtml as esc, icon } from './art.js';
 import { EVENTS } from './engine.js';
 import { STORIES } from './reputation.js';
 
-const SECTIONS = [['overview', 'Reports'], ['safety', 'Safety'], ['businesses', 'Businesses'], ['missions', 'Missions'], ['qr', 'QR codes'], ['checkins', 'Check-ins'], ['ranks', 'XP & ranks'], ['sponsorship', 'Sponsorship'], ['season', 'Season'], ['demo', 'Demo tools']];
+const SECTIONS = [['overview', 'Reports'], ['safety', 'Safety'], ['businesses', 'Businesses'], ['missions', 'Missions'], ['checkins', 'Visits'], ['ranks', 'XP & ranks'], ['sponsorship', 'Sponsorship'], ['season', 'Season'], ['demo', 'Demo tools']];
 
 export class Admin {
   constructor(app) { this.app = app; this.section = 'overview'; this.editing = null; }

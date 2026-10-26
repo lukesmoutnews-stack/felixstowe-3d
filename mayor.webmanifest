@@ -1,7 +1,7 @@
 {
   "name": "Felixstowe – The Game: Race to Be Mayor",
   "short_name": "Race to Be Mayor",
-  "description": "Explore Felixstowe in 3D, then visit real places to earn stamps and race to become the (fictional) Mayor.",
+  "description": "Explore Felixstowe in 3D, then visit its shops and landmarks to earn stamps and race to become the (fictional) Mayor.",
   "start_url": "mayor.html",
   "scope": "./",
   "display": "standalone",

@@ -46,6 +46,7 @@ export class World extends EventTarget {
     this.buildingGrid = new SpatialGrid(32);  // footprints (clearance tests, interactions)
     this.areaGrid = new SpatialGrid(100);     // water / beach / walkable extras
     this.pois = new Map();
+    this.parkingLots = [];                     // car park outlines (tile key, ring) for parking bays at the start
     this.surfaces = [];                        // pier decks, interior floors, bridge decks and ramps
     this.profiles = new Map();                 // OSM way id -> bridge deck / approach ramp elevation profile (whole ways)
     this.clearances = [];                      // headroom under bridge decks (for tall vehicles and traffic)
@@ -285,6 +286,7 @@ export class World extends EventTarget {
     this.roads.prepareCores(r, tile.key);
     buildGround(tile, ctx);
     buildAreas(f.areas, tile, ctx);
+    for (const a of f.areas) if (a.kind === 'parking' && a.outer.length >= 3) this.parkingLots.push({ tile: tile.key, id: a.id, ring: a.outer });
     await yieldFrame();
     // --- roads (clipped to the tile so neighbours never double-draw) ---
     const roadsHere = [];
@@ -521,6 +523,7 @@ export class World extends EventTarget {
     this.surfaces = this.surfaces.filter((s) => !(t.surfaces || []).includes(s));
     this.clearances = this.clearances.filter((c) => c.tile !== key);
     for (const id of t.pois || []) this.pois.delete(id);
+    this.parkingLots = this.parkingLots.filter((l) => l.tile !== key);
     this.interiors = this.interiors.filter((i) => !(t.interiors || []).includes(i));
     for (const [k, m] of t.signMaterials || []) { m.map.dispose(); m.dispose(); this._signMats.delete(k); }
     this.tiles.delete(key);

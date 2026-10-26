@@ -1,3 +1,4 @@
+import { PART_OVERRIDES, PART_ADDITIONS } from './frontage-parts/index.js';
 // Hamilton Road businesses: researched corrections and shopfront styles (9 October 2026).
 // Generated from docs/research/hamilton-road-*.json (web research with sources). OSM (8 Oct 2026) supplies
 // names and positions; entries here only correct, add or style them. Logos are never drawn: signs show the
@@ -5,6 +6,24 @@
 
 /** Fascia styles by business name (national chains; colours from brand knowledge, see confidence). */
 export const BRAND_STYLES = {
+ "The Cafe on the Corner": { "fascia": "#7a1f2e", "text": "#ffffff", "case": "upper", "font": "serif", "weight": "bold", "confidence": "medium", "note": "Fascia colours read from the user's Street View photos (Sept 2026).", "sources": [] },
+ "Vogue": { "fascia": "#25282e", "text": "#ffffff", "case": "upper", "font": "sans", "weight": "bold", "confidence": "medium", "note": "Fascia colours read from the user's Street View photos (Sept 2026).", "sources": [] },
+ "GlowGetter Tanning Studio": { "fascia": "#141414", "text": "#f2823a", "case": "mixed", "font": "sans", "weight": "bold", "confidence": "medium", "note": "Fascia colours read from the user's Street View photos (Sept 2026).", "sources": [] },
+ "Tony's Nails & Spa": { "fascia": "#1d1e22", "text": "#ffffff", "case": "upper", "font": "sans", "weight": "bold", "confidence": "medium", "note": "Fascia colours read from the user's Street View photos (Sept 2026).", "sources": [] },
+ "China China": { "fascia": "#d11a22", "text": "#f3d98b", "case": "upper", "font": "serif", "weight": "bold", "confidence": "medium", "note": "Fascia colours read from the user's Street View photos (Sept 2026).", "sources": [] },
+ "The Card Centre": { "fascia": "#1b2a86", "text": "#ffffff", "case": "mixed", "font": "serif", "weight": "regular", "confidence": "medium", "note": "Fascia colours read from the user's Street View photos (Sept 2026).", "sources": [] },
+ "Coastal Taxis": { "fascia": "#f4f4f1", "text": "#17181b", "case": "upper", "font": "sans", "weight": "bold", "confidence": "medium", "note": "Fascia colours read from the user's Street View photos (Sept 2026).", "sources": [] },
+ "A&B Glass Home Improvements": { "fascia": "#1a1c21", "text": "#ffffff", "case": "upper", "font": "sans", "weight": "bold", "confidence": "medium", "note": "Fascia colours read from the user's Street View photos (Sept 2026).", "sources": [] },
+ "Conkers Pets & Plants": { "fascia": "#7a8087", "text": "#ffffff", "case": "mixed", "font": "sans", "weight": "regular", "confidence": "medium", "note": "Fascia colours read from the user's Street View photos (Sept 2026).", "sources": [] },
+ "Beijing": { "fascia": "#d3202a", "text": "#ffffff", "case": "mixed", "font": "serif", "weight": "bold", "confidence": "medium", "note": "Fascia colours read from the user's Street View photos (Sept 2026).", "sources": [] },
+ "Wainwrights": { "fascia": "#4b1e5f", "text": "#f1e6c8", "case": "mixed", "font": "serif", "weight": "bold", "confidence": "medium", "note": "Fascia colours read from the user's Street View photos (Sept 2026).", "sources": [] },
+ "Nick Barber Auctions": { "fascia": "#14267c", "text": "#ffffff", "case": "mixed", "font": "sans", "weight": "bold", "confidence": "medium", "note": "Fascia colours read from the user's Street View photos (Sept 2026).", "sources": [] },
+ "Fred. Olsen Travel Agents": { "fascia": "#1763c9", "text": "#ffffff", "case": "mixed", "font": "sans", "weight": "bold", "confidence": "medium", "note": "Fascia colours read from the user's Street View photos (Sept 2026).", "sources": [] },
+ "King's": { "fascia": "#2b2b2e", "text": "#ffffff", "case": "upper", "font": "sans", "weight": "regular", "confidence": "medium", "note": "Fascia colours read from the user's Street View photos (Sept 2026).", "sources": [] },
+ "The Bakery": { "fascia": "#2c9a9c", "text": "#2a1a5e", "case": "mixed", "font": "serif", "weight": "bold", "confidence": "medium", "note": "Fascia colours read from the user's Street View photos (Sept 2026).", "sources": [] },
+ "RSPCA Suffolk Central": { "fascia": "#1634b4", "text": "#ffffff", "case": "upper", "font": "sans", "weight": "bold", "confidence": "medium", "note": "Fascia colours read from the user's Street View photos (Sept 2026).", "sources": [] },
+ "St Elizabeth Hospice": { "fascia": "#a9d229", "text": "#ffffff", "case": "mixed", "font": "sans", "weight": "bold", "confidence": "medium", "note": "Fascia colours read from the user's Street View photos (Sept 2026).", "sources": [] },
+ "Favorite": { "fascia": "#ffffff", "text": "#1b3a9a", "case": "upper", "font": "sans", "weight": "bold", "confidence": "medium", "note": "Fascia colours read from the user's Street View photos (Sept 2026).", "sources": [] },
  "Treasure Chest Books": { "fascia": "#17181b", "text": "#f4f1ea", "case": "upper", "font": "serif", "weight": "bold", "confidence": "medium", "note": "Black fascia with white capitals, from the user's Street View photo (Sept 2026).", "sources": [] },
  "Felixstowe Mini Market": { "fascia": "#1f3d93", "text": "#ffffff", "case": "mixed", "font": "sans", "weight": "bold", "confidence": "medium", "note": "Royal-blue fascia with white lettering, from the user's Street View photo (Sept 2026).", "sources": [] },
  "Abbeygate Lighting": { "fascia": "#1d3a40", "text": "#e6eef0", "case": "mixed", "font": "sans", "weight": "bold", "confidence": "medium", "note": "Dark teal fascia with pale lettering ('Abbeygate'), from the user's Street View photo (Sept 2026).", "sources": [] },
@@ -534,3 +553,6 @@ export const ADDITIONS = [
  { id: "x-creatd-130", name: "Creatdinteriors", kind: "interior_decoration", addr: "130 Hamilton Road", lat: 51.965246, lon: 1.352486, evidence: ["https://visitfelixstowe.org.uk/bijou"] },
  { id: "x-winebar-187", name: "The Little Wine Bar and Cafe", kind: "bar", addr: "187 Hamilton Road", lat: 51.966527, lon: 1.352042, evidence: ["https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/5189"] },
 ];
+
+Object.assign(OVERRIDES, PART_OVERRIDES);
+ADDITIONS.push(...PART_ADDITIONS);

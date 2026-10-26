@@ -59,11 +59,29 @@ export class Preview {
   dispose() { this.alive = false; this.renderer.dispose(); }
 }
 
+
+/** Plain-English "what is this game" card, shown first and reopenable from Home → How to play. */
+export function howToPlay(heading = 'What is this game?') {
+  const steps = [
+    ['Make your character', 'Pick how you look and type a name. That is all you need to start.'],
+    ['Walk around the town', 'You explore a 3D copy of real Felixstowe. Use the on-screen stick to walk (W A S D on a keyboard) and drag the screen to look around. Walk up to any car or van and tap <b>Take</b> to drive it.'],
+    ['Find the places', 'Shops and landmarks show up as markers. Tap one to find out about it. An arrow points you towards your next goal.'],
+    ['Visit places', 'Walk up to a shop or landmark and tap <b>Visit</b> to collect a <b>stamp</b>. Stamps and missions give you points (XP).'],
+    ['Climb to Mayor', 'More points move you up the ranks, from <b>Newcomer</b> to <b>Mayoral Candidate</b>. Finish the last challenge at the Town Hall to win the title of Mayor.'],
+  ];
+  return `<section class="card howto" aria-labelledby="howto-h"><h2 id="howto-h">${esc(heading)}</h2>
+    <p class="howto-lede"><b>Race to Be Mayor</b> is a free game about the real town of Felixstowe. You explore it in 3D, visit shops and landmarks, and collect stamps to win the made-up title of <b>Mayor of Felixstowe</b>.</p>
+    <ol class="howto-steps">${steps.map(([t, d], i) => `<li><span class="n">${i + 1}</span><div><b class="ht">${t}</b><p>${d}</p></div></li>`).join('')}</ol>
+    <p class="fine">It is all in the game: you never need to go anywhere in real life. The Mayor title is just for fun, not a real job or election. No account needed. Your progress is saved on this device.</p></section>`;
+}
+
 /** Onboarding: choose a starting character, customise, name, confirm. */
 export function selectScreen(st) {
   const p = PRESETS[st.preset], L = st.look;
   return `<main class="screen onboarding cs">
-    <header class="cs-head"><p class="eyebrow">Race to Be Mayor · Felixstowe</p><h1>Who’s running for the Town Hall?</h1><p class="muted">Pick a starting look, then make it yours. Every character has the same abilities, reputation and chances of winning.</p></header>
+    <header class="cs-head"><p class="eyebrow">Race to Be Mayor · Felixstowe</p><h1>Race to Be Mayor</h1><p class="muted">Explore Felixstowe, visit real places, win the title of Mayor.</p></header>
+    ${howToPlay()}
+    <h2 class="cs-step">Now make your character</h2><p class="muted">Pick a starting look, then make it yours. Every character has the same abilities and the same chance of winning.</p>
     <div class="cs-stage"><canvas id="cs-canvas" aria-label="3D preview of your character. Drag to turn."></canvas><p class="cs-hint">Drag to turn</p></div>
     <div class="cs-picks" role="radiogroup" aria-label="Starting character">${Object.entries(PRESETS).map(([k, v]) => `<button role="radio" aria-checked="${k === st.preset}" class="cs-pick ${k === st.preset ? 'on' : ''}" data-act="cs-pick" data-id="${k}">${esc(v.label)}</button>`).join('')}</div>
     ${editor(L, st, true)}

@@ -8,6 +8,7 @@ import { Geo } from './seafront.js';
 import { Textures } from './textures.js';
 import { ensureCCW, pointInRing } from '../geo/polygon.js';
 import { cinemaFront, cinemaSide, sideFrame, dormers, chimneys } from './frontage-features.js';
+import { FEATURES } from './features/index.js';
 
 let M = null;
 function mats() {
@@ -73,6 +74,7 @@ export function buildFrontageDetails(b, ctx) {
   const lim = Math.max(1.0, e.front - 0.2); // never out over the pavement or road
   const D = (d) => Math.min(d, lim); K.D = D;
   for (let it of fr.details) {
+    if (FEATURES[it.t]) { try { FEATURES[it.t](K, it, { b, ring: ensureCCW(b.outer), pointInRing, sideFrame: (o) => sideFrame(b, o || it, K, ensureCCW(b.outer), pointInRing) }); } catch (err) { console.warn('frontage feature failed', it.t, b.id, err); } continue; }
     if (it.t === 'cinemaFront') cinemaFront(K); else if (it.t === 'dormers') dormers(K, it); else if (it.t === 'chimneys') chimneys(K, it); else if (it.t === 'cinemaSide') cinemaSide(sideFrame(b, it, K, ensureCCW(b.outer), pointInRing));
     else if (it.t === 'verandah2') { // two tiers of white fretwork verandahs (raised ground floor + first floor)
       const d = D(1.7), y0 = 0.9, y1 = y0 + storey, top = y1 + storey - 0.2;

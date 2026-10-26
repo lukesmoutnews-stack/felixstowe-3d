@@ -424,3 +424,15 @@ td input { min-height: 36px !important; width: 80px !important; padding: 4px 8px
 .people { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; } .people li { display: flex; flex-direction: column; padding: 8px 10px; border-radius: 12px; background: var(--cream); border: 1px solid var(--line); } .people small { color: var(--muted); font-size: 12px; }
 @media (max-width: 420px) { .inf-row { grid-template-columns: 1fr auto; } .inf-row .bar { grid-column: 1 / -1; grid-row: 2; } }
 .closed-note { background: #fff1e6; border: 1px solid #f0b48a; border-left: 4px solid #e2531b; border-radius: 12px; padding: 10px 12px; font-size: 13.5px; color: var(--navy); }
+
+/* ---------- how to play ---------- */
+.howto { display: flex; flex-direction: column; gap: 12px; }
+.howto h2 { margin: 0; font-size: 22px; }
+.howto-lede { margin: 0; font-size: 17px; line-height: 1.45; }
+.howto-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.howto-steps li { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start; }
+.howto-steps .n { width: 34px; height: 34px; border-radius: 50%; background: var(--navy); color: var(--gold, #f2b632); display: grid; place-items: center; font-weight: 800; font-size: 16px; }
+.howto-steps .ht { font-size: 16px; display: block; }
+.howto-steps p { margin: 2px 0 0; font-size: 15px; line-height: 1.4; }
+.cs-step { margin: 6px 0 0; font-size: 20px; }
+.howto-btn { align-self: flex-start; margin: 4px 0; }

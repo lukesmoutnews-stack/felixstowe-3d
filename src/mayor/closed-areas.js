@@ -13,4 +13,4 @@ export function inClosedArea(l) {
   return cache.get(l.id);
 }
 export const CLOSED_TITLE = 'Closed in the 3D town for now';
-export const CLOSED_NOTE = 'The roads to this part of Felixstowe are closed in the 3D town while the town centre and seafront are being finished. You can still reveal it here, and real-world visits still count.';
+export const CLOSED_NOTE = 'The roads to this part of Felixstowe are closed in the 3D town while the town centre and seafront are being finished. You can still reveal it here, and visit it from here.';

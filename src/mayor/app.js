@@ -202,6 +202,7 @@ class MayorApp {
       case 'close-sheet': this.closeSheet(); if (this.tab !== 'explore') this.render(); break;
       case 'open-loc': this.openLocation(id); break;
       case 'open-mission': this.openMission(id); break;
+      case 'how-to-play': this.openSheet(CS.howToPlay('How to play'), 'howto'); break;
       case 'continue': this.continueCampaign(); break;
       case 'accept': {
         const r = g.accept(id); if (!r.ok) { this.afterAction({ found: r.found }); this.toast(esc(r.message), 'bad'); this.refreshSheet(); break; }

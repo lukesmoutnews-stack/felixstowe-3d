@@ -77,3 +77,56 @@ are what the photos show on the day they were taken.
 | Photo | What it shows |
 |---|---|
 | i-palace-rear-led-tower, i-palace-rear-fire-escape-canopy, i-palace-rear-auditorium-wall | Auditorium is a huge weathered cream/white render box with shallow vertical pilasters, a brick course under the roofline, a rounded white ventilation duct, and a satellite dish. A low single-storey annexe (cream, brick-capped) has blue steel doors. Steel-framed fire escape with stairs beside a white tensile canopy. Narrow brick tower (white cap) at the Hamilton Road end carries the LED screen. Corrugated roof visible behind. |
+
+## Church, former post office, Victoria Street corner and the south end (j-*.png)
+
+| Photo (file name after `j-`) | What it shows |
+|---|---|
+| j-methodist-church-corner, j-methodist-church-door-rose | Felixstowe Methodist (Trinity) church: flint-and-stone rubble walls with cream stone dressings, steep slate gable with a large rose window, three lancet windows, a gabled porch with a bright blue double door with black iron hinges, slate-roofed side aisle, buttresses, a cross finial. Benches along the kerb. |
+| j-former-post-office-victoria-st-front, j-former-post-office-corner-oriel, j-former-post-office-victoria-st-wide | Large red-brick Queen Anne-style former post office on the corner of Victoria Street: three storeys plus attic, stone and terracotta dressings, Dutch/shaped gables, big arched ground-floor windows with brick architraves, a corbelled two-storey stone oriel at the corner, tall chimneys, red pillar box, white door surround. |
+| j-cafe-on-the-corner, j-cafe-corner-vogue-row | The Cafe on the Corner: two-storey cream render with a hipped slate roof, a white bay window upstairs, wine-red fascias and pilasters, dark plinth. Neighbouring grey interwar block (Vogue). |
+| j-vogue-glowgetter, j-tonys-nails-china-china, j-china-china-card-centre, j-card-centre-coastal-taxis, j-coastal-taxis-abglass | South-end shops: Vogue (charcoal fascia with pink wedge), GlowGetter (black fascia, white-framed glazing), Tony's Nails & Spa (black fascia, pink glazing bars), China China (bright red timber shopfront, grey marble plinth), The Card Centre (navy fascia, white pilasters, grey painted upper), Coastal Taxis (white front, black plinth). |
+| j-abglass-corner-1, j-abglass-corner-2 | A&B Glass Home Improvements: new-build corner, dark blue-black glazed-brick ground floor with big shop windows, white render above, two steep gables with slate roofs, glass balconies. |
+
+## West side, Victoria Street corner up to the old Job Centre (k-*.png)
+
+| Photo (file name after `k-`) | What it shows |
+|---|---|
+| k-scissor-trix-corner-victoria-st | Scissor Trix on the Victoria Street corner: two-storey red brick with a hipped clay-tile roof, curved bay, grey-painted ground floor, black plinth, tall chimney, blue finger-post and lamp posts |
+| k-scissor-trix-livias-nutshells | Livia's Boutique (black timber shopfront), Nutshells by the Sea (dark grey-green frontage with a glazed upper bay), a bright blue door with fanlight between shops |
+| k-glow-studio8-gables, k-glow-blue-naan-row | Glow / Studio8: three-storey red-brick pair of steep gables with buff-brick and stone banding, a central dormer, black fascia ground floor with frosted glass. Beside it Blue Naan: white render, black timber bargeboards, curved arches, scalloped gable |
+| k-blue-naan-china-palace-greyfriars | Blue Naan (white, black trim), China Palace Restaurant (bright red timber shopfront with a pantile pent roof, buff brick above with a dormer), Greyfriars (black fascia, white-painted upper floors) |
+| k-greyfriars-suffolk-house | Greyfriars Carpets, Beds, Flooring: black fascia, "SUFFOLK HOUSE" painted on white-painted brick, small gabled dormers with bargeboards |
+| k-basic-charity-scott-beckett | BASIC Life Charity (white upper, pale fascia), Scott Beckett estate agents (orange fascia and doors, two white canted bays above, dormer) |
+| k-scott-beckett-vacant-block, k-vacant-60s-block-jobcentre | 1960s three-storey brick block with deep balconies and concrete frame, vacant shop at the foot (Sainsbury's Argos poster), then the old Job Centre Plus |
+| k-jobcentre-corner-side, k-jobcentre-corner-turret | Former Job Centre Plus on the corner: red brick, three storeys, a conical clay-tile turret with a clock, green fascia, dormers, white sashes |
+
+## Bent Hill, south end of Hamilton Road: Ruby's, Architects, Smmash, Felixstowe Grill, The Grand, One29 (l-*.png)
+
+| Photo (file name after `l-`) | What it shows |
+|---|---|
+| l-bent-hill-top-rubys-smmash, l-bent-hill-from-hamilton-rubys-architects, l-rubys-architects-smmash | Row on the sloping Bent Hill street: Ruby's Cafe Bar Take Away (aubergine-purple timber shopfront and painted brick gable end with a black timber fence beside it), Architects (dark bottle-green fascia, glazed green-tile stall riser, arched glazed door), Smmash Burger Shack, Felixstowe Grill. Block ends on a red-brick wall with a stone gateway arch (Seafront Gardens). Sea visible beyond. |
+| l-smmash-burger-shack | Smmash Burger Shack: single-storey white-painted brick front with a stepped/scalloped Dutch parapet gable topped with a ball finial, a round vent, fluted pilasters, orange fascia, big window covered in leaf wallpaper |
+| l-felixstowe-grill-smmash, l-grand-white-gable-grill | Felixstowe Grill: black/charcoal shopfront with a gold-lettered sign, grey-painted brick side wall with a shaped scrolled gable and tall chimney. Next to it The Grand's white-painted brick wall with a big curved (Dutch) parapet gable framing a dark window with the "the Grand" logo |
+| l-grand-blue-lower-side, l-grand-entrance-doors | The Grand (former nightclub): low slate-roofed white and royal-blue-painted building, stepped down the hill, railings to a sunken lower entrance, curved blue canopy sign with equaliser-bars logo, double doors |
+| l-grand-one29-side | The Grand's tall white-painted brick gable end onto Bent Hill with the One29 bar beside it: white upper floor with a first-floor black wrought-iron balcony on iron columns, a covered terrace below with hanging lamps and a railed patio, green and black banners |
+
+## Bent Hill, lower half and the seafront end (more l-*.png)
+
+| Photo | What it shows |
+|---|---|
+| l-bent-hill-steps-stone-wall, l-bent-hill-grand-blue-timber-side | Bent Hill as a paved shared-surface street (brick-paviour pattern with a grey banded gutter strip) climbing to the north-west; a rubble-stone retaining wall with a blue handrail on the west side, broad shallow stone steps and a bench set into a planted bank, lamp post, holm oaks and cordylines. East side: The Grand's blue-and-white timber-boarded low wings with railings and steps |
+| l-bent-hill-hamilton-mas-corner, l-hamilton-mas-yellow-brick-house | The little corner pair at the foot of the hill: Hamilton MAS (a white-fronted shop under a tile-hung first floor in scalloped red tile, slate roof with ridge cresting) and the yellow-stock-brick house beside it with red brick bands, a canted two-storey bay, white sashes, bright green door and a clay-tile roof |
+| l-bent-hill-cream-gabled-villa | Cream-painted gabled villa with scalloped bargeboards and finials, a glazed balcony and timber-clad oriel with green painted panels, tiled roof; the sea-end of Bent Hill, with the brick and glass flats of the Grand's neighbour on the left |
+
+| l-undercliff-kiosk-seafront | The Undercliff Kiosk on the seafront lawn: small white clapboard hut with a flat roof, black sign board, a hatch and door; green metal cafe chairs and tables, red flower planters, brick-and-timber bench, lamp post with a fan of arms, festoon lights, shingle beach, rock groynes and the pier beyond |
+
+## Spa Pavilion, Undercliff Road (m-*.png)
+
+| Photo (file name after `m-`) | What it shows |
+|---|---|
+| m-spa-pavilion-roundabout-boat, m-spa-pavilion-steps-lounge, m-spa-pavilion-gateway-barrier | Art Deco/Moderne Spa Pavilion: white-rendered, with royal-blue banding and trim, a clay-pantile hipped roof (orange-red), gilt "SPA PAVILION" letters on the side gable, a blue "SPA PAVILION" fascia over the entrance block, a flat-roofed two-storey glazed LOUNGE bar wing with blue-framed curtain glazing and copper-brown "LOUNGE" fascia, broad stepped entrance stair with blue-edged white cheek walls and gold handrails, railed first-floor terrace. Cordylines and palms, a blue-and-white rowing boat planter on the Undercliff Road roundabout, black lamp post, a rubble-stone retaining wall with iron railings, orange ticket barrier with stop sign, gate piers with stone caps, rock groynes and sea beyond |
+| m-spa-pavilion-terrace-red-summer | Same building in an older summer capture with the trim painted red instead of blue (shows the layout: first-floor railed terrace, lower terrace café on white columns under a glazed curtain-wall wing, stepped stair, stone gate piers, a tall fan-armed lamp post with festoon bulbs). Use the BLUE version (the latest capture) for colours |
+
+## Pier Bight car park (spawn point, opposite the pier) — pb-1 … pb-9
+Pay-and-display car park on Undercliff Road West between the Felixstowe Pier building and the Leisure Centre. Bays (white lines) run nose-in against the low red-brick sea wall, one row along the wall and a second row on the road side, with a central aisle; direction arrows and X road marks on the aisle; a block-paved island with a cordyline palm and the "Pier Bight Car Park" sign (pay and display, blue disabled-badge bays); mixed everyday cars (hatchbacks, SUVs, estates, a blue convertible, vans) in dark, silver, blue, red and white.

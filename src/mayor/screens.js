@@ -29,7 +29,7 @@ export function onboarding() {
   return `<main class="screen onboarding">
     <div class="ob-hero">${townHallArt(5)}</div>
     <div class="ob-logo">${logo()}</div>
-    <p class="lede">Every campaign ends at the Town Hall. Explore the real streets of Felixstowe in 3D, find shops and landmarks, then visit them in person to collect stamps, light up the Town Hall rank by rank, and finish the race on its steps.</p>
+    <p class="lede">Every campaign ends at the Town Hall. Explore the real streets of Felixstowe in 3D, find shops and landmarks, then visit them in the 3D town to collect stamps, light up the Town Hall rank by rank, and finish the race on its steps.</p>
     <div class="ob-news"><img src="icons/felixstowe-news.png" alt="" width="40" height="40"><span>Your campaign makes the headlines in <b>Felixstowe News</b> (game edition). Real local news: <a href="https://www.felixstowenews.co.uk" target="_blank" rel="noopener">felixstowenews.co.uk</a></span></div>
     <form id="onboard" class="card form" novalidate>
       <h2>Create your player</h2>
@@ -53,7 +53,7 @@ export function nextAction(app) {
     const [k, a] = step.split(':');
     if (['discover', 'visit', 'stop'].includes(k) && g.loc(a)) {
       const l = g.loc(a);
-      return { type: 'location', id: a, mission: m.id, title: m.hideTarget && k === 'visit' ? m.title : (k === 'discover' ? `Find ${l.name}` : `Visit ${l.name}`), text: k === 'discover' ? `Head for the marker to discover ${l.name}.` : `${l.name}: real-world visit required. Scan its QR code when you're there.` };
+      return { type: 'location', id: a, mission: m.id, title: m.hideTarget && k === 'visit' ? m.title : (k === 'discover' ? `Find ${l.name}` : `Visit ${l.name}`), text: k === 'discover' ? `Head for the marker to discover ${l.name}.` : `${l.name}: walk up to it in the 3D town and tap Visit.` };
     }
     return { type: 'mission', id: m.id, title: m.title, text: g.stepLabel(step, m) };
   }
@@ -82,6 +82,7 @@ export function home(app) {
   const badges = Object.entries(g.p.achievements).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([id, ts]) => ({ a: ACHIEVEMENTS.find((x) => x.id === id), ts }));
   return `<header class="home-top">${logo({ compact: true })}<button class="avatar-btn" data-act="tab" data-tab="profile" aria-label="Your profile">${avatar(p.name, p.colour, 40)}</button></header>
   <section class="hello"><p class="eyebrow">Your campaign \u00b7 ${esc(g.config.season.name)}</p><h1>Hello, ${esc(p.name)}</h1></section>
+  <button class="btn howto-btn" data-act="how-to-play">${icon('guide')}How to play</button>
   ${hallHero(app)}
   ${repStrip(app)}
   ${homeNewsCard(app)}
@@ -97,7 +98,7 @@ export function home(app) {
     <ol class="mayor-track">${ranks.map((k, i) => `<li class="${i < ri ? 'past' : i === ri ? 'now' : ''}"><span class="dot">${i < ri ? icon('check') : i + 1}</span><span class="lbl">${esc(k.name)}</span></li>`).join('')}</ol>
     <p class="fine">Mayor of Felixstowe is a fictional game title for the season winner of the final challenge. It is not a real office or election.</p></section>
   <section class="stats3">
-    <div><b>${st.visits}</b><span>Real-world visits</span></div><div><b>${st.missions}</b><span>Missions done</span></div><div><b>${st.stamps}</b><span>Stamps</span></div>
+    <div><b>${st.visits}</b><span>Places visited</span></div><div><b>${st.missions}</b><span>Missions done</span></div><div><b>${st.stamps}</b><span>Stamps</span></div>
   </section>
   ${weekly ? `<section class="card feature"><div class="feature-head"><span class="tag week">Weekly challenge</span><span class="xp">+${weekly.xp} XP</span></div>
     <h3>${esc(weekly.title)}</h3><p>${esc(weekly.description)}</p>${missionProgress(g, weekly)}
@@ -172,33 +173,31 @@ export function locationSheet(app, id) {
   const myVisits = g.myCheckins().filter((c) => c.target === id);
   const directions = l.kind === 'landmark'
     ? `<div class="links"><a class="btn small" href="https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lon}" target="_blank" rel="noopener">${icon('external')}Directions (Google Maps)</a><a class="btn small" href="https://www.openstreetmap.org/?mlat=${l.lat}&mlon=${l.lon}#map=18/${l.lat}/${l.lon}" target="_blank" rel="noopener">${icon('external')}OpenStreetMap</a></div>`
-    : '<p class="fine">This is a fictional business, so there are no real directions. In a pilot, each participating business would have a verified address and a QR poster on its premises.</p>';
+    : '<p class="fine">This is a fictional business, so there are no real directions. It exists only in the game.</p>';
   return `<p class="eyebrow">${esc(l.category)} \u00b7 ${esc(l.area)}</p><h2>${esc(l.name)}</h2>
     <div class="tags">${kindTag(l)}${l.hub ? ' <span class="tag hub">The goal of the race</span>' : ''}</div>
     ${l.hub ? `<div class="hall-sheet-art">${townHallArt(g.rankIndex())}</div><p class="fine">${esc(g.chapter().lights)} Chapter ${g.chapter().n} of 6.</p>` : ''}
     ${stepper(st)}
-    <p class="status-line">${pill(st)}${visited ? ` <span class="tag got">${icon('check')}Visited ${fmtDate(myVisits[0].ts)}${myVisits.some((c) => c.simulated) ? ' (simulated)' : ''}</span>` : ''}</p>
+    <p class="status-line">${pill(st)}${visited ? ` <span class="tag got">${icon('check')}Visited ${fmtDate(myVisits[0].ts)}</span>` : ''}</p>
     <p class="blurb">${esc(l.blurb)}</p>
     ${l.story ? `<p class="story">${esc(l.story)}</p>` : ''}
     ${(l.facts || []).length ? `<div class="facts"><h3>Did you know?</h3>${l.facts.map((f) => `<p>${esc(f.text)} <a href="${esc(f.source)}" target="_blank" rel="noopener">Source</a></p>`).join('')}</div>` : ''}
     <dl class="meta"><dt>Address</dt><dd>${l.kind === 'business' ? `Fictional – marker on ${esc(l.street)} is illustrative only` : `${esc(l.area)}, Felixstowe (position from OpenStreetMap ${esc(l.osm || '')})`}</dd>
       <dt>Opening</dt><dd>${esc(l.opening || 'Demo business – no real opening hours')}</dd>
-      <dt>Taking part</dt><dd>${l.kind === 'business' ? 'Demo participant (fictional)' : l.hub ? 'Independent game \u2013 no partnership with Felixstowe Town Council. There is no QR code on the building; a pilot would only add one with the council\u2019s permission, otherwise finale codes come from game organisers at an outdoor event.' : 'Not yet \u2013 no QR plaque exists here. A pilot would need the owner\u2019s permission.'}</dd>
+      <dt>Taking part</dt><dd>${l.kind === 'business' ? 'Demo participant (fictional)' : l.hub ? 'Independent game \u2013 no partnership with Felixstowe Town Council. It is the goal of the race: reach it in the 3D town.' : 'This is a virtual game: you visit it in the 3D town.'}</dd>
       ${l.offer ? `<dt>Offer</dt><dd>${esc(l.offer)}</dd>` : ''}</dl>
     ${missions.map((m) => missionMini(g, m, id)).join('')}
     ${STOP_QUESTIONS[id] && missions.some((m) => m.id === 'seafront_explorer' && g.missionState(m) === 'active') && !g.stepDone('stop:' + id) ? stopQuestion(id) : ''}
     <div class="checkin-box ${needsVisit ? 'need' : ''}">
-      ${needsVisit ? `<p class="need-title">${icon('qr')}<b>Real-world visit required</b></p><p>Go to ${esc(l.name)} and scan the QR code displayed there. Opening this page doesn’t count as a visit.</p>` : visited ? '<p>You’ve checked in here. Business repeat-visit challenges allow one check-in per day.</p>' : '<p>Accept a mission first, or check in when you’re there.</p>'}
-      <div class="actions"><button class="btn primary" data-act="checkin" data-loc="${id}">${icon('qr')}Check in with QR code</button>
-      <button class="btn demo" data-act="simulate" data-type="location" data-id="${id}">Simulated check-in (demo)</button></div>
-      <p class="fine">The simulated check-in exists only to test the game without travelling. It is recorded as simulated and never counts as proof of a real visit.</p>
+      ${needsVisit ? `<p class="need-title">${icon('pin')}<b>Visit it in the 3D town</b></p><p>Walk up to ${esc(l.name)} in the 3D town and tap Visit to collect your stamp. Opening this page doesn’t count as a visit.</p>` : visited ? '<p>You’ve visited here. Business repeat-visit challenges allow one visit per day.</p>' : '<p>Walk up to it in the 3D town and tap Visit to collect a stamp.</p>'}
+      <div class="actions"><button class="btn primary" data-act="checkin" data-loc="${id}">${icon('pin')}Visit ${esc(l.name)}</button></div>
     </div>
-    ${inClosedArea(l) ? `<p class="closed-note"><b>${CLOSED_TITLE}.</b> The roads there are closed in the 3D town; real-world visits still count.</p>` : `<div class="actions"><button class="btn" data-act="guide" data-id="${id}">${icon('guide')}Show in 3D</button></div>`}
+    ${inClosedArea(l) ? `<p class="closed-note"><b>${CLOSED_TITLE}.</b> The roads there are closed in the 3D town, but you can still visit it from here.</p>` : `<div class="actions"><button class="btn" data-act="guide" data-id="${id}">${icon('guide')}Show in 3D</button></div>`}
     ${directions}`;
 }
 function stepper(st) {
   const idx = { undiscovered: 0, discovered: 1, accepted: 2, visit_required: 2, visited: 3, completed: 4 }[st];
-  const labels = ['Undiscovered', 'Discovered', 'Visit required', 'Visited', 'Mission completed'];
+  const labels = ['Undiscovered', 'Discovered', 'Ready to visit', 'Visited', 'Mission completed'];
   return `<ol class="stepper">${labels.map((t, i) => `<li class="${i < idx ? 'past' : i === idx ? 'now' : ''}"><span></span>${t}</li>`).join('')}</ol>`;
 }
 function missionMini(g, m, locId) {
@@ -220,14 +219,14 @@ export function missions(app) {
   const list = t === 'stories' ? [] : groups[t];
   const fin = g.mission('mayoral_challenge'), fst = fin && g.missionState(fin);
   const finCard = fin ? `<button class="final-card ${fst}" data-act="open-mission" data-id="${fin.id}"><div class="fc-art">${townHallArt(g.rankIndex())}</div><div class="fc-text"><p class="eyebrow">The final challenge</p><h3>${esc(fin.title)}</h3><p>${fst === 'locked' ? `Unlocks at Mayoral Candidate. You are a ${esc(g.rank().name)}.` : fst === 'available' && !g.finalEligibility().ok ? `Your reputation isn\u2019t ready yet: ${esc(g.finalEligibility().items.filter((i) => !i.done).map((i) => i.label).join(', '))}.` : fst === 'completed' ? 'Completed \u2013 you finished on the Town Hall steps this season.' : esc(fin.description)}</p></div></button>` : '';
-  return `<header class="page-head"><h1>Missions</h1><p class="muted">Every mission moves you closer to the Town Hall. Steps marked with a pin need a real-world visit; quizzes can be done anywhere.</p></header>
+  return `<header class="page-head"><h1>Missions</h1><p class="muted">Every mission moves you closer to the Town Hall. Steps marked with a pin need a visit in the 3D town; quizzes can be done anywhere.</p></header>
     ${finCard}
     <div class="seg wide">${['active', 'available', 'stories', 'completed'].map((k) => `<button class="${t === k ? 'on' : ''}" data-act="mtab" data-val="${k}">${k === 'stories' ? 'Town stories' : k[0].toUpperCase() + k.slice(1)} <span class="count">${groups[k].length}</span></button>`).join('')}</div>
     ${t === 'stories' ? storiesList(app) : list.length ? `<div class="mission-list">${list.map(({ m, st }) => missionCard(g, m, st)).join('')}</div>` : `<p class="empty">${t === 'active' ? 'No active missions. Pick one from Available.' : t === 'completed' ? 'Nothing completed yet.' : 'All missions accepted.'}</p>`}`;
 }
 function missionCard(g, m, st) {
   const pr = g.progress(m);
-  const phys = m.physical === true ? `${icon('pin')}Real-world visit` : m.physical === 'mixed' ? `${icon('pin')}Visit or answer` : `${icon('star')}Anywhere`;
+  const phys = m.physical === true ? `${icon('pin')}Visit in the 3D town` : m.physical === 'mixed' ? `${icon('pin')}Visit or answer` : `${icon('star')}Anywhere`;
   return `<button class="mission-card ${st}" data-act="open-mission" data-id="${m.id}">
     <div class="mc-top"><span class="tag cat-${m.category}">${catLabel(m)}</span><span class="xp">+${m.xp} XP</span></div>
     <h3>${esc(m.title)}</h3><p>${esc(m.riddle && st !== 'completed' ? m.riddle : m.description)}</p>
@@ -242,7 +241,7 @@ export function missionSheet(app, id) {
     const [k, a] = s.step.split(':');
     if (['discover', 'visit', 'stop', 'repeat'].includes(k) && g.loc(a) && !(m.hideTarget && k === 'visit')) return `<button class="btn small" data-act="open-loc" data-id="${a}">Open</button>`;
     if (k === 'quiz' && st === 'active') return `<button class="btn small primary" data-act="quiz" data-id="${a}">Take quiz</button>`;
-    if (k === 'event' && st === 'active') return `<button class="btn small primary" data-act="checkin" data-event="${a}">Check in</button><button class="btn small demo" data-act="simulate" data-type="event" data-id="${a}">Simulate</button>`;
+    if (k === 'event' && st === 'active') return `<button class="btn small primary" data-act="checkin" data-event="${a}">Join in</button>`;
     return '';
   };
   const ev = m.eventId || m.steps.find((s) => s.startsWith('event:'))?.split(':')[1];
@@ -254,7 +253,7 @@ export function missionSheet(app, id) {
     ${event ? `<p class="fine">${esc(event.blurb)} When: ${esc(event.when)}.</p>` : ''}
     ${m.type === 'final' ? '<p class="fine">Winning the Mayoral Challenge makes you the fictional Mayor of Felixstowe for this season of the game. It has no connection with Felixstowe Town Council or any real election.</p>' : ''}
     <div class="mp">${bar(pr.done / pr.total)}<span>${pr.done}/${pr.total} steps</span></div>
-    <ul class="steps big">${pr.steps.map((s) => `<li class="${s.done ? 'done' : ''} k-${s.kind}">${icon(s.done ? 'check' : s.kind === 'physical' ? 'pin' : s.kind === 'virtual' ? 'eye' : 'star')}<span>${esc(s.label)}<small>${{ virtual: 'In the 3D town', physical: 'In person – QR check-in', either: 'In person, or answer the stop question', anywhere: 'Anywhere', progress: 'Career progress' }[s.kind] || ''}</small></span>${stepAction(s)}</li>`).join('')}</ul>
+    <ul class="steps big">${pr.steps.map((s) => `<li class="${s.done ? 'done' : ''} k-${s.kind}">${icon(s.done ? 'check' : s.kind === 'physical' ? 'pin' : s.kind === 'virtual' ? 'eye' : 'star')}<span>${esc(s.label)}<small>${{ virtual: 'In the 3D town', physical: 'Visit it in the 3D town', either: 'Visit it, or answer the stop question', anywhere: 'Anywhere', progress: 'Career progress' }[s.kind] || ''}</small></span>${stepAction(s)}</li>`).join('')}</ul>
     <div class="actions">${st === 'available' ? `<button class="btn primary big" data-act="accept" data-id="${m.id}">Accept mission</button>` : st === 'locked' ? `<p class="muted">${icon('lock')}Reach the rank of Mayoral Candidate to unlock this challenge.</p>` : st === 'completed' ? `<p class="done-line">${icon('check')}Completed ${fmtDate(g.p.completed[m.id].ts)} – +${m.xp} XP awarded</p>` : `<p class="muted">Mission accepted. Complete each step; rewards are added automatically when the last step is verified.</p><button class="btn small ghost" data-act="abandon" data-id="${m.id}">Pause this mission (no penalty)</button>`}</div>
     ${m.type === 'final' ? `<div class="card elig"><h4>Reputation check before the steps</h4><ul class="endorse">${g.finalEligibility().items.map((i) => `<li class="${i.done ? 'ok' : ''}">${icon(i.done ? 'check' : 'lock')}<span><b>${esc(i.label)}</b>${i.have != null ? `<small>You have ${i.have}</small>` : ''}</span></li>`).join('')}</ul><p class="fine">Before the finale the fictional press digs into every candidate: any hidden whisper comes out at 1.5\u00d7 the penalty.</p></div>` : ''}`;
 }
@@ -312,7 +311,7 @@ export function profile(app) {
     ${garage(app)}
     <section class="card"><h3 class="sec">Stamp book <span class="muted">${st.stamps}/${biz.length}</span></h3><div class="stamps">${biz.map((l) => { const v = firstVisit(l.id); return stamp(l, !!v, v ? fmtDate(v.ts) : ''); }).join('')}</div></section>
     <section class="card"><h3 class="sec">Badges</h3><div class="badges">${ACHIEVEMENTS.map((a) => badge(a, g.p.achievements[a.id])).join('')}</div></section>
-    <section class="card"><h3 class="sec">Visit history <span class="muted">– private to you</span></h3>${visits.length ? `<ul class="history">${visits.map((c) => `<li><b>${esc(c.type === 'event' ? EVENTS.find((e) => e.id === c.target)?.name : g.loc(c.target)?.name)}</b><span>${fmtDT(c.ts)} · ${c.simulated ? 'simulated (demo)' : { camera: 'QR scan', photo: 'QR photo', typed: 'typed code' }[c.method] || c.method}</span></li>`).join('')}</ul>` : '<p class="muted">No check-ins yet.</p>'}</section>
+    <section class="card"><h3 class="sec">Visit history <span class="muted">– private to you</span></h3>${visits.length ? `<ul class="history">${visits.map((c) => `<li><b>${esc(c.type === 'event' ? EVENTS.find((e) => e.id === c.target)?.name : g.loc(c.target)?.name)}</b><span>${fmtDT(c.ts)} · in the 3D town</span></li>`).join('')}</ul>` : '<p class="muted">No visits yet.</p>'}</section>
     <section class="card"><h3 class="sec">Missions completed</h3>${Object.keys(g.p.completed).length ? `<ul class="history">${Object.entries(g.p.completed).map(([id, c]) => `<li><b>${esc(g.mission(id)?.title || id)}</b><span>${fmtDate(c.ts)}</span></li>`).join('')}</ul>` : '<p class="muted">None yet.</p>'}</section>
     <section class="card"><h3 class="sec">Career history</h3><ol class="career">${g.p.career.map((c) => `<li><b>${esc(g.config.ranks.find((k) => k.id === c.rank)?.name)}</b><time>${fmtDate(c.ts)}</time></li>`).join('')}</ol>
       ${g.p.seasons.length ? `<h4>Seasons</h4><ul class="history">${g.p.seasons.map((s) => `<li><b>${esc(s.title || s.rank)}</b><span>${esc(s.season)}${s.points != null ? ' · ' + s.points + ' pts' : ''}</span></li>`).join('')}</ul>` : ''}</section>
@@ -327,5 +326,5 @@ export function profile(app) {
       <p><button class="btn" data-act="report-open">${icon('admin')}Report a problem</button></p>
       <div class="danger-zone"><button class="btn danger" data-act="delete-ask">Delete my progress</button>
         <div class="confirm"><p>This deletes your player, stamps and history from this device. It can’t be undone.</p><button class="btn danger" data-act="delete-confirm">Yes, delete everything</button><button class="btn" data-act="delete-cancel">Keep my progress</button></div></div></section>
-    <section class="card admin-entry"><h3 class="sec">For businesses and organisers</h3><p>Manage demo businesses, missions, QR codes, ranks, seasons and reports.</p><button class="btn" data-act="admin">${icon('admin')}Open the admin panel (demo)</button></section>`;
+    <section class="card admin-entry"><h3 class="sec">For businesses and organisers</h3><p>Manage demo businesses, missions, ranks, seasons and reports.</p><button class="btn" data-act="admin">${icon('admin')}Open the admin panel (demo)</button></section>`;
 }

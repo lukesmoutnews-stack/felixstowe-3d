@@ -29,6 +29,7 @@ const params = new URLSearchParams(location.search);
 // A hosting page can pre-set options (used by the published demo, where query strings are unavailable).
 for (const [k, v] of Object.entries(window.F3D_DEMO || {})) params.set(k, v);
 
+const PLAIN_BAD = [0xf0b429, 0x6f8f3a]; // yellow / lime hatchbacks are rare in a real car park
 class App {
   async init() {
     this.t0 = performance.now();
@@ -166,14 +167,98 @@ class App {
     }
     return { x: road.cx, z: road.cz, yaw: Math.atan2(-dx, -dz) };
   }
-  /** Your own car near where you start, plus a few parked vehicles of other kinds to try. */
+  /** Your own car near where you start. When you start in a car park it stands in a bay, with other cars parked around it. */
   parkCar(x, z) {
     const f = this.fleet;
     let mine = f.vehicles.find((v) => v.owner === 'yours');
-    if (!mine || Math.hypot(mine.pos.x - x, mine.pos.z - z) > 200) { if (mine) f.remove(mine); mine = f.parkNear(x, z, this.hooks.ownCar || 'hatchback', { owner: 'yours', along: 6, colour: this.hooks.ownColour }); }
-    // no cluster of parked vehicles at the start: they block the street. Parked vehicles of every kind are spread across
-    // the town instead (vehicles/traffic.js ambient parking), and any vehicle, parked or driving, can be taken.
+    if (!mine || Math.hypot(mine.pos.x - x, mine.pos.z - z) > 200) {
+      if (mine) f.remove(mine);
+      const bays = this.carParkBays(x, z);
+      if (bays) {
+        // clear a previous car park's cars, then fill this one
+        for (const v of f.vehicles.slice()) if (v.lot) f.remove(v);
+        if (this._bayMarks) { this.scene.remove(this._bayMarks); this._bayMarks.geometry.dispose(); this._bayMarks = null; }
+        const own = bays.slice().sort((a, b) => Math.hypot(a.x - x, a.z - z) - Math.hypot(b.x - x, b.z - z)).find((b) => Math.hypot(b.x - x, b.z - z) > 3.5);
+        if (own) { mine = f.spawn(this.hooks.ownCar || 'hatchback', own.x, own.z, own.heading, { owner: 'yours', colour: this.hooks.ownColour }); own.used = true; }
+        this._fillCarPark(bays, x, z); this._markBays(bays);
+      }
+      if (!mine) mine = f.parkNear(x, z, this.hooks.ownCar || 'hatchback', { owner: 'yours', along: 6, colour: this.hooks.ownColour });
+    }
+    // Parked vehicles of every kind are also spread across the town (vehicles/traffic.js ambient parking);
+    // any vehicle, parked or driving, can be taken.
     this.carAvailable = f.vehicles.length > 0; if (!this.car) this.car = mine;
+  }
+  /** Marked bays in the car park the player starts in: rows of 2.6 m x 5 m across the car park's long axis. */
+  carParkBays(x, z) {
+    const lots = this.world.parkingLots || []; let best = null;
+    for (const l of lots) {
+      const inside = pointInRing(x, z, l.ring);
+      let d = 0; if (!inside) { d = Infinity; for (let i = 0; i < l.ring.length; i++) { const a = l.ring[i], b = l.ring[(i + 1) % l.ring.length]; d = Math.min(d, distToSegment(x, z, a[0], a[1], b[0], b[1]).d); } }
+      if (d > 40) continue; if (!best || d < best.d) best = { l, d };
+    }
+    if (!best) return null;
+    const ring = best.l.ring; let ux = 1, uz = 0, len = 0;
+    for (let i = 0; i < ring.length; i++) { const a = ring[i], b = ring[(i + 1) % ring.length], L = Math.hypot(b[0] - a[0], b[1] - a[1]); if (L > len) { len = L; ux = (b[0] - a[0]) / L; uz = (b[1] - a[1]) / L; } }
+    const vx = -uz, vz = ux; let u0 = Infinity, u1 = -Infinity, v0 = Infinity, v1 = -Infinity;
+    for (const p of ring) { const u = p[0] * ux + p[1] * uz, v = p[0] * vx + p[1] * vz; u0 = Math.min(u0, u); u1 = Math.max(u1, u); v0 = Math.min(v0, v); v1 = Math.max(v1, v); }
+    const BW = 2.6, BL = 5.0, M = 0.7, bays = [], at = (u, v) => [ux * u + vx * v, uz * u + vz * v];
+    const ok = (px, pz) => pointInRing(px, pz, ring) && !this.collision.insideBuilding(px, pz);
+    const span = (u) => { // where the line across the car park at u enters and leaves it
+      let lo = Infinity, hi = -Infinity;
+      for (let i = 0; i < ring.length; i++) {
+        const A = ring[i], B = ring[(i + 1) % ring.length], ua = A[0] * ux + A[1] * uz, ub = B[0] * ux + B[1] * uz;
+        if ((ua - u) * (ub - u) > 0 || ua === ub) continue; const t = (u - ua) / (ub - ua), va = A[0] * vx + A[1] * vz, vb = B[0] * vx + B[1] * vz, v = va + (vb - va) * t;
+        lo = Math.min(lo, v); hi = Math.max(hi, v);
+      }
+      return hi > lo ? [lo, hi] : null;
+    };
+    for (let u = u0 + BW / 2 + 0.5; u < u1 - BW / 2; u += BW) {
+      const sp = span(u); if (!sp) continue; const [lo, hi] = sp, depth = hi - lo;
+      const rows = []; // nose-in against each edge, with an aisle between when the car park is deep enough
+      if (depth >= 2 * BL + 5.5) rows.push([lo + BL / 2 + M, -1], [hi - BL / 2 - M, 1]); else if (depth >= BL + 1.4) rows.push(depth > 12 ? [lo + BL / 2 + M, -1] : [(lo + hi) / 2, -1]);
+      for (const [rv, dir] of rows) {
+        const [cx, cz] = at(u, rv);
+        const corners = [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([su, sv]) => [cx + ux * su * BW / 2 + vx * sv * BL / 2, cz + uz * su * BW / 2 + vz * sv * BL / 2]);
+        if (!ok(cx, cz) || !corners.every(([qx, qz]) => ok(qx, qz))) continue;
+        const rd = this.world.nearestRoad(cx, cz, 6, (r) => r.car && !r.footOnly && !r.bridge); if (rd && rd.d < rd.road.width / 2 + 1.2) continue; // a road through the car park stays clear
+        bays.push({ ux, uz, vx, vz, dir, x: cx, z: cz, heading: Math.atan2(vx * dir, vz * dir) + (this._lotRng() < 0.12 ? Math.PI : 0) });
+      }
+    }
+    return bays.length ? bays : null;
+  }
+  /** White bay lines painted on the tarmac: a line on each side of every bay, and one across the back. */
+  _markBays(bays) {
+    const pos = [], idx = [], W = 0.09, BW = 2.6, BL = 5.0, y = (x, z) => this.world.surfaceAt(x, z) + 0.035;
+    const quad = (x0, z0, x1, z1) => { // a thin strip from (x0,z0) to (x1,z1)
+      const dx = x1 - x0, dz = z1 - z0, L = Math.hypot(dx, dz) || 1, nx = -dz / L * W / 2, nz = dx / L * W / 2, n = pos.length / 3;
+      for (const [px, pz] of [[x0 + nx, z0 + nz], [x0 - nx, z0 - nz], [x1 - nx, z1 - nz], [x1 + nx, z1 + nz]]) pos.push(px, y(px, pz), pz);
+      idx.push(n, n + 1, n + 2, n, n + 2, n + 3);
+    };
+    for (const b of bays) {
+      const tx = b.vx * BL / 2, tz = b.vz * BL / 2, sx = b.ux * BW / 2, sz = b.uz * BW / 2, mouth = -b.dir; // the open end faces the aisle
+      const c = (su, sv) => [b.x + sx * su + tx * sv, b.z + sz * su + tz * sv];
+      for (const su of [-1, 1]) { const a = c(su, -1), d = c(su, 1); quad(a[0], a[1], d[0], d[1]); }
+      const a = c(-1, b.dir), d = c(1, b.dir); quad(a[0], a[1], d[0], d[1]); void mouth;
+    }
+    if (!pos.length) return;
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ color: 0xe9e9e4, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, side: THREE.DoubleSide }));
+    m.renderOrder = 2; m.frustumCulled = false; this.scene.add(m); this._bayMarks = m;
+  }
+  _lotRng() { this._lr = ((this._lr ?? 7) * 1664525 + 1013904223) >>> 0; return this._lr / 4294967296; }
+  _fillCarPark(bays, px, pz) {
+    const f = this.fleet, TYPES = [['hatchback', 18], ['saloon', 12], ['family', 10], ['suv', 14], ['taxi', 3], ['sports', 4], ['van', 8]];
+    const total = TYPES.reduce((s, [, w]) => s + w, 0);
+    const near = f.vehicles.find((v) => v.owner === 'yours');
+    let n = 0;
+    for (const b of bays) {
+      if (b.used || n >= 16) continue;
+      if (Math.hypot(b.x - px, b.z - pz) < 5.5 || (near && Math.hypot(b.x - near.pos.x, b.z - near.pos.z) < 2.4)) continue; // keep the player's way clear
+      if (this._lotRng() > 0.62) continue; // not every bay is full
+      let r = this._lotRng() * total, type = 'hatchback'; for (const [t, w] of TYPES) if ((r -= w) <= 0) { type = t; break; }
+      const cols = VEHICLES[type].colours.filter((c) => !PLAIN_BAD.includes(c)), colour = cols[Math.floor(this._lotRng() * cols.length) % cols.length];
+      const v = f.spawn(type, b.x, b.z, b.heading, { owner: 'parked', colour }); v.lot = true; n++;
+    }
   }
 
   enter() {

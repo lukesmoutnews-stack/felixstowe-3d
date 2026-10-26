@@ -138,21 +138,21 @@ export const MISSIONS = [
   // A. Business missions (one per demonstration business)
   ...LOCATIONS.filter((l) => l.kind === 'business').map((l) => ({
     id: 'visit_' + l.id, category: 'business', title: `Visit ${l.name}`, difficulty: 'Easy', xp: 50, demo: true,
-    description: `Find ${l.name} in the 3D town, then visit in person and scan its QR code.`, locationId: l.id,
+    description: `Find ${l.name} in the 3D town, then visit it in the 3D town.`, locationId: l.id,
     steps: [`discover:${l.id}`, `visit:${l.id}`], physical: true, sponsored: !!l.sponsored,
   })),
   { id: 'high_street', category: 'business', type: 'trail', title: 'The High Street Challenge', difficulty: 'Medium', xp: 250, badge: 'high_street_hero', demo: true,
     description: 'Discover five businesses in the town centre, visit each one and collect five stamps.',
     steps: ['kittiwake', 'marram', 'lantern', 'oldsignal', 'shingle'].flatMap((id) => [`discover:${id}`, `visit:${id}`]), physical: true },
   { id: 'stamp_collector', category: 'business', title: 'Stamp collector', difficulty: 'Medium', xp: 100, demo: true,
-    description: 'Collect stamps from any five businesses by checking in at each one.', steps: ['stamps:5'], physical: true },
+    description: 'Collect stamps from any five businesses by visiting each one.', steps: ['stamps:5'], physical: true },
   { id: 'regular_kittiwake', category: 'business', title: 'A regular at the Kittiwake', difficulty: 'Medium', xp: 75, demo: true, locationId: 'kittiwake',
-    description: 'Check in at The Kittiwake Bakehouse on two different days.', steps: ['repeat:kittiwake:2'], physical: true },
+    description: 'Visit The Kittiwake Bakehouse on two different days.', steps: ['repeat:kittiwake:2'], physical: true },
   { id: 'ferry_morning', category: 'business', type: 'trail', title: 'A morning at the Ferry', difficulty: 'Medium', xp: 120, sponsored: true, sponsor: 'tidewrack', demo: true,
     description: 'Sponsored by Tidewrack Coffee (demo). Visit the café, then the harbour at Felixstowe Ferry.', steps: ['discover:tidewrack', 'visit:tidewrack', 'discover:ferry', 'visit:ferry'], physical: true },
   // B. Exploration missions
   { id: 'three_landmarks', category: 'exploration', title: 'Landmark hunter', difficulty: 'Easy', xp: 80,
-    description: 'Discover three real landmarks in the 3D town and visit them in person.', steps: ['visitAny:3:landmark'], physical: true },
+    description: 'Discover three real landmarks in the 3D town and visit them in the 3D town.', steps: ['visitAny:3:landmark'], physical: true },
   { id: 'history_quiz', category: 'exploration', title: 'Felixstowe history quiz', difficulty: 'Easy', xp: 60,
     description: 'Six questions on the pier, the Spa Pavilion, Landguard Fort and the railway. You can do this anywhere.', steps: ['quiz:history'], physical: false },
   { id: 'seafront_explorer', category: 'exploration', type: 'trail', title: 'The Seafront Explorer', difficulty: 'Medium', xp: 250, badge: 'seafront_explorer',
@@ -165,9 +165,9 @@ export const MISSIONS = [
     steps: ['discover:landguard_fort', 'visit:landguard_fort', 'discover:museum', 'visit:museum', 'discover:landguard_reserve', 'visit:landguard_reserve', 'quiz:landguard'], physical: true },
   // C. Community missions
   { id: 'beach_clean', category: 'community', title: 'Seafront litter pick', difficulty: 'Medium', xp: 150, demo: true, eventId: 'beach_clean',
-    description: 'Join the (fictional) Saturday litter pick at Martello Park and check in with the event code.', steps: ['event:beach_clean'], physical: true },
+    description: 'Join the (fictional) Saturday litter pick at Martello Park and join in.', steps: ['event:beach_clean'], physical: true },
   { id: 'community_space', category: 'community', title: 'Discover a community space', difficulty: 'Easy', xp: 60,
-    description: 'Find The Triangle, the town-centre garden, and visit it in person.', steps: ['discover:triangle', 'visit:triangle'], physical: true },
+    description: 'Find The Triangle, the town-centre garden, and visit it in the 3D town.', steps: ['discover:triangle', 'visit:triangle'], physical: true },
   { id: 'heritage_challenge', category: 'community', title: 'Heritage challenge', difficulty: 'Medium', xp: 120,
     description: 'Visit Landguard Fort and pass the Landguard heritage quiz.', steps: ['visit:landguard_fort', 'quiz:landguard'], physical: true },
   // Final challenge
