@@ -5,6 +5,9 @@
 
 /** Fascia styles by business name (national chains; colours from brand knowledge, see confidence). */
 export const BRAND_STYLES = {
+ "Treasure Chest Books": { "fascia": "#17181b", "text": "#f4f1ea", "case": "upper", "font": "serif", "weight": "bold", "confidence": "medium", "note": "Black fascia with white capitals, from the user's Street View photo (Sept 2026).", "sources": [] },
+ "Felixstowe Mini Market": { "fascia": "#1f3d93", "text": "#ffffff", "case": "mixed", "font": "sans", "weight": "bold", "confidence": "medium", "note": "Royal-blue fascia with white lettering, from the user's Street View photo (Sept 2026).", "sources": [] },
+ "Abbeygate Lighting": { "fascia": "#1d3a40", "text": "#e6eef0", "case": "mixed", "font": "sans", "weight": "bold", "confidence": "medium", "note": "Dark teal fascia with pale lettering ('Abbeygate'), from the user's Street View photo (Sept 2026).", "sources": [] },
  "Poundstretcher": {
   "fascia": "#ffffff",
   "text": "#e2231a",
@@ -516,6 +519,7 @@ export const BRAND_STYLES = {
 
 /** Corrections to OSM where newer evidence exists (keyed by OSM id as n123 / w123). */
 export const OVERRIDES = {
+ n6859083269: { name: "Felixstowe Mini Market", kind: "convenience", status: "replaced", was: "The Oaks Tearoom", evidence: ["User-supplied Google Street View, Sept 2026 (docs/research/hamilton-road-streetview/treasure-chest-abbeygate.png)"], note: "Shown beside Treasure Chest Books in the photo; the OSM node still says The Oaks Tearoom" },
  n6865114918: { name: "China Palace", kind: "restaurant", status: "replaced", was: "Saigon", evidence: ["https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/170"], note: "Premises licence for China Palace Restaurant, 11 Hamilton Road, from 7 Apr 2026" },
  n6865114968: { name: "China China", kind: "restaurant", status: "replaced", was: "Sam Moi Oriental", evidence: ["https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/115"], note: "Premises licence for China China Restaurant, 8 Hamilton Road, from 30 Dec 2024" },
  n6865115034: { status: "closed", was: "Coffee Link", evidence: ["https://wanderlog.com/place/details/2875387"], note: "Listed as permanently closed; current occupant of 82 unknown" },

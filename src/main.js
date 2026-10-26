@@ -105,7 +105,7 @@ class App {
     this.player.onStep = (v) => this.audio.step(this.surfaceKind(), v / 2);
     this.fleet = new Fleet(this); this.crowd = new Crowd(this); if (params.has('nopeople')) this.crowd.enabled = false; this.npcPositions = () => this.crowd.positions(); this.car = null; this.transit = null; // car = the vehicle being driven (or last driven)
     if (params.has('notraffic') || this.hooks.noTraffic) this.fleet.traffic.enabled = false;
-    if (this.settings.viewDistance < 1000) this.fleet.traffic.max = 6;
+    if (this.settings.viewDistance < 1000) { this.fleet.traffic.max = 4; this.fleet.traffic.parkedMax = 4; }
     this.rig = new CameraRig(this.camera, this.world, this.settings);
     this.driving = false; this.paused = false; this.entered = false;
 
@@ -171,10 +171,8 @@ class App {
     const f = this.fleet;
     let mine = f.vehicles.find((v) => v.owner === 'yours');
     if (!mine || Math.hypot(mine.pos.x - x, mine.pos.z - z) > 200) { if (mine) f.remove(mine); mine = f.parkNear(x, z, this.hooks.ownCar || 'hatchback', { owner: 'yours', along: 6, colour: this.hooks.ownColour }); }
-    if (!this._seeded && !this.hooks.noParked) {
-      this._seeded = true;
-      [['taxi', 22], ['van', -16], ['sports', 34], ['parcel', -30], ['boxtruck', 50], ['bus', -48], ['doubledecker', 70], ['artic', 95], ['suv', 44], ['refuse', -70], ['roadworks', 82], ['flatbed', -88]].forEach(([t, a]) => f.parkNear(x, z, t, { owner: 'parked', along: a }));
-    }
+    // no cluster of parked vehicles at the start: they block the street. Parked vehicles of every kind are spread across
+    // the town instead (vehicles/traffic.js ambient parking), and any vehicle, parked or driving, can be taken.
     this.carAvailable = f.vehicles.length > 0; if (!this.car) this.car = mine;
   }
 
@@ -222,6 +220,7 @@ class App {
     const [dx, dz] = v.local(v.door.x, v.door.z);
     this.transit = { kind: 'enter', v, t: 0, from: this.player.pos.clone(), door: { x: dx, z: dz } };
     v.doorTarget = 1; this.player.heading = Math.atan2(v.pos.x - dx, v.pos.z - dz);
+    if (v.owner === 'traffic') this.fleet.traffic.release(v); // a moving car stops for you
     if (v.owner === 'parked') { this.hooks.onVehicleTaken?.(v); if (!this.hooks.onVehicleTaken) this.ui.toast('This isn’t your vehicle. In the game you can borrow it; never do this in real life.'); }
   }
   _finishEnter(v) {
@@ -424,7 +423,7 @@ class App {
     if (this.driving) this.ui.prompt(`<kbd>E</kbd> Get out of the ${escapeHtml(this.car?.s.name.split(' (')[0].toLowerCase() || 'vehicle')}`);
     else if (!it) this.ui.prompt(null);
     else if (it.type === 'npc') this.ui.prompt(`<kbd>E</kbd> Talk to ${escapeHtml(it.npc.name)}`);
-    else if (it.type === 'car') this.ui.prompt(`<kbd>E</kbd> ${it.v.owner === 'yours' || it.v.owner === 'taken' ? 'Get in' : 'Take'} the ${escapeHtml(it.v.s.name.split(' (')[0].toLowerCase())}${it.v.owner === 'parked' ? ' (not yours, in the game only)' : ''}`);
+    else if (it.type === 'car') this.ui.prompt(`<kbd>E</kbd> ${it.v.owner === 'yours' || it.v.owner === 'taken' ? 'Get in' : 'Take'} the ${escapeHtml(it.v.s.name.split(' (')[0].toLowerCase())}${it.v.owner === 'parked' || it.v.owner === 'traffic' ? ' (not yours, in the game only)' : ''}`);
     else this.ui.prompt(`<kbd>E</kbd> ${it.poi.landmark ? 'Read about' : 'Inspect'} ${escapeHtml(it.poi.name)}`);
     // discovery (no key press needed)
     if (it?.type === 'poi') {
@@ -466,6 +465,8 @@ class App {
       /** Hold controls for `seconds` of simulation (throttle -1..1, steer -1..1 left positive). */
       hold: (throttle, steer, seconds, handbrake = false) => { const s = { f: throttle, s: -steer }; app.input.setAnalog(s.f, s.s); if (handbrake) app.input.virtual.add('Space'); const n = Math.round(seconds * 30); for (let i = 0; i < n; i++) app.update(1 / 30); app.input.setAnalog(0, 0); app.input.virtual.delete('Space'); return app.debugApi().state().car; },
       vehicles: () => app.fleet.vehicles.map((v) => ({ id: v.id, type: v.type, owner: v.owner, x: +v.pos.x.toFixed(1), y: +v.pos.y.toFixed(2), z: +v.pos.z.toFixed(1), speed: +v.speed.toFixed(2) })),
+      /** Test helper: stand at a vehicle's driver door and get in (what pressing E there does). */
+      enterVehicle: (id) => { const v = app.fleet.vehicles.find((x) => x.id === id); if (!v) return null; const [dx, dz] = v.local(v.door.x, v.door.z); app.player.place(dx, dz, v.pos.y); const near = app.fleet.nearestEnterable(app.player.pos); const owner0 = v.owner; app.enterCar(near || v); app.holdSim = true; for (let i = 0; i < 75; i++) app.update(1 / 30); app.holdSim = false; return { offered: near ? near.id === id : false, ownerBefore: owner0, ownerAfter: v.owner, driving: app.driving, isCar: app.car === v, speed: +v.speed.toFixed(2) }; },
       graph: () => ({ nodes: app.fleet.traffic.graph.nodes.size, edges: app.fleet.traffic.graph.edges.length }),
       /** Load the area and stand at (x,z); with y, on whichever surface is at that level (e.g. a bridge deck). */
       placeAt: async (x, z, y = null) => { await app.world.ensureAround(x, z, 400); app.player.place(x, z, y); app.rig.initialised = false; return { y: app.player.pos.y, ground: app.world.ground(x, z), deck: app.world.onDeck(x, z, app.player.pos.y)?.name || null }; },

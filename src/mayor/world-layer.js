@@ -139,7 +139,7 @@ export class WorldLayer {
     this._actT = (this._actT || 0) + 1; if (!force && this._actT % 8) return;
     const a = this.app; let label = null;
     if (a.driving && a.car) label = `Get out (${Math.round(Math.abs(a.car.speed) * 2.237)} mph)`;
-    else { const it = a.nearbyInteractable?.(); if (it?.type === 'car') label = `${it.v.owner === 'parked' ? 'Take' : 'Get in'}: ${it.v.s.name.replace(/ \(.*\)/, '')}`; else if (it?.type === 'npc') label = `Talk to ${it.npc.name}`; }
+    else { const it = a.nearbyInteractable?.(); if (it?.type === 'car') label = `${it.v.owner === 'parked' || it.v.owner === 'traffic' ? 'Take' : 'Get in'}: ${it.v.s.name.replace(/ \(.*\)/, '')}`; else if (it?.type === 'npc') label = `Talk to ${it.npc.name}`; }
     btn.hidden = !label; if (label && btn.textContent !== label) btn.textContent = label;
     btn.classList.toggle('warn', !!label && /^Take/.test(label));
   }

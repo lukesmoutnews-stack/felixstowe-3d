@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { Geo } from './seafront.js';
 import { Textures } from './textures.js';
 import { ensureCCW, pointInRing } from '../geo/polygon.js';
+import { cinemaFront, cinemaSide, sideFrame, dormers, chimneys } from './frontage-features.js';
 
 let M = null;
 function mats() {
@@ -22,6 +23,8 @@ function mats() {
     yellowWall: std({ color: 0xe9d46a, roughness: 0.8 }),
     pane: std({ color: 0x5f7480, roughness: 0.12, metalness: 0.35, side: THREE.DoubleSide }), // opaque window glass (bays are not hollow)
     tile: std({ color: 0x8a5a44, roughness: 0.85, side: THREE.DoubleSide }), cream: std({ color: 0xe8dcb8, roughness: 0.8, side: THREE.DoubleSide }),
+    gw: std({ color: 0xe8e5dc, roughness: 0.75, side: THREE.DoubleSide }), red: std({ color: 0x9c1426, roughness: 0.45, side: THREE.DoubleSide }),
+    slate: std({ color: 0x45484e, roughness: 0.8, side: THREE.DoubleSide }),
     panel: std({ color: 0xf2f0ea, roughness: 0.7, side: THREE.DoubleSide }), resin: std({ color: 0xb48f72, roughness: 0.95, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
   };
   return M;
@@ -51,7 +54,7 @@ export function streetEdge(b, nearestRoad) {
 export function buildFrontageDetails(b, ctx) {
   const fr = b.frontage; if (!fr?.details?.length) return null;
   const e = streetEdge(b, ctx.nearestRoad); if (!e) return null;
-  const m = mats(); const G = { white: new Geo(), black: new Geo(), glass: new Geo(), blue: new Geo(), timber: new Geo(), steel: new Geo(), deck: new Geo(), brick: new Geo(), coping: new Geo(), yellowWall: new Geo(), pane: new Geo(), tile: new Geo(), cream: new Geo(), panel: new Geo(), resin: new Geo() };
+  const m = mats(); const G = { gw: new Geo(), red: new Geo(), slate: new Geo(), white: new Geo(), black: new Geo(), glass: new Geo(), blue: new Geo(), timber: new Geo(), steel: new Geo(), deck: new Geo(), brick: new Geo(), coping: new Geo(), yellowWall: new Geo(), pane: new Geo(), tile: new Geo(), cream: new Geo(), panel: new Geo(), resin: new Geo() };
   let g = Infinity; for (let t = 0; t <= 1; t += 0.25) g = Math.min(g, ctx.ground(e.a[0] + (e.c[0] - e.a[0]) * t, e.a[1] + (e.c[1] - e.a[1]) * t));
   const H = b.height, storey = Math.max(2.6, Math.min(3.2, H / Math.max(1, Math.round(H / 3)))), colliders = [];
   // local frame: s along the edge (0..L), d out from the facade, y above the ground at the edge
@@ -66,10 +69,12 @@ export function buildFrontageDetails(b, ctx) {
     for (let s = s0 + 0.15; s < s1 - 0.1; s += 0.3) { const p = P(s, d, y - 0.2); G[k].tri([p[0] - e.ux * 0.15, p[1] + 0.04, p[2] - e.uz * 0.15], [p[0] + e.ux * 0.15, p[1] + 0.04, p[2] + e.uz * 0.15], [p[0], p[1] - 0.09, p[2]]); }
   };
   const deck = (d, y) => box('deck', sm, d / 2, y, L / 2, d / 2, 0.08);
+  const extra = [], K = { P, box, G, L, s0, s1, sm, H, D: null, e, colliders, g, extra, m };
   const lim = Math.max(1.0, e.front - 0.2); // never out over the pavement or road
-  const D = (d) => Math.min(d, lim);
+  const D = (d) => Math.min(d, lim); K.D = D;
   for (let it of fr.details) {
-    if (it.t === 'verandah2') { // two tiers of white fretwork verandahs (raised ground floor + first floor)
+    if (it.t === 'cinemaFront') cinemaFront(K); else if (it.t === 'dormers') dormers(K, it); else if (it.t === 'chimneys') chimneys(K, it); else if (it.t === 'cinemaSide') cinemaSide(sideFrame(b, it, K, ensureCCW(b.outer), pointInRing));
+    else if (it.t === 'verandah2') { // two tiers of white fretwork verandahs (raised ground floor + first floor)
       const d = D(1.7), y0 = 0.9, y1 = y0 + storey, top = y1 + storey - 0.2;
       deck(d, y0); deck(d, y1); posts(d, 0, top);
       balustrade(d, y0); balustrade(d, y1); sideRails(d, y0); sideRails(d, y1);
@@ -172,7 +177,7 @@ export function buildFrontageDetails(b, ctx) {
     }
   }
   const meshes = []; for (const [k, geo] of Object.entries(G)) { const me = geo.mesh(m[k]); if (me) { me.name = 'frontage:' + k; meshes.push(me); } }
-  const group = new THREE.Group(); group.name = 'frontage:' + b.id; for (const me of meshes) group.add(me);
+  const group = new THREE.Group(); group.name = 'frontage:' + b.id; for (const me of meshes) group.add(me); for (const me of extra) group.add(me);
   return { group, colliders };
 }
 

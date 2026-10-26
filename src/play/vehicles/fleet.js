@@ -33,11 +33,13 @@ export class Fleet {
     return null;
   }
 
-  /** Vehicles you can get into: parked or your own, stationary, with the driver's door reachable. */
+  /** Vehicles you can get into: any vehicle with its driver's door within reach, parked, your own or in the traffic
+   *  (a moving one stops for you, traffic.release). The one you are driving is not offered. */
   nearestEnterable(p, range = 2.6) {
     let best = null;
     for (const v of this.vehicles) {
-      if (v.owner === 'traffic' || Math.abs(v.speed) > 0.5 || Math.abs(v.pos.y - p.y) > 1.6) continue;
+      if (v === this.driving || Math.abs(v.pos.y - p.y) > 1.6) continue;
+      if (v.owner !== 'traffic' && Math.abs(v.speed) > 0.5) continue; // a rolling parked/taken vehicle is not offered; traffic is
       const [dx, dz] = v.local(v.door.x, v.door.z); const d = Math.hypot(dx - p.x, dz - p.z);
       if (d < range + (v.s.cat === 'bus' ? 1 : 0) && (!best || d < best.d)) best = { v, d };
     }

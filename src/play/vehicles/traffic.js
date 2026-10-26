@@ -14,6 +14,8 @@ import { Vehicle } from './vehicle.js';
 const LIMIT = { motorway: 31, trunk: 26, primary: 13.4, secondary: 13.4, tertiary: 13.4, unclassified: 11, residential: 8.9, living_street: 4.5, service: 6.7, road: 8.9,
   motorway_link: 18, trunk_link: 18, primary_link: 13, secondary_link: 13, tertiary_link: 11 }; // m/s (20/30 mph in town, 60 on the A14)
 const MIX = [['hatchback', 20], ['saloon', 14], ['family', 12], ['suv', 10], ['taxi', 4], ['sports', 2], ['van', 10], ['parcel', 5], ['boxtruck', 4], ['flatbed', 2], ['refuse', 1], ['roadworks', 1], ['bus', 4], ['doubledecker', 3], ['artic', 4]];
+// parked vehicles of every kind, so anything can be found and taken anywhere in the town
+const PARK_MIX = [['hatchback', 16], ['saloon', 12], ['family', 10], ['suv', 10], ['taxi', 5], ['sports', 4], ['van', 10], ['parcel', 5], ['boxtruck', 4], ['flatbed', 2], ['refuse', 2], ['roadworks', 2], ['bus', 3], ['doubledecker', 2], ['artic', 2]];
 const BIG_ROADS = new Set(['trunk', 'primary', 'secondary', 'trunk_link', 'primary_link', 'motorway', 'motorway_link']);
 
 /** Is test(x, z) true every `step` metres along a polyline (not just at its vertices)? */
@@ -61,7 +63,7 @@ export class RoadGraph {
 }
 
 export class Traffic {
-  constructor(app, fleet) { this.app = app; this.fleet = fleet; this.graph = new RoadGraph(app.world); this.agents = []; this.dirty = true; this.max = 10; this.timer = 0; this.rng = mulberry(1234); this.enabled = true;
+  constructor(app, fleet) { this.app = app; this.fleet = fleet; this.graph = new RoadGraph(app.world); this.agents = []; this.dirty = true; this.max = 6; this.parkedMax = 8; this.timer = 0; this.rng = mulberry(1234); this.enabled = true;
     app.world.addEventListener('tileloaded', () => { this.dirty = true; }); app.world.addEventListener('tileunloaded', () => { this.dirty = true; }); }
   pickType(edge) {
     const pool = MIX.filter(([t]) => edge.big || !['artic', 'refuse'].includes(t)).filter(([t]) => edge.headroom > VEHICLES[t].hgt + (VEHICLES[t].trailer ? 0.3 : 0) + 0.2);
@@ -83,6 +85,30 @@ export class Traffic {
       return;
     }
   }
+  /** Park one more vehicle at a kerb somewhere around the player (never close by, so the start and the way stay clear). */
+  spawnParked(focus) {
+    const g = this.graph; if (!g.edges.length) return;
+    for (let tries = 0; tries < 14; tries++) {
+      const e = g.edges[Math.floor(this.rng() * g.edges.length)]; if (e.len < 30) continue;
+      const mid = e.pts[Math.floor(e.pts.length / 2)], d = Math.hypot(mid[0] - focus.x, mid[1] - focus.z);
+      if (d < 80 || d > 260) continue;
+      let r = this.rng() * PARK_MIX.reduce((s, [, w]) => s + w, 0), type = 'hatchback'; for (const [t, w] of PARK_MIX) if ((r -= w) <= 0) { type = t; break; }
+      const sp = VEHICLES[type]; if (e.way.width < (sp.cat === 'car' ? 4.5 : 7) || (e.headroom < sp.hgt + 0.5)) continue;
+      if (['bus', 'doubledecker', 'artic', 'refuse'].includes(type) && !e.big && e.way.width < 8) continue;
+      const s = 12 + this.rng() * (e.len - 24), off = e.way.width / 2 - sp.wid / 2 - 0.3;
+      const p = g.sample(e, s, 1, e.oneway ? 0 : off); // the left-hand kerb (UK)
+      if (e.oneway) { const q = g.sample(e, s, 1, off); p.x = q.x; p.z = q.z; }
+      if (this.fleet.vehicles.some((v) => Math.hypot(v.pos.x - p.x, v.pos.z - p.z) < 14 + sp.len / 2)) continue;
+      if (this.app.collision.insideBuilding(p.x, p.z)) continue;
+      const v = this.fleet.spawn(type, p.x, p.z, p.heading, { owner: 'parked', seed: this.rng(), y: p.y + 0.3 }); v.ambient = true;
+      return;
+    }
+  }
+  /** A traffic vehicle you take over: it leaves the road network and stands where it is. */
+  release(v) {
+    const a = this.agents.find((x) => x.v === v); if (a) this.agents.splice(this.agents.indexOf(a), 1);
+    v.owner = 'parked'; v.ambient = true; v.speed = 0; v.accel = 0; v.yawRate = 0; v.latAcc = 0; v.braking = true; v.reversing = false;
+  }
   nextEdge(ag) {
     const node = ag.dir > 0 ? ag.e.b : ag.e.a, h = VEHICLES[ag.v.type].hgt + (ag.v.trailer ? 0.3 : 0);
     let opts = node.out.filter((o) => o.e !== ag.e && o.e.headroom > h + 0.2 && (o.e.big || !['artic'].includes(ag.v.type) || ag.e.big));
@@ -97,7 +123,11 @@ export class Traffic {
     if (!this.enabled) return;
     if (this.dirty) { this.graph.keep = this.app.zoneOn ? inZone : null; this.graph.rebuild(); this.dirty = false; for (const a of this.agents.slice()) if (!this.graph.wayIds.has(a.e.way.id)) this.despawn(a); }
     this.timer += dt;
-    if (this.timer > 0.6) { this.timer = 0; if (this.agents.length < this.max) this.spawnOne(focus); for (const a of this.agents.slice()) if (Math.hypot(a.v.pos.x - focus.x, a.v.pos.z - focus.z) > 330) this.despawn(a); }
+    if (this.timer > 0.6) { this.timer = 0; if (this.agents.length < this.max) this.spawnOne(focus); for (const a of this.agents.slice()) if (Math.hypot(a.v.pos.x - focus.x, a.v.pos.z - focus.z) > 330) this.despawn(a);
+      // parked vehicles: keep a few around the player, and tidy those left far behind (including ones you drove off in and left)
+      const amb = this.fleet.vehicles.filter((v) => v.ambient && v.owner === 'parked');
+      if (!this.app.hooks?.noParked && amb.length < this.parkedMax) this.spawnParked(focus);
+      for (const v of this.fleet.vehicles.slice()) if (v.ambient && v !== this.fleet.driving && (v.owner === 'parked' || v.owner === 'taken') && Math.hypot(v.pos.x - focus.x, v.pos.z - focus.z) > (v.owner === 'taken' ? 450 : 340)) this.fleet.remove(v); }
     const all = this.fleet.vehicles;
     for (const ag of this.agents) {
       const v = ag.v, s = VEHICLES[v.type], [fx, fz] = v.forward();

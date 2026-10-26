@@ -50,6 +50,14 @@ export const FRONTAGES = {
   '506411934:w': { addr: '55/57 Seaton Road (pair)', photo: '../seaton-road/57-seaton-road.png', height: 6.0, force: true, roofShape: 'hipped', style: { facade: 'brick_red', roof: 'clay', roofTint: [0.78, 0.6, 0.5], winStyle: 0 }, details: [{ t: 'bays', at: [0.32, 0.68], panelEast: 'cream', panelWest: 'panel' }, { t: 'porches', at: [0.09, 0.91] }, { t: 'resinDrive' }] },
   '506411934:e': { addr: 'pair east of 55/57 (left of the photo)', photo: '../seaton-road/57-seaton-road.png', height: 6.0, force: true, roofShape: 'hipped', style: { facade: 'brick_red', roof: 'clay', winStyle: 0 }, details: [{ t: 'lowBrickWall' }] },
   1017204189: { addr: '47 (café)', photo: '47-cafe.png', height: 3.7, force: true, roofShape: 'flat', style: { facade: 'render', tint: YELLOW, roof: 'flat' }, details: [{ t: 'cafeVerandah' }] },
+  // --- Hamilton Road / Cobbold Road (Street View photos supplied 26 Oct 2026, docs/research/hamilton-road-streetview) ---
+  // The Palace Cinema (the former Ritz, 1937): white ground floor, dark red-brown brick above, white stepped stripes
+  // and pilasters, a white panel lettered BINGO | CINEMA. Height scaled from the photo (about 15 m to the parapet).
+  354182171: { addr: 'Palace Cinema, Hamilton Road', photo: 'palace-cinema.png', height: 15.0, force: true, roofShape: 'flat', style: { facade: 'brick_red', tint: [0.78, 0.55, 0.47], roof: 'flat', windows: false }, details: [{ t: 'cinemaFront' }, { t: 'cinemaSide', at: [45.2, -452.1], from: [57.7, -442.9] }] },
+  // Treasure Chest Books and the Mini Market: a two-storey red-brick corner with a dark tiled roof, white sash windows, dormers
+  688756410: { addr: 'Treasure Chest Books / Felixstowe Mini Market (Cobbold Road and Crescent Road corner)', photo: 'treasure-chest-abbeygate.png', height: 6.9, force: true, roofShape: 'hipped', style: { facade: 'brick_red', tint: [1, 0.93, 0.88], roof: 'concrete_tile', roofTint: [0.46, 0.4, 0.38], winStyle: 0 }, details: [{ t: 'dormers', at: [0.28, 0.72] }, { t: 'chimneys', at: [0.12, 0.88] }] },
+  // Abbeygate: red brick upper floor over a wide shopfront, dark slate roof, gable end to the east
+  732472280: { addr: 'Abbeygate Lighting, Cobbold Road', photo: 'treasure-chest-abbeygate.png', height: 6.3, force: true, roofShape: 'gabled', style: { facade: 'brick_red', tint: [1, 0.95, 0.9], roof: 'slate', roofTint: [0.5, 0.5, 0.54], winStyle: 0 }, details: [] },
 };
 
 /**
