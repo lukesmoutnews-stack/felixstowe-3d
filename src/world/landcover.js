@@ -13,10 +13,10 @@ const AREA_LAYER = {
   paved: LAYER.paved, parking: LAYER.paved, playground: LAYER.paved, quay: LAYER.paved,
 };
 
-function polyToAcc(acc, outer, holes, ground, texSize, lift, hasTerrain) {
+function polyToAcc(acc, outer, holes, ground, texSize, lift, hasTerrain, step = 6) {
   let { verts, tris } = triangulate(outer, holes);
   if (!tris.length) return;
-  ({ verts, tris } = subdivide(verts, tris, hasTerrain ? 6 : 150)); // also avoids huge triangles
+  ({ verts, tris } = subdivide(verts, tris, hasTerrain ? step : 150)); // also avoids huge triangles
   const V = verts.map(([x, z]) => [x, ground(x, z) + lift, z]);
   for (const [i, j, k] of tris) {
     const a = V[i], b = V[j], c = V[k];
@@ -78,7 +78,9 @@ export function buildAreas(areas, tile, ctx) {
     const [cx, cz] = outer[0];
     if (a.kind === 'water') { polyToAcc(acc.get(cx, cz, 'waterOverlay'), outer, holes, ground, 10, 0.03, ctx.hasTerrain); continue; }
     const tex = groundTexName(a.kind);
-    polyToAcc(acc.get(cx, cz, `ground:${a.kind}:${layer}`), outer, holes, ground, GROUND_TEX_SIZE[tex] || 6, 0.03, ctx.hasTerrain);
+    // paved ground sits a little higher on a finer mesh so the terrain's LiDAR noise never pokes through it as green patches
+    const hard = layer === LAYER.paved;
+    polyToAcc(acc.get(cx, cz, `ground:${a.kind}:${layer}`), outer, holes, ground, GROUND_TEX_SIZE[tex] || 6, hard ? 0.075 : 0.03, ctx.hasTerrain, hard ? 3.5 : 6);
     stats.drawn++;
   }
   return stats;

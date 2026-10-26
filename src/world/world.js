@@ -13,6 +13,7 @@ import { buildRoads, buildRail } from './roads.js';
 import { RoadNetwork } from './road-surface.js';
 import { promenadeWays, buildSeafrontWall, isSeafrontShelter, buildShelter } from './seafront.js';
 import { FRONTAGES, FRONTAGE_AREAS, SPLITS } from '../content/frontages.js';
+import { PB, pierBightPlan, buildPierBight } from './pier-bight.js';
 import { CLOSURES, inZone } from './zone.js';
 import { buildClosures } from './roadworks.js';
 import { buildFrontageDetails, buildAreaFrontage } from './frontage-details.js';
@@ -208,6 +209,7 @@ export class World extends EventTarget {
 
   async buildTile(tile) {
     const f = tile.features, r = tile.rect, ctx0 = this;
+    f.roads = f.roads.filter((rd) => !PB.hidden.has(rd.id)); // the car park's own aisles are drawn by pier-bight.js
     const acc = new ChunkedAccum(250);
     const inTile = (x, z) => x >= r.minX && x < r.maxX && z >= r.minZ && z < r.maxZ;
     tile.colliders = []; tile.surfaces = []; tile.pois = [];
@@ -272,6 +274,13 @@ export class World extends EventTarget {
     // Town Hall Garden: terrace the slope before the ground mesh is built (see town-hall-gardens.js)
     const gardenArea = f.areas.find(isTownHallGarden);
     if (gardenArea && !this.terrain.mods?.some((m) => m.id === 'town-hall-garden')) { this.gardenPlan = gardenPlan(gardenArea, this.terrain, ownBuildings); this.terrain.addModifier('town-hall-garden', this.gardenPlan.ring, this.gardenPlan.fn); }
+    // Pier Bight car park (the start): one level tarmac area out to the sea wall, with marked bays (pier-bight.js)
+    let pierBight = null;
+    { const pb = pierBightPlan(f, this.terrain), c = pb && pb.ring.reduce((m, q) => [m[0] + q[0] / pb.ring.length, m[1] + q[1] / pb.ring.length], [0, 0]);
+      if (pb && inTile(c[0], c[1])) {
+        pierBight = pb; this.pierBightStart = pb.start; if (pb.heightFn) this.terrain.addModifier('pier-bight', pb.ring, pb.heightFn);
+        f.areas = f.areas.filter((a) => a.id !== PB.lotId); f.areas.push({ id: PB.lotId, kind: 'parking', outer: pb.ring, holes: [], tags: { amenity: 'parking' } });
+      } }
     // --- bridge decks and approach ramps: profiled on whole ways so every tile agrees ---
     const netWays = [...f.roads, ...f.lines.filter((l) => l.kind === 'rail').map((l) => ({ id: l.id, pts: l.pts, nodeIds: l.nodeIds, kind: 'rail', width: 4, bridge: !!l.tags.bridge && l.tags.bridge !== 'no', tunnel: !!l.tags.tunnel && l.tags.tunnel !== 'no', name: l.tags.name || null, tags: l.tags }))];
     const bridgeWays = netWays.filter((w) => w.bridge && !this.profiles.has(w.id));
@@ -286,7 +295,7 @@ export class World extends EventTarget {
     this.roads.prepareCores(r, tile.key);
     buildGround(tile, ctx);
     buildAreas(f.areas, tile, ctx);
-    for (const a of f.areas) if (a.kind === 'parking' && a.outer.length >= 3) this.parkingLots.push({ tile: tile.key, id: a.id, ring: a.outer });
+    for (const a of f.areas) if (a.kind === 'parking' && a.outer.length >= 3) this.parkingLots.push({ tile: tile.key, id: a.id, ring: a.outer, bays: pierBight && a.id === PB.lotId ? pierBight.bays : null });
     await yieldFrame();
     // --- roads (clipped to the tile so neighbours never double-draw) ---
     const roadsHere = [];
@@ -324,6 +333,7 @@ export class World extends EventTarget {
       if (!FRONTAGE_AREAS[a.id]) continue; const c = a.outer.reduce((s, p) => [s[0] + p[0] / a.outer.length, s[1] + p[1] / a.outer.length], [0, 0]); if (!inTile(c[0], c[1])) continue;
       const fa = buildAreaFrontage(a, { nearestRoad: ctx.nearestRoad, ground: this.ground, roads: f.roads }); if (fa) { bridgeMeshes.push(fa.group); for (const cl of fa.colliders) this._addPrimitive(tile, cl); }
     }
+    if (pierBight) { const pbo = buildPierBight(pierBight, this.ground); bridgeMeshes.push(...pbo.meshes); for (const c of pbo.colliders) this._addPrimitive(tile, c); }
     if (seaWall) { bridgeMeshes.push(...seaWall.meshes); for (const c of seaWall.colliders) this._addPrimitive(tile, c); tile.gates = seaWall.gates; }
     // road closures at the edge of the playable zone (world/zone.js, world/roadworks.js)
     const here = CLOSURES.filter((c) => inTile(c.x, c.z));

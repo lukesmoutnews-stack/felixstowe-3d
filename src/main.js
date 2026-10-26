@@ -151,7 +151,8 @@ class App {
     const want = this.spawnSpec.name;
     const lmPoi = [...this.world.pois.values()].find((p) => p.name && want && p.name.toLowerCase() === want.toLowerCase());
     if (lmPoi) { target = { x: lmPoi.x, z: lmPoi.z }; if (lmPoi.line) target = { x: lmPoi.line[0][0], z: lmPoi.line[0][1] }; }
-    const pos = this.findStandingSpot(target.x, target.z);
+    let pos = this.findStandingSpot(target.x, target.z);
+    if (this.world.pierBightStart && Math.hypot(this.world.pierBightStart.x - pos.x, this.world.pierBightStart.z - pos.z) < 120) pos = this.world.pierBightStart; // start in the car park opposite the pier
     this.player.place(pos.x, pos.z);
     this.rig.yaw = pos.yaw ?? 0; this.spawnYaw = this.rig.yaw;
     this.parkCar(pos.x, pos.z);
@@ -180,7 +181,7 @@ class App {
         if (this._bayMarks) { this.scene.remove(this._bayMarks); this._bayMarks.geometry.dispose(); this._bayMarks = null; }
         const own = bays.slice().sort((a, b) => Math.hypot(a.x - x, a.z - z) - Math.hypot(b.x - x, b.z - z)).find((b) => Math.hypot(b.x - x, b.z - z) > 3.5);
         if (own) { mine = f.spawn(this.hooks.ownCar || 'hatchback', own.x, own.z, own.heading, { owner: 'yours', colour: this.hooks.ownColour }); own.used = true; }
-        this._fillCarPark(bays, x, z); this._markBays(bays);
+        this._fillCarPark(bays, x, z); if (!bays[0].ready) this._markBays(bays);
       }
       if (!mine) mine = f.parkNear(x, z, this.hooks.ownCar || 'hatchback', { owner: 'yours', along: 6, colour: this.hooks.ownColour });
     }
@@ -197,6 +198,7 @@ class App {
       if (d > 40) continue; if (!best || d < best.d) best = { l, d };
     }
     if (!best) return null;
+    if (best.l.bays?.length) return best.l.bays.map((b) => ({ ...b, ready: true })); // Pier Bight: laid out and painted by world/pier-bight.js
     const ring = best.l.ring; let ux = 1, uz = 0, len = 0;
     for (let i = 0; i < ring.length; i++) { const a = ring[i], b = ring[(i + 1) % ring.length], L = Math.hypot(b[0] - a[0], b[1] - a[1]); if (L > len) { len = L; ux = (b[0] - a[0]) / L; uz = (b[1] - a[1]) / L; } }
     const vx = -uz, vz = ux; let u0 = Infinity, u1 = -Infinity, v0 = Infinity, v1 = -Infinity;
@@ -252,9 +254,9 @@ class App {
     const near = f.vehicles.find((v) => v.owner === 'yours');
     let n = 0;
     for (const b of bays) {
-      if (b.used || n >= 16) continue;
+      if (b.used || n >= 28) continue;
       if (Math.hypot(b.x - px, b.z - pz) < 5.5 || (near && Math.hypot(b.x - near.pos.x, b.z - near.pos.z) < 2.4)) continue; // keep the player's way clear
-      if (this._lotRng() > 0.62) continue; // not every bay is full
+      if (this._lotRng() > 0.72) continue; // not every bay is full
       let r = this._lotRng() * total, type = 'hatchback'; for (const [t, w] of TYPES) if ((r -= w) <= 0) { type = t; break; }
       const cols = VEHICLES[type].colours.filter((c) => !PLAIN_BAD.includes(c)), colour = cols[Math.floor(this._lotRng() * cols.length) % cols.length];
       const v = f.spawn(type, b.x, b.z, b.heading, { owner: 'parked', colour }); v.lot = true; n++;
