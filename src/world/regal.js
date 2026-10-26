@@ -49,13 +49,18 @@ function mats() {
 
 export function buildRegal(b, ctx) {
   const m = mats(), outer = ensureCCW(b.outer);
-  let best = null; // front: long edge facing Sea Road
+  // front: the side with the clock faces the sea / Sea Road. Edges of 5 m or more compete; the small jogs that follow the winning edge are merged into its frontage.
+  let seaX = 0, seaZ = 0; { const cx = b.cx, cz = b.cz; let bd = Infinity; for (const c of ctx.coastLines || []) for (let i = 1; i < c.length; i++) { const [ax, az] = c[i - 1], [bx, bz] = c[i], dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((cx - ax) * dx + (cz - az) * dz) / L2)), px = ax + t * dx, pz = az + t * dz, d = Math.hypot(px - cx, pz - cz); if (d < bd) { bd = d; seaX = (px - cx) / (d || 1); seaZ = (pz - cz) / (d || 1); } } }
+  let best = null;
   for (let i = 0; i < outer.length; i++) {
-    const a = outer[i], c = outer[(i + 1) % outer.length], L = Math.hypot(c[0] - a[0], c[1] - a[1]); if (L < 20) continue; // the long frontage, not the short flank
+    const a = outer[i], c = outer[(i + 1) % outer.length], L = Math.hypot(c[0] - a[0], c[1] - a[1]); if (L < 5) continue;
     const nx = -(c[1] - a[1]) / L, nz = (c[0] - a[0]) / L, mx = (a[0] + c[0]) / 2 + nx * 8, mz = (a[1] + c[1]) / 2 + nz * 8;
-    const road = ctx.nearestRoad(mx, mz, 40, (r) => r.car && r.name === 'Sea Road'); // the shop faces Sea Road, towards the seafront
-    const score = L * 0.5 + (road ? 40 - road.d : 0); if (!best || score > best.score) best = { score, a, c, L, nx, nz };
+    const road = ctx.nearestRoad(mx, mz, 40, (r) => r.car && r.name === 'Sea Road');
+    const score = L * 0.2 + (road ? 40 - road.d : 0) + Math.max(0, nx * seaX + nz * seaZ) * 30; if (!best || score > best.score) best = { score, i, a, c, L, nx, nz };
   }
+  { let j = (best.i + 1) % outer.length, k = 0; // merge short jogs after the front edge
+    while (k++ < outer.length) { const p = outer[j], q = outer[(j + 1) % outer.length]; if (Math.hypot(q[0] - p[0], q[1] - p[1]) >= 5) break; j = (j + 1) % outer.length; }
+    const c2 = outer[j]; if (c2 !== best.c) { const L = Math.hypot(c2[0] - best.a[0], c2[1] - best.a[1]); best = { ...best, c: c2, L, nx: -(c2[1] - best.a[1]) / L, nz: (c2[0] - best.a[0]) / L }; } }
   const { a: A, c: B, L: W, nx: Nx, nz: Nz } = best;
   const Ex = (B[0] - A[0]) / W, Ez = (B[1] - A[1]) / W, Ox = (A[0] + B[0]) / 2, Oz = (A[1] + B[1]) / 2;
   const base = ctx.ground(Ox + Nx * 3, Oz + Nz * 3);

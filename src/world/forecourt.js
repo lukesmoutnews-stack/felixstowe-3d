@@ -4,7 +4,7 @@
 // lamp standards with a cluster of three bronze globes; navy steel guard railings along the road edge (open at the
 // pelican crossing); navy Sheffield cycle stands. Positions are estimated from the photos, not surveyed.
 import * as THREE from 'three';
-import { pointInRing } from '../geo/polygon.js';
+import { pointInRing, insetRing } from '../geo/polygon.js';
 import { Geo } from './seafront.js';
 
 const std = (o) => new THREE.MeshStandardMaterial(o);
@@ -31,14 +31,27 @@ export function forecourtPlan(ring, fr) {
   let A = 0, gx = 0, gz = 0;
   for (let i = 0; i < L.length; i++) { const [x0, z0] = L[i], [x1, z1] = L[(i + 1) % L.length], c = x0 * z1 - x1 * z0; A += c; gx += (x0 + x1) * c; gz += (z0 + z1) * c; }
   const cx = gx / (3 * A), cz = gz / (3 * A);
-  const at = (dx, dz) => [cx + dx, cz + dz];
-  const ok = (x, z) => inside(x, z);
-  const lamps = [[7.6, -6.4], [-8.2, -5.6], [-0.5, 8.6], [10.4, 7.5], [-13.5, 3.5], [-4, -12]].map(([a, b]) => at(a, b)).filter(([x, z]) => ok(x, z));
-  const bins = [[-7.8, -5.4, 'black'], [7.8, -5.4, 'black'], [-7.8, 5.4, 'black'], [7.8, 5.4, 'black'], [-8.3, 0, 'green'], [8.5, 0, 'green']].map(([a, b, k]) => [...at(a, b), k]);
-  // benches stand on the top tier all round the edge, facing outwards: [x, z, outward x, outward z]
-  const benches = [[-3.4, -2.6, 0, -1], [0, -2.6, 0, -1], [3.4, -2.6, 0, -1], [-3.4, 2.6, 0, 1], [0, 2.6, 0, 1], [3.4, 2.6, 0, 1], [-5.55, 0, -1, 0], [5.55, 0, 1, 0]].map(([a, b, ox, oz]) => [...at(a, b), ox, oz]);
-  const stands = [[11.5, -9], [13.1, -9.3], [14.7, -9.6]].map(([a, b]) => at(a, b)).filter(([x, z]) => ok(x, z));
-  return { W2, fr, cx, cz, lamps, bins, benches, stands, ring };
+  const ok = inside;
+  // the platform is an elongated hexagon (from the aerial view) with its long axis pointing away from the pier, turned ~15 degrees
+  const PHI = (14.6 * Math.PI) / 180, uA = [Math.cos(PHI), Math.sin(PHI)], vA = [-Math.sin(PHI), Math.cos(PHI)];
+  const rot = ([u, v]) => [cx + u * uA[0] + v * vA[0], cz + u * uA[1] + v * vA[1]];
+  const hex = [[-6, -9.5], [3, -9.5], [7, -5.5], [7, 9.5], [-3, 9.5], [-7, 5.5]].map(rot);
+  const tiers = [hex, insetRing(hex, 0.55) || hex]; tiers.push(insetRing(tiers[1], 0.55) || tiers[1]);
+  const seatRing = insetRing(tiers[2], 0.5) || tiers[2];
+  const outward = (px, pz, d) => { const dx = px - cx, dz = pz - cz, L = Math.hypot(dx, dz) || 1; return [px + (dx / L) * d, pz + (dz / L) * d]; };
+  // benches stand on the top tier all round its edge, facing outwards: [x, z, outward x, outward z]
+  const benches = [];
+  for (let i = 0; i < seatRing.length; i++) {
+    const [x0, z0] = seatRing[i], [x1, z1] = seatRing[(i + 1) % seatRing.length], len = Math.hypot(x1 - x0, z1 - z0), n = Math.floor(len / 2.7);
+    if (n < 1) continue;
+    let nx = (z1 - z0) / len, nz = -(x1 - x0) / len; const mx = (x0 + x1) / 2, mz = (z0 + z1) / 2;
+    if ((mx - cx) * nx + (mz - cz) * nz < 0) { nx = -nx; nz = -nz; }
+    for (let k = 0; k < n; k++) { const t = (k + 0.5) / n; benches.push([x0 + (x1 - x0) * t, z0 + (z1 - z0) * t, nx, nz]); }
+  }
+  const bins = hex.map(([x, z], i) => [...outward(x, z, 0.9), i % 3 === 1 ? 'green' : 'black']);
+  const lamps = [0, 2, 3, 5].map((i) => outward(hex[i][0], hex[i][1], 3.6)).concat([outward(cx, cz - 16, 0)]).filter(([x, z]) => ok(x, z));
+  const stands = [[11.5, -9], [13.1, -9.3], [14.7, -9.6]].map(([a, b]) => [cx + a, cz + b]).filter(([x, z]) => ok(x, z));
+  return { W2, fr, cx, cz, tiers, lamps, bins, benches, stands, ring };
 }
 
 /** @param roadEdge polyline [[x,z],...] of the road side of the forecourt (offset inwards here) */
@@ -52,11 +65,17 @@ export function buildForecourt(plan, ground, roadEdge) {
   const box = (g, x, y, z, hx, hy, hz, rot = 0) => { const [wx, wz] = loc(x, z), a = ang + rot; geo[g].box(wx, ground(wx, wz) + y, wz, Math.sin(a), Math.cos(a), hx, hy, hz); };
   // local helper: box with its long axis along the facade (x): u axis = (Ex, Ez)
 
-  // ---- stepped platform: three brick tiers ----
-  const T = [[7.2, 4.4, 0.14, 'brickDark'], [6.6, 3.8, 0.28, 'brickMid'], [6.0, 3.2, 0.42, 'top']];
-  for (const [hx, hz, h, g] of T) { const [wx, wz] = loc(cx, cz); geo[g].box(wx, ground(wx, wz) + h / 2 - 0.02, wz, Ex, Ez, hx, h / 2 + 0.02, hz); }
-  const tierH = (lx, lz) => { const dx = Math.abs(lx - cx), dz = Math.abs(lz - cz); return dx <= 6.0 && dz <= 3.2 ? 0.42 : dx <= 6.6 && dz <= 3.8 ? 0.28 : dx <= 7.2 && dz <= 4.4 ? 0.14 : 0; };
-  { const ringW = [[-7.2, -4.4], [7.2, -4.4], [7.2, 4.4], [-7.2, 4.4]].map(([a, b]) => W2(cx + a, cz + b));
+  // ---- stepped platform: three brick tiers (hexagon prisms) ----
+  const TH = [0.14, 0.28, 0.42], TM = [m.brickDark, m.brickMid, m.top];
+  for (const mt of TM) mt.side = THREE.DoubleSide;
+  { const [wx0, wz0] = loc(cx, cz), y0 = ground(wx0, wz0);
+    plan.tiers.forEach((rg, k) => {
+      const shape = new THREE.Shape(rg.map(([x, z]) => new THREE.Vector2(...loc(x, z))));
+      const g = new THREE.ExtrudeGeometry(shape, { depth: TH[k] + 0.02, bevelEnabled: false }); g.rotateX(Math.PI / 2);
+      const me = new THREE.Mesh(g, TM[k]); me.position.y = y0 + TH[k]; me.castShadow = me.receiveShadow = true; group.add(me);
+    }); }
+  const tierH = (lx, lz) => pointInRing(lx, lz, plan.tiers[2]) ? 0.42 : pointInRing(lx, lz, plan.tiers[1]) ? 0.28 : pointInRing(lx, lz, plan.tiers[0]) ? 0.14 : 0;
+  { const ringW = plan.tiers[0].map(([x, z]) => loc(x, z));
     const toLocal = (x, z) => { const dx = x - fr.Ox, dz = z - fr.Oz; return [dx * Ex + dz * Ez, dx * Nx + dz * Nz]; };
     surfaces.push({ id: 'pier-forecourt-platform', kind: 'terrace', ring: ringW, heightAt: (x, z) => { const [lx, lz] = toLocal(x, z); return ground(x, z) + tierH(lx, lz); }, name: 'Pier forecourt platform', meshes: [] }); }
   // benches: timber slats on black steel ends, standing on the top tier, backs to the centre, facing outwards

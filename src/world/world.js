@@ -265,7 +265,7 @@ export class World extends EventTarget {
     for (const b of ownBuildings) if ((b.name && matchLandmark({ name: b.name, tags: {} })) || lmAreas.some((p) => pointInRing(b.cx, b.cz, p.ring))) b.landmark = true;
 
     const styleOf = (b) => { const base = landmarkStyle(b); return b.frontage?.style ? { ...(base || {}), ...b.frontage.style } : base; };
-    const ctx = { acc, ground: this.ground, terrain: this.terrain, hasTerrain: this.terrain.hasTerrain, landmarkStyle: styleOf, settings: this.settings,
+    const ctx = { acc, ground: this.ground, terrain: this.terrain, hasTerrain: this.terrain.hasTerrain, landmarkStyle: styleOf, settings: this.settings, coastLines: f.coastLines || [],
       isClear: this.isClear, nearestRoad: (x, z, d, f) => this.nearestRoad(x, z, d, f), isLand: (x, z) => this.isLand(x, z) || this._tileLand(tile, x, z), roadGrid: this.roadGrid, surfaceAt: null, points: f.points.filter((p) => inTile(p.x, p.z)) };
 
     // --- ground, areas ---

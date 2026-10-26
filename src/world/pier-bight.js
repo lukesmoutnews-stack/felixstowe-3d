@@ -69,17 +69,19 @@ export function pierBightPlan(f, terrain) {
   const polyIn = (x, z) => pointInRing(x, z, ring);
   const island = { c: at(u0 + 9.5, wallV - (BL + AISLE + BL)), r: 2.55 }; // between the two back-to-back rows, near the entrance
   const bays = [], lines = [];
+  const hatch = [[u0 + 5.2, 4.6, 5.2, 4.6], [u0 + 50, 11.6, 3.6, 3.6]]; // yellow cross-hatched boxes seen on the aerial: [u, distance from the wall, size along u, size across]
   for (let u = u0 + 3.2; u < u1 - BW / 2; u += BW) ROWS.forEach(([d0, d1, nose], ri) => {
     const vN = wallV - d0, vF = wallV - d1, cv = (vN + vF) / 2, [cx, cz] = at(u, cv);
     const corners = [[-1, vN], [1, vN], [1, vF], [-1, vF]].map(([s, v]) => at(u + s * BW / 2, v));
     if (!corners.every(([x, z]) => polyIn(x, z))) return;
     if (Math.hypot(cx - island.c[0], cz - island.c[1]) < island.r + 3.2) return;
+    if (hatch.some(([hu, hd, hs, ht]) => Math.abs(u - hu) < hs / 2 + BW / 2 - 0.2 && !(d1 < hd - ht / 2 || d0 > hd + ht / 2))) return;
     const dirV = nose > 0 ? 1 : -1; // wall row noses to the wall (+v); the far rows alternate
     bays.push({ x: cx, z: cz, row: ri, heading: Math.atan2(vx * dirV, vz * dirV), ux, uz, vx, vz, dir: dirV, vN, vF, u });
   });
   const aisleMid = [wallV - BL - AISLE / 2, wallV - 3 * BL - AISLE - AISLE / 2];
   const sp = at(u0 + 7.5, aisleMid[0]);
-  return { start: { x: sp[0], z: sp[1], yaw: Math.atan2(-ux, -uz) }, lotId: PB.lotId, ring, ux, uz, vx, vz, u0, u1, wallV, bays, island, heightFn, levelRings: rings, at, aisleMid, U, V, sign: { p: at(u0 + 9.5 - 0.1, wallV - (BL + AISLE + BL) + 3.4), faceU: -1 } };
+  return { start: { x: sp[0], z: sp[1], yaw: Math.atan2(-ux, -uz) }, lotId: PB.lotId, ring, ux, uz, vx, vz, u0, u1, wallV, bays, hatch, island, heightFn, levelRings: rings, at, aisleMid, U, V, sign: { p: at(u0 + 9.5 - 0.1, wallV - (BL + AISLE + BL) + 3.4), faceU: -1 } };
 }
 
 // ---------- materials and small helpers ----------
@@ -157,7 +159,17 @@ export function buildPierBight(plan, ground) {
   for (const v of plan.aisleMid) { aisleDisc(plan.u0 + 6, v, 1); aisleDisc(plan.u1 - 6, v, -1); }
   const X = [[-0.8, -0.8, 0.8, 0.8], [-0.8, 0.8, 0.8, -0.8]];
   for (const v of plan.aisleMid) for (let u = plan.u0 + 22; u < plan.u1 - 12; u += 24) { const [cx, cz] = plan.at(u, v); for (const [a, b, c2, d] of X) white.strip(cx + ux * a + vx * b, cz + uz * a + vz * b, cx + ux * c2 + vx * d, cz + uz * c2 + vz * d, 0.14); }
-  for (const [f, m] of [[white, paint(0xeeeeea)], [grey, paint(0x8b8e90)], [dark, paint(0x45484b)]]) { const mesh = f.mesh(m); if (mesh) group.add(mesh); }
+  const yel = new Flat(ground, 0.118);
+  for (const [hu, hd, hs, ht] of plan.hatch) { // yellow cross-hatched box: border plus diagonal lines both ways
+    const P = (a, b) => plan.at(hu + a, plan.wallV - hd + b), hx = hs / 2, hy = ht / 2;
+    for (const [a0, b0, a1, b1] of [[-hx, -hy, hx, -hy], [hx, -hy, hx, hy], [hx, hy, -hx, hy], [-hx, hy, -hx, -hy]]) { const p0 = P(a0, b0), p1 = P(a1, b1); yel.strip(p0[0], p0[1], p1[0], p1[1], 0.13); }
+    for (const sg of [1, -1]) for (let k = -hx - hy; k <= hx + hy; k += 0.7) { // the line a = k + sg*b clipped to the box
+      const pts = [];
+      for (const b of [-hy, hy]) { const a = k + sg * b; if (Math.abs(a) <= hx + 1e-6) pts.push([a, b]); }
+      for (const a of [-hx, hx]) { const b = sg * (a - k); if (Math.abs(b) < hy - 1e-6) pts.push([a, b]); }
+      if (pts.length >= 2) { const p0 = P(...pts[0]), p1 = P(...pts[1]); yel.strip(p0[0], p0[1], p1[0], p1[1], 0.09); } }
+  }
+  for (const [f, m] of [[white, paint(0xeeeeea)], [yel, paint(0xe0b73a)], [grey, paint(0x8b8e90)], [dark, paint(0x45484b)]]) { const mesh = f.mesh(m); if (mesh) group.add(mesh); }
 
   // island: stone kerb, mulch, brick paviors round it, a cordyline palm
   const [ix, iz] = plan.island.c, iy = ground(ix, iz), R = plan.island.r;
