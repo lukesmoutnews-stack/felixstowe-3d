@@ -184,8 +184,13 @@ export function addBuilding(b, ctx) {
         wallAcc.quad([a[0], y0, a[1]], [c[0], y0, c[1]], [c[0], top, c[1]], [a[0], top, a[1]],
           [u0, v0], [u1, v0], [u1, (top - y0) / STOREY_H], [u0, (top - y0) / STOREY_H], tint);
       } else {
-        wallAcc.quad([a[0], y0, a[1]], [c[0], y0, c[1]], [c[0], top, c[1]], [a[0], top, a[1]],
-          [u0, vOf(y0, base, STOREY_H)], [u1, vOf(y0, base, STOREY_H)], [u1, vOf(top, base, STOREY_H)], [u0, vOf(top, base, STOREY_H)], tint);
+        // ambient occlusion baked into the vertex colour: darker where the wall meets the ground and just under
+        // the eaves, as light from the sky is blocked there
+        const sh = (k) => [tint[0] * k, tint[1] * k, tint[2] * k];
+        const band = (ya, yb, ka, kb) => { if (yb - ya < 0.02) return; wallAcc.quad([a[0], ya, a[1]], [c[0], ya, c[1]], [c[0], yb, c[1]], [a[0], yb, a[1]],
+          [u0, vOf(ya, base, STOREY_H)], [u1, vOf(ya, base, STOREY_H)], [u1, vOf(yb, base, STOREY_H)], [u0, vOf(yb, base, STOREY_H)], [sh(ka), sh(ka), sh(kb), sh(kb)]); };
+        const yg = Math.min(top, Math.max(y0, base) + 1.1), ye = Math.max(yg, top - 0.7);
+        band(y0, yg, 0.6, 1); band(yg, ye, 1, 1); band(ye, top, 1, 0.8);
       }
       // gable infill above the eaves
       if (ra > top + 0.02 || rc > top + 0.02) {

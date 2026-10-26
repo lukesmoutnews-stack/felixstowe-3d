@@ -159,9 +159,10 @@ function facadeTexture(kind, windows, seed, style = 0) {
   const pxm = 512 / BAY_W;
   if (kind.startsWith('brick')) {
     const pal = {
-      brick_red: [[10, 50, 30], [14, 46, 27], [8, 44, 33], [18, 40, 29], [6, 38, 24]],
-      brick_dark: [[8, 40, 22], [12, 34, 19], [5, 36, 26], [20, 22, 24]],
-      brick_yellow: [[40, 34, 60], [38, 30, 55], [44, 26, 64], [35, 24, 52], [30, 20, 47]],
+      // real facing brick is muted and varied (some brownish, some purple-blue headers), not a flat saturated red
+      brick_red: [[10, 36, 33], [14, 32, 30], [8, 30, 37], [18, 27, 31], [5, 26, 26], [22, 20, 35], [350, 12, 26]],
+      brick_dark: [[8, 26, 22], [12, 22, 19], [5, 24, 25], [20, 16, 23], [340, 8, 20]],
+      brick_yellow: [[40, 22, 62], [38, 18, 58], [44, 16, 66], [35, 15, 54], [30, 12, 50], [28, 10, 44]],
     }[kind];
     brickWall(P, pal, kind === 'brick_yellow' ? '#a9a291' : '#958b7c');
     P.noise(0.06, 8, 2);
@@ -207,7 +208,12 @@ function facadeTexture(kind, windows, seed, style = 0) {
     const curtains = ['#d8cfb8', '#9a8f7c', '#c9b49a', '#7d8a8f', '#e3dccb'];
     windowAt(P, wx, wy, ww, wh, { style, curtain: curtains[(seed + style) % curtains.length], lintel: brick ? (kind === 'brick_yellow' ? '#b9ad95' : style === 1 ? '#6f3a2d' : '#d6cfbf') : null, sill: brick ? '#d6d1c4' : '#e7e3da' });
   }
-  P.roughness((x, y, hv) => 0.95 - Math.max(0, 0.45 - hv) * 1.2);
+  if (windows && kind !== 'glass' && kind !== 'metal') { // weathering: faint rain streaks running down from the sill
+    const ww = (style === 1 ? 1.5 : 1.1) * pxm, wx = (P.w - ww) / 2, sy = P.h - (style === 1 ? 0.95 : 0.8) * pxm + 7;
+    for (let k = 0; k < 5; k++) { const x = wx + P.rand() * ww, w = 3 + P.rand() * 10, g = P.ctx.createLinearGradient(0, sy, 0, sy + 0.55 * pxm); g.addColorStop(0, 'rgba(40,36,32,0.16)'); g.addColorStop(1, 'rgba(40,36,32,0)'); P.ctx.fillStyle = g; P.ctx.fillRect(x, sy, w, 0.55 * pxm); }
+  }
+  // window glass (low in the height map) is smooth, so it reflects the sky and the street; walls are rough
+  P.roughness((x, y, hv) => (hv < 0.3 ? 0.05 : 0.95 - Math.max(0, 0.45 - hv) * 1.2));
   const r = P.result(kind === 'render' ? 1.2 : 3);
   cache.set(key, r); return r;
 }

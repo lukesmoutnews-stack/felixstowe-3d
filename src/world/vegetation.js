@@ -18,38 +18,83 @@ function blob(r, detail, rand, jitter = 0.25) {
   for (let i = 0; i < p.count; i++) { const k = 1 + (rand() - 0.5) * jitter; p.setXYZ(i, p.getX(i) * k, p.getY(i) * k, p.getZ(i) * k); }
   g.computeVertexNormals(); return g;
 }
-function treeGeometry(kind) {
-  if (variants.has(kind)) return variants.get(kind);
-  const rand = mulberry32(kind.length * 17);
-  const parts = [];
-  const bark = [0.32, 0.25, 0.19];
-  if (kind === 'conifer') {
-    parts.push(colorize(new THREE.CylinderGeometry(0.18, 0.32, 9, 6).translate(0, 4.5, 0), bark));
-    for (const [y, r, h] of [[5.5, 2.4, 4.5], [7.8, 1.9, 4], [9.8, 1.3, 3.2]]) parts.push(colorize(new THREE.ConeGeometry(r, h, 8).translate(0, y, 0), [0.17, 0.3, 0.18]));
-  } else if (kind === 'pine') { // umbrella-crowned coastal pine
-    parts.push(colorize(new THREE.CylinderGeometry(0.16, 0.3, 9, 6).translate(0, 4.5, 0), [0.38, 0.27, 0.2]));
-    for (let i = 0; i < 5; i++) parts.push(colorize(blob(1.6 + rand(), 1, rand, 0.4).scale(1.3, 0.55, 1.3).translate((rand() - 0.5) * 2.4, 9 + rand() * 1.2, (rand() - 0.5) * 2.4), [0.2, 0.32, 0.19]));
-  } else if (kind === 'shrub') {
-    for (let i = 0; i < 4; i++) parts.push(colorize(blob(0.8 + rand() * 0.4, 1, rand, 0.4).translate((rand() - 0.5) * 1.2, 0.7 + rand() * 0.4, (rand() - 0.5) * 1.2), [0.3, 0.4, 0.2]));
-  } else { // broadleaf
-    const big = kind === 'broadleaf_large';
-    const th = big ? 4 : 3;
-    parts.push(colorize(new THREE.CylinderGeometry(big ? 0.25 : 0.16, big ? 0.42 : 0.26, th + 1.5, 7).translate(0, (th + 1.5) / 2, 0), bark));
-    const n = big ? 7 : 5;
-    for (let i = 0; i < n; i++) {
-      const r = (big ? 2.4 : 1.7) + rand() * 0.8, a = (i / n) * Math.PI * 2;
-      const d = i === 0 ? 0 : (big ? 1.9 : 1.2);
-      parts.push(colorize(blob(r, 1, rand).translate(Math.cos(a) * d, th + (big ? 3 : 2.2) + (rand() - 0.3) * 1.5, Math.sin(a) * d), kind === 'holm_oak' ? [0.17, 0.27, 0.15] : [0.26, 0.4, 0.17]));
+// ---- realistic trees: branching trunks and crowns of alpha-tested leaf cards ----
+// Each card carries a hand-drawn cluster of leaves (procedural, on canvas); cards are scattered through the
+// crown volume, mostly near its surface, with normals pointing out from the crown centre so the canopy shades
+// softly as one mass (light on top and sunward side, dark inside and underneath), as real foliage does.
+function leafTexture(kind) {
+  const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d'); const rand = mulberry32(kind === 'needle' ? 7 : 3);
+  g.strokeStyle = 'rgba(70,55,40,0.9)'; g.lineWidth = 2; for (let i = 0; i < 6; i++) { g.beginPath(); g.moveTo(128, 250); g.quadraticCurveTo(60 + rand() * 136, 160, 20 + rand() * 216, 20 + rand() * 120); g.stroke(); }
+  const n = kind === 'needle' ? 900 : 170;
+  for (let i = 0; i < n; i++) {
+    const a = rand() * Math.PI * 2, r = Math.sqrt(rand()) * 118, x = 128 + Math.cos(a) * r, y = 120 + Math.sin(a) * r * 0.95;
+    const hue = kind === 'needle' ? 130 + rand() * 25 : 78 + rand() * 40, l = 18 + rand() * 26, sat = kind === 'needle' ? 25 + rand() * 15 : 35 + rand() * 25;
+    g.save(); g.translate(x, y); g.rotate(rand() * Math.PI * 2);
+    g.fillStyle = `hsl(${hue},${sat}%,${l}%)`;
+    if (kind === 'needle') { g.fillRect(-0.8, -9, 1.6, 18); }
+    else { g.beginPath(); g.ellipse(0, 0, 4 + rand() * 4, 9 + rand() * 6, 0, 0, Math.PI * 2); g.fill(); g.strokeStyle = `hsla(${hue},${sat}%,${l + 14}%,0.7)`; g.lineWidth = 1; g.beginPath(); g.moveTo(0, -10); g.lineTo(0, 10); g.stroke(); }
+    g.restore();
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
+}
+function cards(out, n, pick, size, rand, tint, ctr) {
+  const P = [], N = [], UV = [], C = [];
+  for (let i = 0; i < n; i++) {
+    const [x, y, z, shell] = pick(rand), w = size * (0.75 + rand() * 0.5), h = w;
+    // orientation: roughly facing outward with a random twist and tilt
+    const ox = x - ctr[0], oy = y - ctr[1], oz = z - ctr[2], ol = Math.hypot(ox, oy, oz) || 1;
+    const yaw = Math.atan2(ox, oz) + (rand() - 0.5) * 1.6, tilt = (rand() - 0.5) * 1.4;
+    const ax = [Math.cos(yaw), 0, -Math.sin(yaw)], ay = [Math.sin(yaw) * Math.sin(tilt), Math.cos(tilt), Math.cos(yaw) * Math.sin(tilt)];
+    const ao = (0.45 + 0.55 * shell) * (0.75 + 0.25 * Math.max(0, oy / ol));
+    for (const [u, v] of [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]]) {
+      P.push(x + ax[0] * u * w + ay[0] * v * h, y + ax[1] * u * w + ay[1] * v * h, z + ax[2] * u * w + ay[2] * v * h);
+      N.push(ox / ol, oy / ol, oz / ol); UV.push(u + 0.5, v + 0.5); C.push(tint[0] * ao, tint[1] * ao, tint[2] * ao);
     }
   }
-  const g = mergeGeometries(parts.map((p) => { p.deleteAttribute('uv'); return p.index ? p.toNonIndexed() : p; }));
-  g.computeBoundingSphere();
-  variants.set(kind, g); return g;
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(UV, 2)); g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3)); out.push(g);
 }
-let treeMat;
+function limb(out, a, b, r0, r1, bark) { // a tapered branch between two points
+  const d = new THREE.Vector3(b[0] - a[0], b[1] - a[1], b[2] - a[2]), L = d.length();
+  const g = new THREE.CylinderGeometry(r1, r0, L, 6, 1, true); g.translate(0, L / 2, 0);
+  g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize())); g.translate(...a);
+  out.push(colorize(g, bark));
+}
+const LOW = () => !!globalThis.__treeLow;
+function treeGeometry(kind) {
+  if (variants.has(kind)) return variants.get(kind);
+  const rand = mulberry32(kind.length * 17 + 5), trunk = [], leaves = [], k = LOW() ? 0.55 : 1;
+  const bark = [0.3, 0.25, 0.2];
+  const ellip = (cx, cy, cz, rx, ry, rz, shellMin = 0.55) => (r) => { const u = rand() * Math.PI * 2, v = Math.acos(2 * rand() - 1), s = shellMin + (1 - shellMin) * Math.sqrt(rand()); return [cx + Math.sin(v) * Math.cos(u) * rx * s, cy + Math.cos(v) * ry * s, cz + Math.sin(v) * Math.sin(u) * rz * s, (s - shellMin) / (1 - shellMin)]; };
+  if (kind === 'conifer') {
+    limb(trunk, [0, 0, 0], [0, 11, 0], 0.32, 0.06, bark);
+    const pick = () => { const y = 1.8 + rand() * 9.4, rr = (1 - (y - 1.8) / 9.6) * 2.6 + 0.2, a = rand() * Math.PI * 2, s = 0.6 + 0.4 * Math.sqrt(rand()); return [Math.cos(a) * rr * s, y, Math.sin(a) * rr * s, s]; };
+    cards(leaves, Math.round(130 * k), pick, 1.5, rand, [0.62, 0.78, 0.66], [0, 6, 0]);
+  } else if (kind === 'pine') { // umbrella-crowned coastal pine
+    limb(trunk, [0, 0, 0], [0.4, 8.6, 0.2], 0.3, 0.16, [0.42, 0.3, 0.22]);
+    for (let i = 0; i < 5; i++) { const a = (i / 5) * Math.PI * 2; limb(trunk, [0.4, 8.2, 0.2], [Math.cos(a) * 2.4, 9.6 + rand(), Math.sin(a) * 2.4], 0.12, 0.05, [0.42, 0.3, 0.22]); }
+    cards(leaves, Math.round(110 * k), ellip(0.2, 10, 0.1, 3.4, 1.1, 3.4), 1.6, rand, [0.62, 0.78, 0.64], [0.2, 9.4, 0.1]);
+  } else if (kind === 'shrub') {
+    cards(leaves, Math.round(40 * k), ellip(0, 0.9, 0, 1.2, 0.9, 1.2, 0.3), 0.9, rand, [0.85, 0.95, 0.75], [0, 0.6, 0]);
+  } else { // broadleaf
+    const big = kind === 'broadleaf_large', holm = kind === 'holm_oak', th = big ? 3.6 : 2.8, rx = big ? 4.2 : 3.0, ry = big ? 3.6 : 2.7, cy = th + ry * 0.95;
+    limb(trunk, [0, 0, 0], [0, th + 0.8, 0], big ? 0.42 : 0.28, big ? 0.24 : 0.16, bark);
+    const nb = big ? 7 : 5;
+    for (let i = 0; i < nb; i++) { const a = (i / nb) * Math.PI * 2 + rand() * 0.5, to = [Math.cos(a) * rx * 0.62, cy + (rand() - 0.2) * ry * 0.6, Math.sin(a) * rx * 0.62]; limb(trunk, [0, th + 0.5 * rand(), 0], to, big ? 0.18 : 0.12, 0.04, bark); }
+    cards(leaves, Math.round((big ? 210 : 140) * k), ellip(0, cy, 0, rx, ry, rx), big ? 1.9 : 1.5, rand, holm ? [0.6, 0.72, 0.58] : [0.92, 1.0, 0.82], [0, cy - ry * 0.3, 0]);
+  }
+  const merge = (list) => { const g = mergeGeometries(list.map((p) => { if (!p.attributes.uv) p.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(p.attributes.position.count * 2), 2)); return p.index ? p.toNonIndexed() : p; })); g.computeBoundingSphere(); return g; };
+  const out = { trunk: trunk.length ? merge(trunk) : null, leaves: merge(leaves), needle: kind === 'conifer' || kind === 'pine' };
+  variants.set(kind, out); return out;
+}
+let treeMat, leafMats = {};
 function material() {
-  if (!treeMat) treeMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0, flatShading: false });
+  if (!treeMat) treeMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0 });
   return treeMat;
+}
+function leafMaterial(needle) {
+  const k = needle ? 'needle' : 'leaf';
+  return (leafMats[k] ||= new THREE.MeshStandardMaterial({ map: leafTexture(k), vertexColors: true, alphaTest: 0.42, side: THREE.DoubleSide, roughness: 0.82, metalness: 0 }));
 }
 const NOMINAL_H = { broadleaf_large: 12, broadleaf: 8.5, holm_oak: 8.5, conifer: 11.5, pine: 11, shrub: 2 };
 
@@ -118,16 +163,20 @@ export function buildTreeMeshes(placements, ground) {
   const meshes = [];
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), t = new THREE.Vector3(), col = new THREE.Color();
   for (const [kind, list] of byKind) {
-    const im = new THREE.InstancedMesh(treeGeometry(kind), material(), list.length);
-    list.forEach((p, i) => {
-      q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), p.rot);
-      const sc = p.scale; s.set(sc * (0.9 + (p.rot % 0.2)), sc, sc * (0.9 + (p.rot % 0.17)));
-      t.set(p.x, ground(p.x, p.z) - 0.1, p.z);
-      m4.compose(t, q, s); im.setMatrixAt(i, m4);
-      const v = 0.85 + ((p.rot * 7.3) % 0.3); col.setRGB(v, v * (0.97 + (p.rot % 0.06)), v * 0.95); im.setColorAt(i, col);
-    });
-    im.castShadow = true; im.receiveShadow = true; im.computeBoundingSphere(); im.renderOrder = 10;
-    meshes.push(im);
+    const geo = treeGeometry(kind);
+    const parts = [[geo.leaves, leafMaterial(geo.needle)], ...(geo.trunk ? [[geo.trunk, material()]] : [])];
+    for (const [g, mat] of parts) {
+      const im = new THREE.InstancedMesh(g, mat, list.length);
+      list.forEach((p, i) => {
+        q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), p.rot);
+        const sc = p.scale; s.set(sc * (0.9 + (p.rot % 0.2)), sc, sc * (0.9 + (p.rot % 0.17)));
+        t.set(p.x, ground(p.x, p.z) - 0.1, p.z);
+        m4.compose(t, q, s); im.setMatrixAt(i, m4);
+        const v = 0.82 + ((p.rot * 7.3) % 0.3); col.setRGB(v * (0.96 + (p.rot % 0.08)), v, v * (0.9 + (p.rot % 0.1))); im.setColorAt(i, col);
+      });
+      im.castShadow = true; im.receiveShadow = true; im.computeBoundingSphere(); im.renderOrder = 10;
+      meshes.push(im);
+    }
   }
   return meshes;
 }

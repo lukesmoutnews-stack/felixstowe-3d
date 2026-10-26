@@ -34,7 +34,7 @@ class App {
     this.t0 = performance.now();
     this.settings = loadSettings(params.has('fixture') ? { proceduralTrees: true } : {});
     // ?quality=low (phones / the mayor game): no shadows, shorter view, 1x pixels
-    if (params.get('quality') === 'low') Object.assign(this.settings, { shadows: 'off', viewDistance: 900, pixelRatio: 1, proceduralTrees: false }); if (params.get('quality') === 'low') { TEX.low = true; CONFIG.streamRadius = 650; CONFIG.unloadRadius = 1400; } // phones: fewer 1 km tiles in memory (view distance is 900 m)
+    if (params.get('quality') === 'low') Object.assign(this.settings, { shadows: 'off', viewDistance: 900, pixelRatio: 1, proceduralTrees: false }); if (params.get('quality') === 'low') { TEX.low = true; globalThis.__treeLow = true; CONFIG.streamRadius = 650; CONFIG.unloadRadius = 1400; } // phones: fewer 1 km tiles in memory (view distance is 900 m)
     this.hooks = window.F3D_HOOKS || {};
     this.fixture = params.get('fixture');
     this.zoneOn = !this.fixture && !params.has('nozone') && /^(data|fx)?\/?$/.test(params.get('data') || ''); // Felixstowe data only (data/ or the published fx/), not test regions
@@ -68,7 +68,7 @@ class App {
     this.renderer.setPixelRatio(this.settings.pixelRatio);
     this.renderer.setSize(innerWidth, innerHeight);
     this.renderer.shadowMap.enabled = true; this.renderer.shadowMap.type = THREE.PCFShadowMap;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping; this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.toneMapping = THREE.AgXToneMapping; // photographic roll-off: no oversaturated, cartoon-bright colours this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.3, 4000);
     addEventListener('resize', () => { this.camera.aspect = innerWidth / innerHeight; this.camera.updateProjectionMatrix(); this.renderer.setSize(innerWidth, innerHeight); });

@@ -69,7 +69,7 @@ export class Environment {
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048, 2048);
     const c = this.sun.shadow.camera; c.left = -110; c.right = 110; c.top = 110; c.bottom = -110; c.near = 1; c.far = 900;
-    this.sun.shadow.bias = -0.0004; this.sun.shadow.normalBias = 0.6;
+    this.sun.shadow.bias = -0.0004; this.sun.shadow.normalBias = 0.6; this.sun.shadow.radius = 2.5; // soft-edged shadows
     scene.add(this.sun); scene.add(this.sun.target);
     this.hemi = new THREE.HemisphereLight(0xdfe7ef, 0x6b6150, 0.4); scene.add(this.hemi);
     this.fog = new THREE.FogExp2(0xc9d6e2, 0.0006); scene.fog = this.fog;
@@ -92,17 +92,17 @@ export class Environment {
     U.sunDir.value.copy(this.sunDir);
     U.zenith.value.set(0x0b1422).lerp(new THREE.Color(0x3f6fa8), day);
     U.horizon.value.set(0x1a2433).lerp(new THREE.Color(0xc4d3df), day).lerp(new THREE.Color(0xf0b88a), golden * 0.55);
-    U.ground.value.set(0x0c1016).lerp(new THREE.Color(0x7d8790), day);
+    U.ground.value.set(0x0c1016).lerp(new THREE.Color(0x6f6a62), day);
     U.sunColor.value.set(0xffe9c7).lerp(new THREE.Color(0xff9a50), golden * 0.7).multiplyScalar(day);
-    this.sun.intensity = 2.8 * THREE.MathUtils.clamp((elevation + 1) / 12, 0, 1);
+    this.sun.intensity = 4.4 * THREE.MathUtils.clamp((elevation + 1) / 12, 0, 1);
     this.sun.color.set(0xfff1dc).lerp(new THREE.Color(0xffb070), golden * 0.6);
-    this.hemi.intensity = THREE.MathUtils.lerp(0.05, 0.55, day);
+    this.hemi.intensity = THREE.MathUtils.lerp(0.03, 0.16, day); // most of the fill now comes from the sky's image-based light
     this.hemi.color.copy(U.zenith.value).lerp(new THREE.Color(0xffffff), 0.5);
     this.fog.color.copy(U.horizon.value);
-    this.renderer.toneMappingExposure = THREE.MathUtils.lerp(0.5, 0.95, day);
+    this.renderer.toneMappingExposure = THREE.MathUtils.lerp(0.6, 1.0, day);
     if (this.scene.environment) this.scene.environment.dispose();
     this.scene.environment = this.pmrem.fromScene(this.envScene, 0.04).texture;
-    this.scene.environmentIntensity = THREE.MathUtils.lerp(0.1, 0.5, day);
+    this.scene.environmentIntensity = THREE.MathUtils.lerp(0.15, 0.85, day); // sky light and reflections, as in a real street
   }
 
   /** Keep the shadow frustum and sky dome around the focus point. */

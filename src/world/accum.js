@@ -11,10 +11,10 @@ export class Accum {
   }
   tri(a, b, c) { this.idx.push(a, b, c); }
   /** Quad from 4 points (counter-clockwise when viewed from the front) with flat normal. */
-  quad(p0, p1, p2, p3, uv0, uv1, uv2, uv3, col) {
-    const n = faceNormal(p0, p1, p2);
-    const a = this.vert(...p0, ...n, ...uv0, col), b = this.vert(...p1, ...n, ...uv1, col);
-    const c = this.vert(...p2, ...n, ...uv2, col), d = this.vert(...p3, ...n, ...uv3, col);
+  quad(p0, p1, p2, p3, uv0, uv1, uv2, uv3, col) { // col: one [r,g,b] for the quad, or four (one per corner)
+    const n = faceNormal(p0, p1, p2), cv = (i) => (col && Array.isArray(col[0]) ? col[i] : col);
+    const a = this.vert(...p0, ...n, ...uv0, cv(0)), b = this.vert(...p1, ...n, ...uv1, cv(1));
+    const c = this.vert(...p2, ...n, ...uv2, cv(2)), d = this.vert(...p3, ...n, ...uv3, cv(3));
     this.idx.push(a, b, c, a, c, d);
   }
   triFlat(p0, p1, p2, uv0, uv1, uv2, col) {
