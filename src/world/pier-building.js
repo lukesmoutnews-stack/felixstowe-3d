@@ -37,6 +37,7 @@ function mats() {
     stone: std({ color: 0xdcd4c4, roughness: 0.85 }),
     navy: std({ color: 0x1c2638, roughness: 0.4, metalness: 0.5 }),
     deck: std({ color: 0x8a6b4e, roughness: 0.9 }),
+    brick: std({ color: 0x8c4d3b, roughness: 0.9 }),
     letters: {},
   };
   return M;
@@ -95,22 +96,39 @@ function letterMat(text, wM, hM) {
  * Build the model. b: OSM building; ctx: tile build context (ground). Returns
  * { group, collider: {outer, base, top}, surfaces: [...], floorY }.
  */
-export function buildPierBuilding(b, ctx) {
-  const m = mats();
+/** The facade facing the promenade/forecourt: its frame (origin, along, outwards, width) and the terrace floor height. */
+export function pierFrame(b, ground) {
   const outer = ensureCCW(b.outer);
   // Front = edge whose outward side has the highest ground (the promenade); the sea is behind.
   let best = null;
   for (let i = 0; i < outer.length; i++) {
     const a = outer[i], c = outer[(i + 1) % outer.length], L = Math.hypot(c[0] - a[0], c[1] - a[1]); if (L < 15) continue;
     const nx = -(c[1] - a[1]) / L, nz = (c[0] - a[0]) / L, mx = (a[0] + c[0]) / 2, mz = (a[1] + c[1]) / 2;
-    let g = 0; for (const d of [8, 12, 16]) g += ctx.ground(mx + nx * d, mz + nz * d);
+    let g = 0; for (const d of [8, 12, 16]) g += ground(mx + nx * d, mz + nz * d);
     const score = g / 3 + L * 0.02; if (!best || score > best.score) best = { a, c, L, nx, nz, score };
   }
   // ensureCCW on the map gives an outward normal of (-dz, dx) in world x,z (z south)
   const { a: A, c: B, L: W, nx: Nx, nz: Nz } = best;
   const Ex = (B[0] - A[0]) / W, Ez = (B[1] - A[1]) / W, Ox = (A[0] + B[0]) / 2, Oz = (A[1] + B[1]) / 2;
-  let G = Infinity; for (const d of [9, 11, 13]) for (const t of [-0.3, 0, 0.3]) G = Math.min(G, ctx.ground(Ox + Ex * t * W + Nx * d, Oz + Ez * t * W + Nz * d));
-  const floorY = G + STEPS.n * STEPS.rise;
+  let G = Infinity; for (const d of [9, 11, 13]) for (const t of [-0.3, 0, 0.3]) G = Math.min(G, ground(Ox + Ex * t * W + Nx * d, Oz + Ez * t * W + Nz * d));
+  return { outer, A, B, W, Nx, Nz, Ex, Ez, Ox, Oz, G, floorY: G + STEPS.n * STEPS.rise };
+}
+/** Where the steps meet the forecourt: a line along the foot of the flight (the promenade wall is opened there). */
+export function pierStepsGap(b, ground) {
+  const { W, Ex, Ez, Nx, Nz, Ox, Oz } = pierFrame(b, ground), hw = W / 2, stepX0 = -hw + W * 0.3, zf = STEPS.terrace + STEPS.n * STEPS.tread;
+  const w2 = (x, z) => [Ox + Ex * x + Nx * z, Oz + Ez * x + Nz * z];
+  return { a: w2(stepX0 - 0.4, zf), b: w2(hw + 0.4, zf), r: 1.6 };
+}
+/** The ground in front of the steps is a raised bank in the LiDAR; carve it down to the forecourt level and pave it, so the flight meets the forecourt. */
+export function pierStepsZone(b, ground) {
+  const { W, Ex, Ez, Nx, Nz, Ox, Oz, G } = pierFrame(b, ground), hw = W / 2, stepX0 = -hw + W * 0.3, T = STEPS.terrace, zf = T + STEPS.n * STEPS.tread;
+  const w2 = (x, z) => [Ox + Ex * x + Nx * z, Oz + Ez * x + Nz * z];
+  const x0 = -hw - 1.0, x1 = hw + 1.0; // the whole frontage: the terrace stands about a metre above the forecourt, with the steps in the middle
+  return { level: G + 0.1, ring: [w2(x0, T - 0.3), w2(x1, T - 0.3), w2(x1, 14), w2(x0, 14)], pave: [w2(x0, T + 0.7), w2(x1, T + 0.7), w2(x1, 9), w2(x0, 9)], stepsPave: [w2(stepX0 - 0.45, zf - 0.6), w2(hw + 0.45, zf - 0.6), w2(hw + 0.45, 9), w2(stepX0 - 0.45, 9)] };
+}
+export function buildPierBuilding(b, ctx) {
+  const m = mats();
+  const { outer, W, Nx, Nz, Ex, Ez, Ox, Oz, G, floorY } = pierFrame(b, ctx.ground);
   const group = new THREE.Group(); group.name = 'landmark:pier-building';
   const local = new THREE.Group(); local.position.set(Ox, floorY, Oz); local.rotation.y = Math.atan2(-Ez, Ex); group.add(local);
   // local axes: x along the facade (left -> right seen from the promenade), z outwards, y up.
@@ -186,6 +204,7 @@ export function buildPierBuilding(b, ctx) {
   box(m.stone, -hw - 0.5, hw + 0.5, -G - 1, 0, -0.5, T);
   for (let k = 1; k <= STEPS.n; k++) box(m.stone, stepX0, hw + 0.5, -G - 1, -k * STEPS.rise, T, T + k * STEPS.tread);
   box(m.stone, -hw - 0.5, stepX0, -G - 1, 0.25, T, T + 0.5); // plinth wall
+  for (const sx of [stepX0 - 0.4, hw + 0.05]) for (let k = 1; k <= STEPS.n; k++) box(m.brick, sx, sx + 0.45, -G - 1, -k * STEPS.rise + 0.55, T + (k - 1) * STEPS.tread, T + k * STEPS.tread + (k === STEPS.n ? 0.4 : 0)); // brick cheek walls stepping down with the flight
   const rails = [];
   const post = (x, z, y) => box(m.navy, x - 0.04, x + 0.04, y, y + 1.05, z - 0.04, z + 0.04);
   for (let x = -hw - 0.3; x <= stepX0; x += 1.6) post(x, T + 0.25, 0.25);

@@ -12,7 +12,7 @@
 
 import * as THREE from 'three';
 import { Textures } from './textures.js';
-import { orientedBox } from '../geo/polygon.js';
+import { orientedBox, pointInRing } from '../geo/polygon.js';
 
 export const PROM = { wallH: 1.0, wallT: 0.34, coping: 0.44, copingH: 0.08, pierW: 0.56, pierH: 1.14 };
 const BLUE = 0x1d4f91;
@@ -102,6 +102,10 @@ export function buildSeafrontWall(chainIds, ctx) {
         opens.push({ s: nd.s, w, by: O.road.name || O.kind });
       }
     }
+    for (const g of ctx.gaps || []) { // gaps for flights of steps down to the promenade wall (pier building)
+      let s0 = null, s1 = null; for (let s = 0; s <= W.L; s += 0.5) { const q = W.pointAt(s); const hit = g.ring ? (pointInRing(q.x, q.z, g.ring) || g.ring.some((p, i) => dseg(q.x, q.z, p, g.ring[(i + 1) % g.ring.length]) < g.r)) : dseg(q.x, q.z, g.a, g.b) < g.r; if (hit) { if (s0 == null) s0 = s; s1 = s; } }
+      if (s0 != null) opens.push({ s: (s0 + s1) / 2, w: s1 - s0 + 0.5, by: 'steps', noGate: true });
+    }
     opens.sort((a, b) => a.s - b.s);
     for (let i = 1; i < opens.length; i++) if (opens[i].s - opens[i].w / 2 < opens[i - 1].s + opens[i - 1].w / 2 + 1) { opens[i - 1].w = Math.max(opens[i - 1].w, opens[i].s + opens[i].w / 2 - (opens[i - 1].s - opens[i - 1].w / 2)); opens[i - 1].s = (opens[i - 1].s + opens[i].s) / 2; opens.splice(i--, 1); }
     // wall runs between openings (piers at each opening)
@@ -147,6 +151,7 @@ export function buildSeafrontWall(chainIds, ctx) {
         const [jx, , jz] = P(op.s + sg * (half - 0.03), om, 0); steel.box(jx, yb + PROM.wallH / 2, jz, ux, uz, 0.05, PROM.wallH / 2, T / 2 + 0.03);
         colliders.push({ type: 'circle', x: px, z: pz, r: PROM.pierW * 0.6, y0: yb - 0.5, top: yb + PROM.pierH, kind: 'wall' });
       }
+      if (op.noGate) continue; // an open forecourt or flight of steps: just brick piers at the ends, no flood gate
       const gk = Math.round(pc.x) + ',' + Math.round(pc.z); if (seenGate.has(gk)) continue; seenGate.add(gk); // one gate where two promenade ways meet
       // sill plate flush with the path
       { const [sx, , sz] = P(op.s, om, 0); steel.box(sx, y(op.s) + 0.01, sz, ux, uz, half, 0.012, T / 2 + 0.05); }

@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import { ensureCCW, pointInRing, distToSegment } from '../geo/polygon.js';
 
 export const PB = {
-  lotId: 1017338024, promId: 603405717,
+  lotId: 1017338024, promId: 603405717, forecourtId: 91786029,
   hidden: new Set([1017338023, 1017338025, 402524431]), // service aisles and the cycleway drawn across the car park
 };
 const BW = 2.6, BL = 5.0, AISLE = 6.6, WALL_GAP = 3.36 + 0.36; // promenade centre -> wall landward face -> tarmac edge (coping)
@@ -39,12 +39,16 @@ export function pierBightPlan(f, terrain) {
   const legV = (u) => { const ua = U(A0), ub = U(A1), t = (u - ua) / (ub - ua || 1); return V(A0) + (V(A1) - V(A0)) * t; }; // road-side kerb line
   const ue = u0 - 0.8; // overlaps the forecourt by a hair so no seam shows
   const ring = ensureCCW([at(ue, legV(ue)), at(u1, legV(u1)), at(u1, wallV + 0.25), at(ue, wallV + 0.25)]); // the tarmac runs just under the wall coping
-  // level the tarmac: least-squares plane through the terrain, blended into the surroundings at the edge
+  // level the tarmac and the pier forecourt beside it as one plane (LiDAR noise would otherwise poke through the paving as
+  // green patches): least-squares plane through the terrain, blended into the surroundings along the outer edge only
+  const fcArea = f.areas.find((x) => x.id === PB.forecourtId), fcRing = fcArea ? ensureCCW(fcArea.outer) : null, rings = fcRing ? [ring, fcRing] : [ring];
   let plane = null;
   if (terrain) {
     const S = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; let cnt = 0; // normal equations for h = a + b x + c z
-    for (let u = u0; u <= u1; u += 4) for (let v = legV(u) + 1; v <= wallV - 1; v += 4) {
-      const [x, z] = at(u, v); const h = terrain.rawHeightAt(x, z); if (!Number.isFinite(h)) continue; cnt++;
+    let bx0 = Infinity, bx1 = -Infinity, bz0 = Infinity, bz1 = -Infinity; for (const r of rings) for (const q of r) { bx0 = Math.min(bx0, q[0]); bx1 = Math.max(bx1, q[0]); bz0 = Math.min(bz0, q[1]); bz1 = Math.max(bz1, q[1]); }
+    for (let x = bx0; x <= bx1; x += 3) for (let z = bz0; z <= bz1; z += 3) {
+      if (!rings.some((r) => pointInRing(x, z, r))) continue;
+      const h = terrain.rawHeightAt(x, z); if (!Number.isFinite(h)) continue; cnt++;
       S[0] += 1; S[1] += x; S[2] += z; S[3] += x * x; S[4] += x * z; S[5] += z * z; S[6] += h; S[7] += x * h; S[8] += z * h;
     }
     if (cnt > 6) {
@@ -53,7 +57,12 @@ export function pierBightPlan(f, terrain) {
       const D = det3(M); if (Math.abs(D) > 1e-9) { const col = (k) => M.map((r, i) => r.map((x, j) => (j === k ? b[i] : x))); plane = [det3(col(0)) / D, det3(col(1)) / D, det3(col(2)) / D]; }
     }
   }
-  const edgeDist = (x, z) => { let d = Infinity; for (let i = 0; i < ring.length; i++) { const a = ring[i], c = ring[(i + 1) % ring.length]; d = Math.min(d, distToSegment(x, z, a[0], a[1], c[0], c[1]).d); } return d; };
+  // outer boundary: edges that are not inside (or against) the other ring
+  const edges = [];
+  rings.forEach((r, ri) => { for (let i = 0; i < r.length; i++) { const a = r[i], c = r[(i + 1) % r.length], mx = (a[0] + c[0]) / 2, mz = (a[1] + c[1]) / 2;
+    const shared = rings.some((o, oi) => { if (oi === ri) return false; if (pointInRing(mx, mz, o)) return true; for (let k = 0; k < o.length; k++) { const p = o[k], q = o[(k + 1) % o.length]; if (distToSegment(mx, mz, p[0], p[1], q[0], q[1]).d < 2.5) return true; } return false; });
+    if (!shared) edges.push([a, c]); } });
+  const edgeDist = (x, z) => { let d = Infinity; for (const [a, c] of edges) d = Math.min(d, distToSegment(x, z, a[0], a[1], c[0], c[1]).d); return d; };
   const heightFn = plane ? (x, z, h) => { const w = Math.min(1, edgeDist(x, z) / 3); const p = plane[0] + plane[1] * x + plane[2] * z; return h + (p - h) * w; } : null;
 
   // marked bays: columns every 2.6 m along the wall
@@ -70,7 +79,7 @@ export function pierBightPlan(f, terrain) {
   });
   const aisleMid = [wallV - BL - AISLE / 2, wallV - 3 * BL - AISLE - AISLE / 2];
   const sp = at(u0 + 7.5, aisleMid[0]);
-  return { start: { x: sp[0], z: sp[1], yaw: Math.atan2(-ux, -uz) }, lotId: PB.lotId, ring, ux, uz, vx, vz, u0, u1, wallV, bays, island, heightFn, at, aisleMid, U, V, sign: { p: at(u0 + 9.5 - 0.1, wallV - (BL + AISLE + BL) + 3.4), faceU: -1 } };
+  return { start: { x: sp[0], z: sp[1], yaw: Math.atan2(-ux, -uz) }, lotId: PB.lotId, ring, ux, uz, vx, vz, u0, u1, wallV, bays, island, heightFn, levelRings: rings, at, aisleMid, U, V, sign: { p: at(u0 + 9.5 - 0.1, wallV - (BL + AISLE + BL) + 3.4), faceU: -1 } };
 }
 
 // ---------- materials and small helpers ----------

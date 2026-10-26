@@ -21,7 +21,7 @@ import { profileNetwork, buildBridge, buildRamp, BRIDGE } from './bridges.js';
 import { buildGround, buildAreas } from './landcover.js';
 import { placeTrees, buildTreeMeshes } from './vegetation.js';
 import { buildProps, buildBarriers, buildPiers } from './furniture.js';
-import { isPierBuilding, buildPierBuilding } from './pier-building.js';
+import { isPierBuilding, buildPierBuilding, pierStepsGap, pierStepsZone } from './pier-building.js';
 import { isFishDish, buildFishDish } from './fish-dish.js';
 import { isRegal, buildRegal } from './regal.js';
 import { isTownHall, buildTownHall } from './town-hall.js';
@@ -278,9 +278,11 @@ export class World extends EventTarget {
     let pierBight = null;
     { const pb = pierBightPlan(f, this.terrain), c = pb && pb.ring.reduce((m, q) => [m[0] + q[0] / pb.ring.length, m[1] + q[1] / pb.ring.length], [0, 0]);
       if (pb && inTile(c[0], c[1])) {
-        pierBight = pb; this.pierBightStart = pb.start; if (pb.heightFn) this.terrain.addModifier('pier-bight', pb.ring, pb.heightFn);
+        pierBight = pb; this.pierBightStart = pb.start; if (pb.heightFn) pb.levelRings.forEach((rg, k) => this.terrain.addModifier('pier-bight-' + k, rg, pb.heightFn));
         f.areas = f.areas.filter((a) => a.id !== PB.lotId); f.areas.push({ id: PB.lotId, kind: 'parking', outer: pb.ring, holes: [], tags: { amenity: 'parking' } });
       } }
+    { const pb2 = ownBuildings.find((b) => isPierBuilding(b) && !b.isPart);
+      if (pb2) { const z = pierStepsZone(pb2, this.ground); this.terrain.addModifier('pier-steps', z.ring, (x, zz, h) => Math.min(h, z.level)); if (!f.areas.some((a) => a.id === 'pier-steps-paving')) f.areas.push({ id: 'pier-steps-paving', kind: 'paved', outer: z.pave, holes: [], tags: {} }); if (!f.areas.some((a) => a.id === 'pier-steps-paving2')) f.areas.push({ id: 'pier-steps-paving2', kind: 'paved', outer: z.stepsPave, holes: [], tags: {} }); } }
     // --- bridge decks and approach ramps: profiled on whole ways so every tile agrees ---
     const netWays = [...f.roads, ...f.lines.filter((l) => l.kind === 'rail').map((l) => ({ id: l.id, pts: l.pts, nodeIds: l.nodeIds, kind: 'rail', width: 4, bridge: !!l.tags.bridge && l.tags.bridge !== 'no', tunnel: !!l.tags.tunnel && l.tags.tunnel !== 'no', name: l.tags.name || null, tags: l.tags }))];
     const bridgeWays = netWays.filter((w) => w.bridge && !this.profiles.has(w.id));
@@ -310,7 +312,8 @@ export class World extends EventTarget {
     tile.roadStats = buildRoads(f.roads, ctx);
     // seafront: brick flood wall along the landward side of the promenade, with blue flood gates (seafront.js)
     const promIds = promenadeWays(f.roads, f.coastLines || []);
-    const seaWall = promIds.size ? buildSeafrontWall(promIds, { net: this.roads, rect: r, coastLines: f.coastLines || [] }) : null;
+    const pierB = ownBuildings.find((b) => isPierBuilding(b) && !b.isPart), gaps = pierB ? [pierStepsGap(pierB, this.ground)] : []; { const fc = f.areas.find((a) => a.id === 91786029); if (fc) gaps.push({ ring: fc.outer, r: 3 }); } // the flood wall is opened where the pier steps come down to it
+    const seaWall = promIds.size ? buildSeafrontWall(promIds, { net: this.roads, rect: r, coastLines: f.coastLines || [], gaps }) : null;
     tile.seafront = seaWall ? { gates: seaWall.gates.length, wallColliders: seaWall.colliders.length } : null;
     buildRail(f.lines.map((l) => ({ ...l, pts: l.pts })).flatMap((l) => clipPolyline(l.pts, r).map((pts) => ({ ...l, pts }))), ctx);
     await yieldFrame();

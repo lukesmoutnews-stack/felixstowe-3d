@@ -51,9 +51,9 @@ export function buildRegal(b, ctx) {
   const m = mats(), outer = ensureCCW(b.outer);
   let best = null; // front: long edge facing Sea Road
   for (let i = 0; i < outer.length; i++) {
-    const a = outer[i], c = outer[(i + 1) % outer.length], L = Math.hypot(c[0] - a[0], c[1] - a[1]); if (L < 10) continue;
+    const a = outer[i], c = outer[(i + 1) % outer.length], L = Math.hypot(c[0] - a[0], c[1] - a[1]); if (L < 20) continue; // the long frontage, not the short flank
     const nx = -(c[1] - a[1]) / L, nz = (c[0] - a[0]) / L, mx = (a[0] + c[0]) / 2 + nx * 8, mz = (a[1] + c[1]) / 2 + nz * 8;
-    const road = ctx.nearestRoad(mx, mz, 25, (r) => r.car);
+    const road = ctx.nearestRoad(mx, mz, 40, (r) => r.car && r.name === 'Sea Road'); // the shop faces Sea Road, towards the seafront
     const score = L * 0.5 + (road ? 40 - road.d : 0); if (!best || score > best.score) best = { score, a, c, L, nx, nz };
   }
   const { a: A, c: B, L: W, nx: Nx, nz: Nz } = best;
