@@ -211,7 +211,7 @@ export function buildPierBuilding(b, ctx) {
   box(m.navy, -hw - 0.3, stepX0, 1.27, 1.32, T + 0.22, T + 0.28); rails.push([[-hw - 0.3, T + 0.25], [stepX0, T + 0.25]]);
   for (const x of [stepX0 + W * 0.18, stepX0 + W * 0.36, stepX0 + W * 0.52]) { // sloped handrails down the flight
     for (let k = 0; k <= STEPS.n; k += 2) post(x, T + k * STEPS.tread, -k * STEPS.rise);
-    const g = new THREE.CylinderGeometry(0.035, 0.035, Math.hypot(run, STEPS.n * STEPS.rise), 6); g.rotateX(Math.PI / 2 - Math.atan2(STEPS.n * STEPS.rise, run));
+    const g = new THREE.CylinderGeometry(0.035, 0.035, Math.hypot(run, STEPS.n * STEPS.rise), 6); g.rotateX(Math.PI / 2 + Math.atan2(STEPS.n * STEPS.rise, run)); // slopes DOWN away from the building, like the flight
     const me = new THREE.Mesh(g, m.navy); me.position.set(x, 1.05 - (STEPS.n * STEPS.rise) / 2, T + run / 2); local.add(me);
   }
   // boardwalk wrapping the building (deck level = terrace level) with railings

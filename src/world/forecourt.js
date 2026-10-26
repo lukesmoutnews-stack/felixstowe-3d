@@ -13,7 +13,7 @@ function mats() {
   if (M) return M;
   M = {
     navy: std({ color: 0x1b2a55, roughness: 0.45, metalness: 0.5 }),
-    brickDark: std({ color: 0x7c3c30, roughness: 0.9 }), brickMid: std({ color: 0xb15a3c, roughness: 0.9 }), top: std({ color: 0xa08672, roughness: 0.95 }), coping: std({ color: 0xc9bfae, roughness: 0.9 }),
+    brickDark: std({ color: 0x7c3c30, roughness: 0.9 }), brickMid: std({ color: 0xb15a3c, roughness: 0.9 }), top: std({ color: 0x9c6650, roughness: 0.95 }), coping: std({ color: 0xc9bfae, roughness: 0.9 }),
     timber: std({ color: 0x8a6035, roughness: 0.8 }), black: std({ color: 0x15171a, roughness: 0.5, metalness: 0.4 }), gold: std({ color: 0xb98d3e, roughness: 0.35, metalness: 0.7 }),
     green: std({ color: 0x2e5a3a, roughness: 0.7 }), globe: std({ color: 0xcaa35a, roughness: 0.25, metalness: 0.85, emissive: 0x2a1f08, emissiveIntensity: 0.4 }), steel: std({ color: 0xaab0b6, roughness: 0.4, metalness: 0.7 }),
   };
@@ -26,11 +26,18 @@ export const FORECOURT_ID = 91786029, FORECOURT_ROAD_EDGE = [[-247, 189], [-256,
 export function forecourtPlan(ring, fr) {
   const { Ex, Ez, Nx, Nz, Ox, Oz } = fr, W2 = (x, z) => [Ox + Ex * x + Nx * z, Oz + Ez * x + Nz * z];
   const inside = (x, z) => { const p = W2(x, z); return pointInRing(p[0], p[1], ring); };
-  const cx = 1.5, cz = 15.5; // platform centre
-  const lamps = [[-12, 11], [-1.5, 10.5], [14, 11], [-6, 22], [9, 23], [23, 17]].filter(([x, z]) => inside(x, z));
-  const bins = [[-4.8, 11.2, 'black'], [7.8, 11.2, 'black'], [-4.8, 19.8, 'black'], [7.8, 19.8, 'black'], [-6.1, 15.5, 'green'], [9.1, 15.5, 'green']];
-  const benches = [[cx - 2.6, cz - 1.9, -1], [cx + 2.6, cz - 1.9, -1], [cx - 2.6, cz + 1.9, 1], [cx + 2.6, cz + 1.9, 1]];
-  const stands = [[18, 20], [19.6, 20.4], [21.2, 20.8]].filter(([x, z]) => inside(x, z));
+  // the platform sits at the centre (area centroid) of the paved forecourt
+  const L = ring.map(([x, y]) => { const dx = x - fr.Ox, dz = y - fr.Oz; return [dx * Ex + dz * Ez, dx * Nx + dz * Nz]; });
+  let A = 0, gx = 0, gz = 0;
+  for (let i = 0; i < L.length; i++) { const [x0, z0] = L[i], [x1, z1] = L[(i + 1) % L.length], c = x0 * z1 - x1 * z0; A += c; gx += (x0 + x1) * c; gz += (z0 + z1) * c; }
+  const cx = gx / (3 * A), cz = gz / (3 * A);
+  const at = (dx, dz) => [cx + dx, cz + dz];
+  const ok = (x, z) => inside(x, z);
+  const lamps = [[7.6, -6.4], [-8.2, -5.6], [-0.5, 8.6], [10.4, 7.5], [-13.5, 3.5], [-4, -12]].map(([a, b]) => at(a, b)).filter(([x, z]) => ok(x, z));
+  const bins = [[-7.8, -5.4, 'black'], [7.8, -5.4, 'black'], [-7.8, 5.4, 'black'], [7.8, 5.4, 'black'], [-8.3, 0, 'green'], [8.5, 0, 'green']].map(([a, b, k]) => [...at(a, b), k]);
+  // benches stand on the top tier all round the edge, facing outwards: [x, z, outward x, outward z]
+  const benches = [[-3.4, -2.6, 0, -1], [0, -2.6, 0, -1], [3.4, -2.6, 0, -1], [-3.4, 2.6, 0, 1], [0, 2.6, 0, 1], [3.4, 2.6, 0, 1], [-5.55, 0, -1, 0], [5.55, 0, 1, 0]].map(([a, b, ox, oz]) => [...at(a, b), ox, oz]);
+  const stands = [[11.5, -9], [13.1, -9.3], [14.7, -9.6]].map(([a, b]) => at(a, b)).filter(([x, z]) => ok(x, z));
   return { W2, fr, cx, cz, lamps, bins, benches, stands, ring };
 }
 
@@ -46,18 +53,20 @@ export function buildForecourt(plan, ground, roadEdge) {
   // local helper: box with its long axis along the facade (x): u axis = (Ex, Ez)
 
   // ---- stepped platform: three brick tiers ----
-  const T = [[5.6, 3.9, 0.14, 'brickDark'], [5.0, 3.3, 0.28, 'brickMid'], [4.5, 2.8, 0.42, 'top']];
+  const T = [[7.2, 4.4, 0.14, 'brickDark'], [6.6, 3.8, 0.28, 'brickMid'], [6.0, 3.2, 0.42, 'top']];
   for (const [hx, hz, h, g] of T) { const [wx, wz] = loc(cx, cz); geo[g].box(wx, ground(wx, wz) + h / 2 - 0.02, wz, Ex, Ez, hx, h / 2 + 0.02, hz); }
-  { const [wx, wz] = loc(cx, cz); geo.coping.box(wx, ground(wx, wz) + 0.43, wz, Ex, Ez, 4.6, 0.025, 2.9); }
-  const tierH = (lx, lz) => { const dx = Math.abs(lx - cx), dz = Math.abs(lz - cz); return dx <= 4.5 && dz <= 2.8 ? 0.42 : dx <= 5.0 && dz <= 3.3 ? 0.28 : dx <= 5.6 && dz <= 3.9 ? 0.14 : 0; };
-  { const ringW = [[-5.6, -3.9], [5.6, -3.9], [5.6, 3.9], [-5.6, 3.9]].map(([a, b]) => W2(cx + a, cz + b));
+  const tierH = (lx, lz) => { const dx = Math.abs(lx - cx), dz = Math.abs(lz - cz); return dx <= 6.0 && dz <= 3.2 ? 0.42 : dx <= 6.6 && dz <= 3.8 ? 0.28 : dx <= 7.2 && dz <= 4.4 ? 0.14 : 0; };
+  { const ringW = [[-7.2, -4.4], [7.2, -4.4], [7.2, 4.4], [-7.2, 4.4]].map(([a, b]) => W2(cx + a, cz + b));
     const toLocal = (x, z) => { const dx = x - fr.Ox, dz = z - fr.Oz; return [dx * Ex + dz * Ez, dx * Nx + dz * Nz]; };
     surfaces.push({ id: 'pier-forecourt-platform', kind: 'terrace', ring: ringW, heightAt: (x, z) => { const [lx, lz] = toLocal(x, z); return ground(x, z) + tierH(lx, lz); }, name: 'Pier forecourt platform', meshes: [] }); }
-  // benches: timber slats on black steel ends, facing outwards
-  for (const [bx, bz, dir] of plan.benches) {
-    box('timber', bx, 0.42 + 0.44, bz, 0.9, 0.025, 0.22); box('timber', bx, 0.42 + 0.7, bz + dir * 0.2, 0.9, 0.2, 0.02);
-    for (const s of [-0.8, 0.8]) box('black', bx + s, 0.42 + 0.22, bz, 0.03, 0.22, 0.2);
-    const [wx, wz] = loc(bx, bz); colliders.push({ type: 'circle', x: wx, z: wz, r: 0.55, y0: ground(wx, wz), top: ground(wx, wz) + 1.2, kind: 'bench' });
+  // benches: timber slats on black steel ends, standing on the top tier, backs to the centre, facing outwards
+  const wv = (a, b) => [Ex * a + Nx * b, Ez * a + Nz * b];
+  for (const [bx, bz, ox, oz] of plan.benches) {
+    const [wx, wz] = loc(bx, bz), [ux, uz] = wv(-oz, ox), [nx, nz] = wv(ox, oz), y = ground(wx, wz) + 0.42;
+    geo.timber.box(wx, y + 0.44, wz, ux, uz, 0.9, 0.025, 0.22);
+    geo.timber.box(wx - nx * 0.2, y + 0.7, wz - nz * 0.2, ux, uz, 0.9, 0.2, 0.02);
+    for (const sgn of [-0.8, 0.8]) geo.black.box(wx + ux * sgn, y + 0.22, wz + uz * sgn, ux, uz, 0.03, 0.22, 0.2);
+    colliders.push({ type: 'circle', x: wx, z: wz, r: 0.55, y0: y - 0.1, top: y + 1.2, kind: 'bench' });
   }
   // bins: black ornate with a gold band; green communal bins
   for (const [bx, bz, kind] of plan.bins) {
