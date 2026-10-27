@@ -121,7 +121,7 @@ export function buildSpaPavilion(b, ctx) {
   const gw = (u, v) => ctx.ground(...W(u, v));
   const Gp = gw(18, -3), Gf = gw(-17, 16);
   const nSteps = Math.max(12, Math.round((Math.max(Gp + 3.6, Gf + 3.3) - Gf) / 0.165)), rise = 0.165, F = Gf + nSteps * rise;
-  const LF = Gp + 3.7, LT = LF + 3.6, E = F + 6.3; // lounge floor, lounge top, hall eaves
+  const LF = F - 0.25, LT = LF + 3.6, E = F + 6.3; // lounge slab (so the lounge floor LD = F: main doors and lounge doors open off one balcony level), lounge top, hall eaves
   const group = new THREE.Group(); group.name = 'landmark:spa-pavilion';
   const local = new THREE.Group(); local.position.set(A[0], 0, A[1]); local.rotation.y = Math.atan2(-Uz, Ux); group.add(local);
   // when V = -(local z), the mapping x=u, z=-v holds; otherwise mirror v
@@ -166,7 +166,7 @@ export function buildSpaPavilion(b, ctx) {
 
   // ---------- exterior: seaward lounge (1960) over a colonnade ----------
   box(m.render, 0, 36, Gp - 0.3, LF, 3, 9);                     // cafe block behind the colonnade
-  box(m.render, -5.8, 0, Gp - 0.3, LF + 0.3, 6.0, 9.2);           // link between the lounge and the entrance
+  box(m.render, -5.8, 0, Gp - 0.3, LF + 0.2, 6.0, 9.2);           // link between the lounge and the entrance
   seaPlane(m.cafe, 0.6, 35.4, 2.99, Gp + 0.2, LF - 0.5);
   box(m.white, -0.2, 36.2, LF - 0.4, LF + 0.25, -0.2, 9);        // lounge floor slab / colonnade ceiling
   for (let u = 0.3; u <= 35.8; u += 4.45) {                      // columns with flared heads
@@ -256,7 +256,7 @@ export function buildSpaPavilion(b, ctx) {
   rail(0, 0.95); rail(-sw + 0.15, 1.85); rail(sw - 0.15, 1.85);
   for (let k = 0; k <= ns; k += 4) { const q = qLand + k * 0.3, yy = F - k * rise; pbox(m.rail, -0.03, 0.03, yy, yy + 0.95, q - 0.03, q + 0.03); }
   // balcony from the landing's seaward-east side round to the lounge doors (user, 12 Oct 2026)
-  const yB = LD, bA = { u0: -6.9, u1: -5.8, v0: 2.4, v1: 8.6 }, bB = { u0: -5.8, u1: 0, v0: 2.4, v1: 6.0 };
+  const yB = LD, bA = { u0: -6.9, u1: -5.8, v0: 2.4, v1: 8.6 }, bB = { u0: -5.8, u1: 0, v0: 2.4, v1: 8.6 };
   // the lounge floor is lower than the entrance landing: a short flight of steps on the balcony takes up the difference
   const nsB = Math.max(0, Math.round((F - yB) / rise)), rB = nsB ? (F - yB) / nsB : 0, vs1 = 7.5, vs0 = vs1 - nsB * 0.3;
   const balY = (v) => (v >= vs1 ? F : v <= vs0 ? yB : F - Math.ceil((vs1 - v) / 0.3 - 1e-6) * rB);
@@ -267,6 +267,8 @@ export function buildSpaPavilion(b, ctx) {
   for (const u of [-6.8, -3.5, -0.2]) box(m.render, u - 0.18, u + 0.18, Gp - 0.3, yB - 0.35, 2.45, 2.81);
   for (let u = bA.u0 + 0.1; u < 0; u += 0.25) box(m.black, u - 0.015, u + 0.015, yB, yB + 1.05, 2.4, 2.44, false);
   box(m.black, bA.u0, 0, yB + 1.0, yB + 1.06, 2.36, 2.48);
+  for (let u = bA.u1 + 0.1; u < 0; u += 0.25) box(m.black, u - 0.015, u + 0.015, yB, yB + 1.05, 8.6, 8.64, false);   // landward edge of the balcony
+  box(m.black, bA.u1, 0, yB + 1.0, yB + 1.06, 8.58, 8.66);
   for (let v = 2.5; v <= 6.7; v += 0.25) box(m.black, bA.u0, bA.u0 + 0.04, balY(v), balY(v) + 1.05, v - 0.015, v + 0.015, false);
   // walkway along the entrance block's landward face: the landing joins the balcony terrace (user's sketch, 12 Oct 2026)
   const wu0 = -11.2, wv0 = 8.2;
@@ -470,7 +472,7 @@ export function buildSpaPavilion(b, ctx) {
   const segPQ = (a, c, r = 0.05, y0 = Gf - 1, top = E + 3, kind = 'building') => colliders.push({ type: 'segment', a: W(...pq(...a)), b: W(...pq(...c)), r, y0, top, kind });
   segPQ([-1.4, -0.5], [-1.4, 3.0], 0.1); segPQ([1.4, -0.5], [1.4, 3.0], 0.1); segPQ([-1.5, 2.9], [-0.8, 2.9], 0.1); segPQ([0.8, 2.9], [1.5, 2.9], 0.1);
   seg([0.05, 1.2], [0.05, ld0], 0.08, LF, LT); seg([0.05, ld1], [0.05, 8.8], 0.08, LF, LT); seg([0, -0.15], [36, -0.15], 0.1, LF, LT); seg([0, 8.75], [36, 8.75], 0.1, LF, LT); // lounge
-  seg([bA.u0, bA.v0], [0, bA.v0], 0.08, yB - 1, yB + 1.1, 'railing'); seg([bA.u0, bA.v0], [bA.u0, 6.6], 0.08, yB - 1, yB + 1.1, 'railing');
+  seg([bA.u0, bA.v0], [0, bA.v0], 0.08, yB - 1, yB + 1.1, 'railing'); seg([bA.u1, 8.6], [0, 8.6], 0.08, yB - 1, yB + 1.1, 'railing'); seg([bA.u0, bA.v0], [bA.u0, 6.6], 0.08, yB - 1, yB + 1.1, 'railing');
   seg([8, 7.5], [26, 7.5], 0.35, LD - 0.2, LD + 1.1, 'furniture');
   for (const sgn of [-1, 1]) { segPQ([sgn * 1.6, qLand], [sgn * 2.2, qLand], 0.08, F - 1, F + 1.1, 'railing'); segPQ([sgn * (sw + 0.2), qLand], [sgn * (sw + 0.2), qBot + 0.4], 0.2); }
   seg([wu0, wv0], [wu0, 21.2], 0.08, F - 1, F + 1.1, 'railing'); seg([wu0, 21.2], [-10.05, 21.2], 0.08, F - 1, F + 1.1, 'railing');
