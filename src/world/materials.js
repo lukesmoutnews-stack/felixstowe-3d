@@ -51,7 +51,7 @@ float bnoise(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
   float n = bnoise(wp * 0.11) * 0.6 + bnoise(wp * 0.37) * 0.4;
   float sh = smoothstep(2.0, 2.7, vWorldPosBeach.y + (n - 0.5) * 0.9);
   vec3 pc = texture2D(uShingle, vMapUv * ${k}).rgb;
-  diffuseColor.rgb = mix(diffuseColor.rgb * (0.88 + m * 0.24), pc * (0.85 + m * 0.3), sh); }`);
+  diffuseColor.rgb = mix(diffuseColor.rgb * (0.88 + m * 0.24), pc * (0.85 + m * 0.3), sh); }`); // (damp sand near the waterline comes from the vertex colours, beach.js)
   };
   material.customProgramCacheKey = () => 'beachblend';
   return material;
@@ -120,7 +120,7 @@ export function groundMaterial(kind, layer) {
     if (layer > LAYER.ground && layer !== LAYER.deck) {
       m.depthWrite = false; m.polygonOffset = true; m.polygonOffsetFactor = -1; m.polygonOffsetUnits = -2 - layer;
     }
-    if (kind === 'beach' && layer === LAYER.landcover) addBeachBlend(m); // sand below, shingle on the upper beach (beach.js)
+    if (kind === 'beach' && layer === LAYER.landcover) { m.vertexColors = true; addBeachBlend(m); } // sand below, shingle on the upper beach (beach.js)
     else addMacroVariation(m, ['asphalt', 'markings'].includes(tex) ? 0.12 : 0.25);
     return m;
   });
