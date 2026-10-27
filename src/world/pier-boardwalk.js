@@ -116,22 +116,42 @@ export function buildBoardwalk(o) {
   let cafe = -1, cl = 0; fp.forEach((p, i) => { const q = fp[(i + 1) % n]; if (N[i][0] > 0.9 && N[i][2] > cl) { cl = N[i][2]; cafe = i; } });
   const backZ = Math.min(...fp.map((p) => p[1])) + 3.2;
 
+  // ---- the pier mouth: where the pier deck leaves the building (found first: the boards are cut away there) ----
+  const pl = (o.pierStarts || []).map(([x, z]) => toLocal(x, z)), near = pl.filter((p) => p[1] < backZ + 1.5 && p[1] > backZ - 8 && Math.abs(p[0]) < 40), far = pl.filter((p) => p[1] < -100 && Math.abs(p[0]) < 80);
+  let mouth = null;
+  if (near.length >= 2 && far.length >= 2) {
+    const c0 = [near.reduce((s, p) => s + p[0], 0) / near.length, near.reduce((s, p) => s + p[1], 0) / near.length], c1 = [far.reduce((s, p) => s + p[0], 0) / far.length, far.reduce((s, p) => s + p[1], 0) / far.length];
+    const L = Math.hypot(c1[0] - c0[0], c1[1] - c0[1]), u = [(c1[0] - c0[0]) / L, (c1[1] - c0[1]) / L], xs = near.map((p) => p[0]);
+    mouth = { c: c0, u, x0: Math.min(...xs), x1: Math.max(...xs), w: Math.max(...xs) - Math.min(...xs) };
+  }
+  const inMouth = (x, z) => mouth && z < backZ + 1.5 && x > mouth.x0 - 0.3 && x < mouth.x1 + 0.3;
+  const clipPoly = (poly, a, b, c) => { const out = []; for (let i = 0; i < poly.length; i++) { const P = poly[i], Q = poly[(i + 1) % poly.length], dp = a * P[0] + b * P[1] + c, dq = a * Q[0] + b * Q[1] + c; if (dp >= 0) out.push(P); if ((dp >= 0) !== (dq >= 0)) { const t = dp / (dp - dq); out.push([P[0] + (Q[0] - P[0]) * t, P[1] + (Q[1] - P[1]) * t]); } } return out; };
+  const pieces = (tri) => { // cut the strip of the pier mouth out of the boards (the pier deck, a little lower, runs through it)
+    if (!mouth) return [tri]; const xa = mouth.x0 - 0.05, xb = mouth.x1 + 0.05;
+    return [clipPoly(tri, -1, 0, xa), clipPoly(tri, 1, 0, -xb), clipPoly(clipPoly(clipPoly(tri, 1, 0, -xa), -1, 0, xb), 0, 1, -(backZ + 1.5))].filter((p) => p.length >= 3);
+  };
+  const spans = (A, B, L) => { // parts of a back edge outside the mouth
+    if (!mouth || Math.max(A[1], B[1]) > backZ + 1.5) return [[0, L]]; const ux = (B[0] - A[0]) / L; if (Math.abs(ux) < 0.3) return [[0, L]];
+    let t0 = (mouth.x0 - 0.05 - A[0]) / ux, t1 = (mouth.x1 + 0.05 - A[0]) / ux; if (t0 > t1) [t0, t1] = [t1, t0];
+    const out = []; if (t0 > 0.05) out.push([0, Math.min(L, t0)]); if (t1 < L - 0.05) out.push([Math.max(0, t1), L]); return out.filter(([p, q]) => q - p > 0.05);
+  };
+
   // boards
-  { const { verts, tris } = triangulate(ring, [core]), pos = [], uv = [];
-    for (const [i, j, k] of tris) {
-      const a = verts[i], b = verts[j], c = verts[k], cz = (a[1] + b[1] + c[1]) / 3, along = cz > backZ;
-      const cr = (b[1] - a[1]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[1] - a[1]); // y of (b-a)x(c-a) with y=0 plane
+  { const { verts, tris } = triangulate(ring, [core]), pos = [], uv = [], upos = [];
+    for (const [i, j, k] of tris) for (const poly of pieces([verts[i], verts[j], verts[k]])) for (let q = 1; q + 1 < poly.length; q++) {
+      const a = poly[0], b = poly[q], c = poly[q + 1], cz = (a[1] + b[1] + c[1]) / 3, along = cz > backZ;
+      const cr = (b[1] - a[1]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[1] - a[1]); // y of (b-a)x(c-a)
       const t = cr > 0 ? [a, b, c] : [a, c, b];
       for (const p of t) { pos.push(p[0], 0.03, p[1]); if (along) uv.push(p[1] / 3.2, p[0] / 3.2); else uv.push(p[0] / 3.2, p[1] / 3.2); }
+      for (const p of [t[0], t[2], t[1]]) upos.push(p[0], -0.5, p[1]);
     }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.computeVertexNormals();
     const deck = new THREE.Mesh(g, m.deck); deck.receiveShadow = true; group.add(deck);
-    const gu = g.clone(); const p2 = gu.attributes.position.array.slice(); for (let q = 0; q < p2.length; q += 9) { for (let k = 0; k < 3; k++) { const t = p2[q + 3 + k]; p2[q + 3 + k] = p2[q + 6 + k]; p2[q + 6 + k] = t; } }
-    for (let q = 1; q < p2.length; q += 3) p2[q] = -0.5; gu.setAttribute('position', new THREE.Float32BufferAttribute(p2, 3)); gu.deleteAttribute('uv'); gu.computeVertexNormals();
+    const gu = new THREE.BufferGeometry(); gu.setAttribute('position', new THREE.Float32BufferAttribute(upos, 3)); gu.computeVertexNormals();
     group.add(new THREE.Mesh(gu, m.under)); // dark underside so the deck is not see-through from the beach
   }
-  // deck surface (walkable; layered so the beach underneath stays walkable)
-  surfaces.push({ id: 'pier-boardwalk', kind: 'terrace', ring: ring.map(([x, z]) => W2(x, z)), heightAt: () => floorY, layered: true, name: 'Felixstowe Pier boardwalk', meshes: [] });
+  // deck surface (walkable)
+  surfaces.push({ id: 'pier-boardwalk', kind: 'terrace', ring: ring.map(([x, z]) => W2(x, z)), heightAt: () => floorY, name: 'Felixstowe Pier boardwalk', meshes: [] });
 
   // ---- fascia, walings, cross beams ----
   for (let i = 0; i < n; i++) {
@@ -141,10 +161,11 @@ export function buildBoardwalk(o) {
       for (const [xa, xb] of [[ring[0][0], -(hw + 0.5)], [hw + 0.5, ring[1][0]]]) { const mx = (xa + xb) / 2, hl = Math.abs(xb - xa) / 2; box('timber', mx, -0.27, T - 0.05, hl, 0.27, 0.05); box('timber', mx, -0.42, T - 0.45, hl, 0.16, 0.16); }
       continue;
     }
-    box('timber', cx - nx * 0.05, -0.27, cz - nz * 0.05, L / 2 + 0.05, 0.27, 0.05, ux, uz);          // fascia board
-    box('timber', cx - nx * 0.45, -0.42, cz - nz * 0.45, L / 2, 0.16, 0.16, ux, uz);                 // waling
+    for (const [t0, t1] of spans(A, B, L)) { const tm = (t0 + t1) / 2, mx = A[0] + ux * tm, mz = A[1] + uz * tm, hl = (t1 - t0) / 2;
+      box('timber', mx - nx * 0.05, -0.27, mz - nz * 0.05, hl + 0.05, 0.27, 0.05, ux, uz);           // fascia board
+      box('timber', mx - nx * 0.45, -0.42, mz - nz * 0.45, hl, 0.16, 0.16, ux, uz); }                // waling
     const d = ds[i], k = Math.max(1, Math.round(L / 4));
-    for (let s = 0; s <= k; s++) { const t = (s + 0.5) / (k + 1) * L, px = A[0] + ux * t - nx * d / 2, pz = A[1] + uz * t - nz * d / 2; box('timber', px, -0.4, pz, (d - 0.3) / 2, 0.14, 0.09, nx, nz); } // cross beams
+    for (let s = 0; s <= k; s++) { const t = (s + 0.5) / (k + 1) * L, px = A[0] + ux * t - nx * d / 2, pz = A[1] + uz * t - nz * d / 2; if (!inMouth(px, pz)) box('timber', px, -0.4, pz, (d - 0.3) / 2, 0.14, 0.09, nx, nz); } // cross beams
   }
 
   // ---- piles: rusty round steel piles with weed bands, instanced ----
@@ -163,16 +184,6 @@ export function buildBoardwalk(o) {
     im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; im.castShadow = true; group.add(im);
     for (const [x, z, y0, h] of piles) addCol('circle', [x, z], null, 0.26, floorY + y0, floorY + y0 + h, 'pile');
   }
-
-  // ---- the pier mouth: where the pier deck leaves the building ----
-  const pl = (o.pierStarts || []).map(([x, z]) => toLocal(x, z)), near = pl.filter((p) => p[1] < backZ + 1.5 && p[1] > backZ - 8 && Math.abs(p[0]) < 40), far = pl.filter((p) => p[1] < -100 && Math.abs(p[0]) < 80);
-  let mouth = null;
-  if (near.length >= 2 && far.length >= 2) {
-    const c0 = [near.reduce((s, p) => s + p[0], 0) / near.length, near.reduce((s, p) => s + p[1], 0) / near.length], c1 = [far.reduce((s, p) => s + p[0], 0) / far.length, far.reduce((s, p) => s + p[1], 0) / far.length];
-    const L = Math.hypot(c1[0] - c0[0], c1[1] - c0[1]), u = [(c1[0] - c0[0]) / L, (c1[1] - c0[1]) / L], xs = near.map((p) => p[0]);
-    mouth = { c: c0, u, x0: Math.min(...xs), x1: Math.max(...xs), w: Math.max(...xs) - Math.min(...xs) };
-  }
-  const inMouth = (x, z) => mouth && z < backZ + 1.5 && x > mouth.x0 - 0.3 && x < mouth.x1 + 0.3;
 
   // ---- white railings with colliders along the outer edge ----
   const rail = (ax, az, bx, bz) => {
