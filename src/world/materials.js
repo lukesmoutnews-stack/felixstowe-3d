@@ -29,6 +29,34 @@ float mnoise(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
   return material;
 }
 
+/** Beach ground: the sand map, with the shingle map blended in by height (the upper beach under the
+ *  promenade bank is pebbles, the flat lower beach is sand) plus the usual low-frequency tint. */
+function addBeachBlend(material) {
+  const shingle = Textures.groundTexture('shingle');
+  const k = (GROUND_TEX_SIZE.sand / GROUND_TEX_SIZE.shingle).toFixed(4);
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uShingle = { value: shingle.map };
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vWorldPosBeach;')
+      .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWorldPosBeach = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', `#include <common>
+varying vec3 vWorldPosBeach; uniform sampler2D uShingle;
+float bhash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float bnoise(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
+  return mix(mix(bhash(i), bhash(i+vec2(1,0)), f.x), mix(bhash(i+vec2(0,1)), bhash(i+vec2(1,1)), f.x), f.y); }`)
+      .replace('#include <map_fragment>', `#include <map_fragment>
+{ vec2 wp = vWorldPosBeach.xz;
+  float m = bnoise(wp * 0.012) * 0.6 + bnoise(wp * 0.052) * 0.4;
+  float n = bnoise(wp * 0.11) * 0.6 + bnoise(wp * 0.37) * 0.4;
+  float sh = smoothstep(2.0, 2.7, vWorldPosBeach.y + (n - 0.5) * 0.9);
+  vec3 pc = texture2D(uShingle, vMapUv * ${k}).rgb;
+  diffuseColor.rgb = mix(diffuseColor.rgb * (0.88 + m * 0.24), pc * (0.85 + m * 0.3), sh); }`);
+  };
+  material.customProgramCacheKey = () => 'beachblend';
+  return material;
+}
+
 function std(key, make) { if (!mats.has(key)) mats.set(key, make()); return mats.get(key); }
 
 const FASCIAS = ['#1f2f4a', '#2f4a36', '#6b1f24', '#1e1e1e', '#e9e6df', '#5b3a5e', '#0f4d57'];
@@ -92,7 +120,8 @@ export function groundMaterial(kind, layer) {
     if (layer > LAYER.ground && layer !== LAYER.deck) {
       m.depthWrite = false; m.polygonOffset = true; m.polygonOffsetFactor = -1; m.polygonOffsetUnits = -2 - layer;
     }
-    addMacroVariation(m, ['asphalt', 'markings'].includes(tex) ? 0.12 : 0.25);
+    if (kind === 'beach' && layer === LAYER.landcover) addBeachBlend(m); // sand below, shingle on the upper beach (beach.js)
+    else addMacroVariation(m, ['asphalt', 'markings'].includes(tex) ? 0.12 : 0.25);
     return m;
   });
 }

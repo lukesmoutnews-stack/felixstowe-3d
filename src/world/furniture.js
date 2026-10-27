@@ -9,6 +9,7 @@ import { BAY_W, STOREY_H } from './textures.js';
 import { LAYER, GROUND_TEX_SIZE } from './materials.js';
 import { ribbon } from './roads.js';
 import { triangulate } from './accum.js';
+import { buildRockGroynes } from './rock-groyne.js';
 
 // ---------- small prop geometries (built once) ----------
 const geo = new Map();
@@ -153,7 +154,9 @@ export function buildProps(features, tile, ctx) {
   }
   const meshes = [];
   for (const [k, list] of Object.entries(lists)) { const m = instances(k, list); if (m) meshes.push(m); }
-  return { meshes, colliders, stats: { mappedLamps, procLamps } };
+  const rocks = buildRockGroynes(features.lines, tile, ctx); // rock groynes (rock-groyne.js) replace the old timber walls
+  meshes.push(...rocks.meshes); colliders.push(...rocks.colliders);
+  return { meshes, colliders, stats: { mappedLamps, procLamps, rockGroynes: rocks.stats.groynes, rocks: rocks.stats.rocks } };
 }
 
 /** Vertical strip (wall/fence/hedge/groyne) along a polyline. */
@@ -184,7 +187,6 @@ export function buildBarriers(lines, tile, ctx) {
       wall: { key: l.tags.material === 'flint' ? 'facade:flint:false' : 'facade:brick_red:false', t: 0.3, h: 1.6 },
       fence: { key: 'facade:timber:false', t: 0.08, h: 1.2 },
       hedge: { key: 'plain:hedge', t: 0.9, h: 1.5 },
-      groyne: { key: 'facade:timber:false', t: 0.3, h: 1.1, tint: [0.42, 0.34, 0.26] },
       breakwater: { key: 'facade:concrete:false', t: 3, h: 1.5 },
     }[l.kind];
     if (!spec) continue;

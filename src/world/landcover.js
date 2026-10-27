@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { LAYER, GROUND_TEX_SIZE, groundTexName, waterMaterial } from './materials.js';
 import { triangulate, subdivide } from './accum.js';
 import { clipRingToRect, area } from '../geo/polygon.js';
+import { buildBeachCells } from './beach.js';
 
 const AREA_LAYER = {
   residential: LAYER.landuse, commercial: LAYER.landuse, industrial: LAYER.landuse, port: LAYER.landuse, railway: LAYER.landuse,
@@ -77,6 +78,7 @@ export function buildAreas(areas, tile, ctx) {
     const holes = (a.holes || []).map((h) => clipRingToRect(h, tile.rect)).filter(Boolean);
     const [cx, cz] = outer[0];
     if (a.kind === 'water') { polyToAcc(acc.get(cx, cz, 'waterOverlay'), outer, holes, ground, 10, 0.03, ctx.hasTerrain); continue; }
+    if (ctx.hasTerrain && (a.kind === 'beach' || a.kind === 'shingle')) { if (buildBeachCells(a, tile, ctx)) stats.drawn++; continue; } // exact base-mesh cells, sand/shingle blended in the material (beach.js)
     const tex = groundTexName(a.kind);
     // paved ground sits a little higher on a finer mesh so the terrain's LiDAR noise never pokes through it as green patches
     const hard = layer === LAYER.paved;

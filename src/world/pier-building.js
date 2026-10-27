@@ -8,7 +8,7 @@
 
 import * as THREE from 'three';
 import { ensureCCW, insetRing, pointInRing } from '../geo/polygon.js';
-import { triangulate } from './accum.js';
+import { buildBoardwalk } from './pier-boardwalk.js';
 
 export const PIER_BUILDING_IDS = new Set([91786049]);
 export const isPierBuilding = (b) => PIER_BUILDING_IDS.has(b.id) || /^felixstowe pier( amusements)?$/i.test(b.name || '') || /^felixstowe pier$/i.test(b.tags?.old_name || '');
@@ -113,11 +113,11 @@ export function pierFrame(b, ground) {
   let G = Infinity; for (const d of [9, 11, 13]) for (const t of [-0.3, 0, 0.3]) G = Math.min(G, ground(Ox + Ex * t * W + Nx * d, Oz + Ez * t * W + Nz * d));
   return { outer, A, B, W, Nx, Nz, Ex, Ez, Ox, Oz, G, floorY: G + STEPS.n * STEPS.rise };
 }
-/** Where the steps meet the forecourt: a line along the foot of the flight (the promenade wall is opened there). */
+/** Where the steps cross the promenade: a line along the promenade centre (about 3.4 m out from the facade) the width of the flight, so the flood wall behind it is opened right across. */
 export function pierStepsGap(b, ground) {
-  const { W, Ex, Ez, Nx, Nz, Ox, Oz } = pierFrame(b, ground), hw = W / 2, stepX0 = -hw + W * 0.3, zf = STEPS.terrace + STEPS.n * STEPS.tread;
+  const { W, Ex, Ez, Nx, Nz, Ox, Oz } = pierFrame(b, ground), hw = W / 2, stepX0 = -hw + W * 0.3;
   const w2 = (x, z) => [Ox + Ex * x + Nx * z, Oz + Ez * x + Nz * z];
-  return { a: w2(stepX0 - 0.4, zf), b: w2(hw + 0.4, zf), r: 1.6 };
+  return { a: w2(stepX0 - 0.4, 3.4), b: w2(hw + 0.4, 3.4), r: 1.3 };
 }
 /** The ground in front of the steps is a raised bank in the LiDAR; carve it down to the forecourt level and pave it, so the flight meets the forecourt. */
 export function pierStepsZone(b, ground) {
@@ -128,7 +128,7 @@ export function pierStepsZone(b, ground) {
 }
 export function buildPierBuilding(b, ctx) {
   const m = mats();
-  const { outer, W, Nx, Nz, Ex, Ez, Ox, Oz, G, floorY } = pierFrame(b, ctx.ground);
+  const { outer, A: frameA, W, Nx, Nz, Ex, Ez, Ox, Oz, G, floorY } = pierFrame(b, ctx.ground);
   const group = new THREE.Group(); group.name = 'landmark:pier-building';
   const local = new THREE.Group(); local.position.set(Ox, floorY, Oz); local.rotation.y = Math.atan2(-Ez, Ex); group.add(local);
   // local axes: x along the facade (left -> right seen from the promenade), z outwards, y up.
@@ -201,7 +201,7 @@ export function buildPierBuilding(b, ctx) {
   }
   // terrace, steps and railings
   const T = STEPS.terrace, run = STEPS.n * STEPS.tread, stepX0 = -hw + W * 0.3; // steps on the right 70 %, wall + railing on the left
-  box(m.stone, -hw - 0.5, hw + 0.5, -G - 1, 0, -0.5, T);
+  box(m.stone, -hw - 0.5, hw + 0.5, -G - 1, 0.05, -0.5, T); // the entrance terrace (a hair above the boardwalk boards at its sides)
   for (let k = 1; k <= STEPS.n; k++) box(m.stone, stepX0, hw + 0.5, -G - 1, -k * STEPS.rise, T, T + k * STEPS.tread);
   box(m.stone, -hw - 0.5, stepX0, -G - 1, 0.25, T, T + 0.5); // plinth wall
   for (const sx of [stepX0 - 0.4, hw + 0.05]) for (let k = 1; k <= STEPS.n; k++) box(m.brick, sx, sx + 0.45, -G - 1, -k * STEPS.rise + 0.55, T + (k - 1) * STEPS.tread, T + k * STEPS.tread + (k === STEPS.n ? 0.4 : 0)); // brick cheek walls stepping down with the flight
@@ -214,13 +214,6 @@ export function buildPierBuilding(b, ctx) {
     const g = new THREE.CylinderGeometry(0.035, 0.035, Math.hypot(run, STEPS.n * STEPS.rise), 6); g.rotateX(Math.PI / 2 + Math.atan2(STEPS.n * STEPS.rise, run)); // slopes DOWN away from the building, like the flight
     const me = new THREE.Mesh(g, m.navy); me.position.set(x, 1.05 - (STEPS.n * STEPS.rise) / 2, T + run / 2); local.add(me);
   }
-  // boardwalk wrapping the building (deck level = terrace level) with railings
-  const walkRing = insetRing(outer, -3) || outer;
-  const { verts, tris } = triangulate(walkRing, [outer.slice().reverse()]);
-  const pos = []; for (const [i, j, k] of tris) for (const q of [i, k, j]) pos.push(verts[q][0], floorY + 0.02, verts[q][1]);
-  const dg = new THREE.BufferGeometry(); dg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); dg.computeVertexNormals();
-  const deck = new THREE.Mesh(dg, m.deck); deck.material.side = THREE.DoubleSide; deck.receiveShadow = true; group.add(deck);
-
   // world-space helpers for walking surfaces and colliders
   const W2 = (x, z) => [Ox + Ex * x + Nx * z, Oz + Ez * x + Nz * z];
   const toLocal = (x, z) => { const dx = x - Ox, dz = z - Oz; return [dx * Ex + dz * Ez, dx * Nx + dz * Nz]; };
@@ -228,25 +221,15 @@ export function buildPierBuilding(b, ctx) {
   const stepsH = (x, z) => { const [, lz] = toLocal(x, z); if (lz <= T) return floorY; const k = Math.min(STEPS.n, Math.ceil((lz - T) / STEPS.tread)); return Math.max(ctx.ground(x, z), floorY - k * STEPS.rise); };
   const colliders = [];
   for (const [p, q] of rails) colliders.push({ type: 'segment', a: W2(...p), b: W2(...q), r: 0.06, y0: floorY, top: floorY + 1.3, kind: 'railing' });
-  // boardwalk outer railing, open at the front (steps) and where the pier deck leaves
-  const pierEnds = ctx.pierStarts || [];
-  for (let i = 0; i < walkRing.length; i++) {
-    const p = walkRing[i], q = walkRing[(i + 1) % walkRing.length];
-    const mid = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2], [, lz] = toLocal(...mid);
-    if (lz > -1) continue; // the front: steps and terrace
-    const L = Math.hypot(q[0] - p[0], q[1] - p[1]);
-    for (let s = 0; s < L; s += 2) {
-      const x = p[0] + ((q[0] - p[0]) * s) / L, z = p[1] + ((q[1] - p[1]) * s) / L;
-      if (pierEnds.some((e) => Math.hypot(e[0] - x, e[1] - z) < 5)) continue;
-      const s2 = Math.min(L, s + 2), x2 = p[0] + ((q[0] - p[0]) * s2) / L, z2 = p[1] + ((q[1] - p[1]) * s2) / L;
-      colliders.push({ type: 'segment', a: [x, z], b: [x2, z2], r: 0.06, y0: floorY, top: floorY + 1.2, kind: 'railing' });
-      const g = new THREE.BoxGeometry(0.08, 1.05, 0.08); const me = new THREE.Mesh(g, m.navy); me.position.set(x, floorY + 0.55, z); group.add(me);
-      const rl = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, Math.hypot(x2 - x, z2 - z)), m.navy); rl.position.set((x + x2) / 2, floorY + 1.08, (z + z2) / 2); rl.rotation.y = Math.atan2(x2 - x, z2 - z); group.add(rl);
-    }
-  }
+  // the boardwalk: timber deck on piles round the building, The Boardwalk Cafe Bar on the right-hand side, promenade ramps, THE DECK kiosk (pier-boardwalk.js)
+  const k0 = outer.findIndex((p) => Math.hypot(p[0] - frameA[0], p[1] - frameA[1]) < 1e-6), rot = (arr) => arr.map((_, i) => arr[(i + Math.max(0, k0)) % arr.length]);
+  const fp = rot(outer).map(([x, z]) => toLocal(x, z)), coreL = (core.length === outer.length ? rot(core) : core).map(([x, z]) => toLocal(x, z));
+  const bw = buildBoardwalk({ fp, core: coreL, floorY, hw, T, W2, toLocal, ground: ctx.ground, surfaceAt: ctx.surfaceAt || ctx.ground, pierStarts: ctx.pierStarts || [], pierColliders: ctx.pierColliders || [], stone: m.stone });
+  local.add(bw.group); colliders.push(...bw.colliders);
+  if (bw.cafe) box(m.louvre, bw.cafe.x0 - 5.2, bw.cafe.x0 - 1.4, H.body - 0.05, H.body + 1.3, bw.cafe.sc - 2, bw.cafe.sc + 2); // louvred plant box on the roof, as in the photograph
   const surfaces = [
     { id: 'pier-steps', kind: 'terrace', ring: stepsRing, heightAt: stepsH, name: 'Felixstowe Pier steps', meshes: [] },
-    { id: 'pier-boardwalk', kind: 'terrace', ring: walkRing, heightAt: () => floorY, name: 'Felixstowe Pier boardwalk', meshes: [] },
+    ...bw.surfaces,
   ];
   group.traverse((o) => { if (o.isMesh) { o.matrixAutoUpdate = true; } });
   return { group, collider: { outer, holes: [], base: gMin - 0.5, top: floorY + H.dome }, surfaces, colliders, floorY, front: { O: [Ox, Oz], E: [Ex, Ez], N: [Nx, Nz], W } };

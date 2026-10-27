@@ -371,14 +371,32 @@ function groundTexture(kind, seed = 7) {
       for (let y = 0; y < P.h; y += 128) P.ctx.fillStyle = 'rgba(255,255,255,0.04)', P.ctx.fillRect(0, y, P.w, 64);
       P.noise(0.08, 10, 0.4, true); P.roughness(() => 0.95); break;
     }
-    case 'sand': {
-      P.fill('#cdb98f', 128);
-      for (let y = 0; y < P.h; y += 2) { const v = Math.sin(y * 0.09 + Math.sin(y * 0.011) * 3) * 8; P.hctx.fillStyle = grey(128 + v); P.hctx.fillRect(0, y, P.w, 2); }
-      P.noise(0.07, 6, 2); P.roughness(() => 0.97); break;
+    case 'sand': { // warm pale beach sand, 8 m tile: wind/tide ripple streaks (running along the shore), damp patches, a few shell flecks and pebbles
+      P.fill('#d6c397', 128);
+      const id = P.ctx.getImageData(0, 0, P.w, P.h), d = id.data, hd = P.hctx.getImageData(0, 0, P.w, P.h), hh = hd.data;
+      const damp = tileNoise(P.w, P.h, 5, P.rand), fine = tileNoise(P.w, P.h, 24, P.rand), warp = tileNoise(P.w, P.h, 7, P.rand);
+      const TAU = Math.PI * 2;
+      for (let y = 0, p = 0; y < P.h; y++) for (let x = 0; x < P.w; x++, p++) {
+        const u = x / P.w, v = y / P.h;
+        // ripples: wave vector (12,20) in world x,z tiles exactly and points across the shore (which runs WSW-ENE here), bent by low noise so they meander
+        const ph = TAU * (12 * u + 20 * v) + (warp[p] - 0.5) * 7 + 1.6 * Math.sin(TAU * (2 * u + v));
+        const rip = Math.sin(ph) * 0.6 + Math.sin(ph * 2.3 + 1) * 0.25;
+        const k = 1 + rip * 0.035 + (damp[p] - 0.5) * 0.14 + (fine[p] - 0.5) * 0.07 - (damp[p] > 0.62 ? 0.06 : 0);
+        const i = p * 4; d[i] = Math.min(255, d[i] * k); d[i + 1] = Math.min(255, d[i + 1] * k * (1 - (damp[p] - 0.5) * 0.02)); d[i + 2] = Math.min(255, d[i + 2] * k * (1 - (damp[p] - 0.5) * 0.08));
+        hh[i] = hh[i + 1] = hh[i + 2] = Math.max(0, Math.min(255, 128 + rip * 11 + (fine[p] - 0.5) * 14));
+      }
+      P.ctx.putImageData(id, 0, 0); P.hctx.putImageData(hd, 0, 0);
+      for (let i = 0; i < 380; i++) { // shell fragments (pale) and the odd small grey/buff pebble
+        const x = P.rand() * P.w, y = P.rand() * P.h, shell = P.rand() < 0.65;
+        P.circle(x, y, 0.7 + P.rand() * (shell ? 1.3 : 1.6), shell ? hsl(38 + P.rand() * 12, 25 + P.rand() * 25, 80 + P.rand() * 12) : hsl(28 + P.rand() * 20, 8 + P.rand() * 14, 48 + P.rand() * 22), 150 + P.rand() * 40);
+      }
+      for (let i = 0; i < 400; i++) P.circle(P.rand() * P.w, P.rand() * P.h, 0.5 + P.rand() * 0.6, 'rgba(120,100,76,0.35)', 150); // fine grit
+      P.roughness(() => 0.97); break;
     }
-    case 'shingle': {
-      P.fill('#6f6455', 80);
-      for (let i = 0; i < 2600; i++) P.circle(P.rand() * P.w, P.rand() * P.h, 3 + P.rand() * 6, hsl(25 + P.rand() * 20, 10 + P.rand() * 18, 30 + P.rand() * 32), 200);
+    case 'shingle': { // pebbles: flint-grey, buff and brown, wet-dark in the gaps
+      P.fill('#6a6050', 70);
+      for (let i = 0; i < 3200; i++) P.circle(P.rand() * P.w, P.rand() * P.h, 3 + P.rand() * 6, hsl(28 + P.rand() * 20, 8 + P.rand() * 22, 40 + P.rand() * 36), 200);
+      for (let i = 0; i < 500; i++) P.circle(P.rand() * P.w, P.rand() * P.h, 2 + P.rand() * 4, hsl(40 + P.rand() * 8, 18, 72 + P.rand() * 14), 205); // pale flints and shell
       P.noise(0.06, 6); P.roughness((x, y, h) => 0.7 + (1 - h) * 0.2); break;
     }
     case 'gravel': case 'ballast': {

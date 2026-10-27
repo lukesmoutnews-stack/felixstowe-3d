@@ -376,7 +376,7 @@ export class World extends EventTarget {
     const pierStarts = piers.surfaces.flatMap((sf) => sf.ring);
     for (const b of ownBuildings) {
       if (isPierBuilding(b) && !b.isPart) { // hand-modelled landmark (see pier-building.js)
-        const pb = buildPierBuilding(b, { ...ctx, pierStarts });
+        const pb = buildPierBuilding(b, { ...ctx, pierStarts, pierColliders: piers.colliders });
         landmarkMeshes.push(pb.group); this._addCollider(tile, b, pb.collider);
         for (const c of pb.colliders) this._addPrimitive(tile, c);
         tile.surfaces.push(...pb.surfaces); this.surfaces.push(...pb.surfaces); b.geom = null; b.customModel = 'pier-building';
