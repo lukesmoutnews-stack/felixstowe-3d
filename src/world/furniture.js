@@ -255,8 +255,11 @@ export function buildPiers(features, tile, ctx) {
         if (l > 8 && depth < 8) { const ab = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], bc = [(b[0] + c[0]) / 2, (b[1] + c[1]) / 2], ca = [(c[0] + a[0]) / 2, (c[1] + a[1]) / 2]; sub(a, ab, ca, depth + 1); sub(ab, b, bc, depth + 1); sub(ca, bc, c, depth + 1); sub(ab, bc, ca, depth + 1); return; }
         const V = [a, b, c].map((q) => [q[0], deckY(q[0], q[1]), q[1]]);
         const ny = (V[1][2] - V[0][2]) * (V[2][0] - V[0][0]) - (V[1][0] - V[0][0]) * (V[2][2] - V[0][2]);
-        const uv = (q) => [q[0] / GROUND_TEX_SIZE.wood_deck, -q[2] / GROUND_TEX_SIZE.wood_deck];
+        const uv = (q) => [((q[0] - obb.cx) * obb.ux + (q[2] - obb.cz) * obb.uz) / GROUND_TEX_SIZE.wood_deck, ((q[0] - obb.cx) * -obb.uz + (q[2] - obb.cz) * obb.ux) / GROUND_TEX_SIZE.wood_deck]; // boards run across the deck along its whole length
         if (ny >= 0) acc.triFlat(V[0], V[1], V[2], uv(V[0]), uv(V[1]), uv(V[2])); else acc.triFlat(V[0], V[2], V[1], uv(V[0]), uv(V[2]), uv(V[1]));
+        // solid timber soffit: the same planks facing down, level with the bottom of the edge fascia, so the deck never reads as a hollow sheet from below
+        const D = V.map((q) => [q[0], q[1] - 0.6, q[2]]);
+        if (ny >= 0) acc.triFlat(D[0], D[2], D[1], uv(V[0]), uv(V[2]), uv(V[1])); else acc.triFlat(D[0], D[1], D[2], uv(V[0]), uv(V[1]), uv(V[2]));
       };
       sub(...P, 0);
     }
