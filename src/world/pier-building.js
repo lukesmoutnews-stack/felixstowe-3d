@@ -126,6 +126,16 @@ export function pierStepsZone(b, ground) {
   const x0 = -hw - 1.0, x1 = hw + 1.0; // the whole frontage: the terrace stands about a metre above the forecourt, with the steps in the middle
   return { level: G + 0.1, ring: [w2(x0, T - 0.3), w2(x1, T - 0.3), w2(x1, 14), w2(x0, 14)], pave: [w2(x0, T + 0.7), w2(x1, T + 0.7), w2(x1, 9), w2(x0, 9)], stepsPave: [w2(stepX0 - 0.45, zf - 0.6), w2(hw + 0.45, zf - 0.6), w2(hw + 0.45, 9), w2(stepX0 - 0.45, 9)] };
 }
+/** The beach under the building and its boardwalk: LiDAR leaves pools below sea level there. Raise it to a gentle sand slope (from the terrace level at the front down to the sea at the back) so you can walk about under the piles. */
+export function pierUndercroft(b, ground) {
+  const { Ex, Ez, Nx, Nz, Ox, Oz } = pierFrame(b, ground), w2 = (x, z) => [Ox + Ex * x + Nx * z, Oz + Ez * x + Nz * z];
+  const X0 = -26, X1 = 33.5, Z0 = -48, Z1 = -0.5, ring = [w2(X0, Z1), w2(X1, Z1), w2(X1, Z0), w2(X0, Z0)];
+  const fn = (x, z, h) => {
+    const dx = x - Ox, dz = z - Oz, lx = dx * Ex + dz * Ez, lz = dx * Nx + dz * Nz, d = Math.min(lx - X0, X1 - lx, lz - Z0, Z1 - lz), w = Math.max(0, Math.min(1, d / 2.5));
+    const want = 3.55 + (0.5 - 3.55) * Math.min(1, -lz / 47); return h + (Math.max(h, want) - h) * w;
+  };
+  return { ring, fn };
+}
 export function buildPierBuilding(b, ctx) {
   const m = mats();
   const { outer, A: frameA, W, Nx, Nz, Ex, Ez, Ox, Oz, G, floorY } = pierFrame(b, ctx.ground);
@@ -141,8 +151,9 @@ export function buildPierBuilding(b, ctx) {
   let gMin = Infinity; for (const [x, z] of outer) gMin = Math.min(gMin, ctx.ground(x, z));
   const core = insetRing(outer, 0.75) || outer; // facade details stand on the footprint line in front of it
   const shape = new THREE.Shape(core.map(([x, z]) => new THREE.Vector2(x, -z)));
-  const body = new THREE.ExtrudeGeometry(shape, { depth: floorY + H.body - (gMin - 0.5), bevelEnabled: false });
-  body.rotateX(-Math.PI / 2); body.translate(0, gMin - 0.5, 0);
+  const bodyBase = floorY - 0.6; // the building stands on piles: open undercroft below this (pier-boardwalk.js draws the piles and the soffit)
+  const body = new THREE.ExtrudeGeometry(shape, { depth: H.body + 0.6, bevelEnabled: false });
+  body.rotateX(-Math.PI / 2); body.translate(0, bodyBase, 0);
   const bodyMesh = new THREE.Mesh(body, m.white); bodyMesh.castShadow = bodyMesh.receiveShadow = true; group.add(bodyMesh);
   // raised centre hall between the towers (the curved roof seen above the lettering)
   box(m.panel, gapL - 0.3, gapR + 0.3, H.body - 0.1, H.eaveLo, -18, -0.7);
@@ -232,7 +243,7 @@ export function buildPierBuilding(b, ctx) {
     ...bw.surfaces,
   ];
   group.traverse((o) => { if (o.isMesh) { o.matrixAutoUpdate = true; } });
-  return { group, collider: { outer, holes: [], base: gMin - 0.5, top: floorY + H.dome }, surfaces, colliders, floorY, front: { O: [Ox, Oz], E: [Ex, Ez], N: [Nx, Nz], W } };
+  return { group, collider: { outer, holes: [], base: floorY - 0.6, top: floorY + H.dome }, surfaces, colliders, floorY, front: { O: [Ox, Oz], E: [Ex, Ez], N: [Nx, Nz], W } };
 }
 
 export function inside(ring, x, z) { return pointInRing(x, z, ring); }

@@ -21,7 +21,7 @@ import { profileNetwork, buildBridge, buildRamp, BRIDGE } from './bridges.js';
 import { buildGround, buildAreas } from './landcover.js';
 import { placeTrees, buildTreeMeshes } from './vegetation.js';
 import { buildProps, buildBarriers, buildPiers } from './furniture.js';
-import { isPierBuilding, buildPierBuilding, pierStepsGap, pierStepsZone, pierFrame } from './pier-building.js';
+import { isPierBuilding, buildPierBuilding, pierStepsGap, pierStepsZone, pierFrame, pierUndercroft } from './pier-building.js';
 import { TRIANGLE, trianglePlan, buildTriangle } from './triangle.js';
 import { forecourtPlan, buildForecourt, FORECOURT_ID, FORECOURT_ROAD_EDGE } from './forecourt.js';
 import { isFishDish, buildFishDish } from './fish-dish.js';
@@ -286,7 +286,8 @@ export class World extends EventTarget {
     let triangle = null;
     { const tp = trianglePlan(f, this.terrain); if (tp && inTile(tp.c[0], tp.c[1])) { triangle = tp; if (tp.heightFn) this.terrain.addModifier('triangle', tp.levelRing, tp.heightFn); } }
     { const pb2 = ownBuildings.find((b) => isPierBuilding(b) && !b.isPart);
-      if (pb2) { const z = pierStepsZone(pb2, this.ground); this.terrain.addModifier('pier-steps', z.ring, (x, zz, h) => Math.min(h, z.level)); if (!f.areas.some((a) => a.id === 'pier-steps-paving')) f.areas.push({ id: 'pier-steps-paving', kind: 'paved', outer: z.pave, holes: [], tags: {} }); if (!f.areas.some((a) => a.id === 'pier-steps-paving2')) f.areas.push({ id: 'pier-steps-paving2', kind: 'paved', outer: z.stepsPave, holes: [], tags: {} }); } }
+      if (pb2) { const uc = pierUndercroft(pb2, this.ground); this.terrain.addModifier('pier-undercroft', uc.ring, uc.fn); if (!f.areas.some((a) => a.id === 'pier-undercroft-sand')) f.areas.push({ id: 'pier-undercroft-sand', kind: 'beach', outer: uc.ring, holes: [], tags: {} });
+        const z = pierStepsZone(pb2, this.ground); this.terrain.addModifier('pier-steps', z.ring, (x, zz, h) => Math.min(h, z.level)); if (!f.areas.some((a) => a.id === 'pier-steps-paving')) f.areas.push({ id: 'pier-steps-paving', kind: 'paved', outer: z.pave, holes: [], tags: {} }); if (!f.areas.some((a) => a.id === 'pier-steps-paving2')) f.areas.push({ id: 'pier-steps-paving2', kind: 'paved', outer: z.stepsPave, holes: [], tags: {} }); } }
     // --- bridge decks and approach ramps: profiled on whole ways so every tile agrees ---
     const netWays = [...f.roads, ...f.lines.filter((l) => l.kind === 'rail').map((l) => ({ id: l.id, pts: l.pts, nodeIds: l.nodeIds, kind: 'rail', width: 4, bridge: !!l.tags.bridge && l.tags.bridge !== 'no', tunnel: !!l.tags.tunnel && l.tags.tunnel !== 'no', name: l.tags.name || null, tags: l.tags }))];
     const bridgeWays = netWays.filter((w) => w.bridge && !this.profiles.has(w.id));
@@ -379,7 +380,7 @@ export class World extends EventTarget {
         const pb = buildPierBuilding(b, { ...ctx, pierStarts, pierColliders: piers.colliders });
         landmarkMeshes.push(pb.group); this._addCollider(tile, b, pb.collider);
         for (const c of pb.colliders) this._addPrimitive(tile, c);
-        tile.surfaces.push(...pb.surfaces); this.surfaces.push(...pb.surfaces); b.geom = null; b.customModel = 'pier-building';
+        tile.surfaces.push(...pb.surfaces); this.surfaces.push(...pb.surfaces); b.geom = null; b.customModel = 'pier-building'; b.enterable = true; /* walk under it: its own collider starts at the soffit */
         continue;
       }
       if (isSpaPavilion(b) && !b.isPart) { // enterable: own colliders with door openings, floors and interior volume

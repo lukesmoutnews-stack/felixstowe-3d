@@ -14,6 +14,7 @@
 import * as THREE from 'three';
 import { Geo } from './seafront.js';
 import { triangulate } from './accum.js';
+import { pointInRing } from '../geo/polygon.js';
 
 const TEXS = {};
 function cv(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; }
@@ -151,7 +152,7 @@ export function buildBoardwalk(o) {
     group.add(new THREE.Mesh(gu, m.under)); // dark underside so the deck is not see-through from the beach
   }
   // deck surface (walkable)
-  surfaces.push({ id: 'pier-boardwalk', kind: 'terrace', ring: ring.map(([x, z]) => W2(x, z)), heightAt: () => floorY, name: 'Felixstowe Pier boardwalk', meshes: [] });
+  surfaces.push({ id: 'pier-boardwalk', kind: 'terrace', ring: ring.map(([x, z]) => W2(x, z)), heightAt: () => floorY, layered: true, name: 'Felixstowe Pier boardwalk', meshes: [] });
 
   // ---- fascia, walings, cross beams ----
   for (let i = 0; i < n; i++) {
@@ -178,6 +179,15 @@ export function buildBoardwalk(o) {
     for (let s = 0; s <= k; s++) { const t = Math.min(L - 0.3, Math.max(0.3, (s / k) * L)); addPile(A[0] + ux * t - nx * 0.4, A[1] + uz * t - nz * 0.4); }
     if (ds[i] > 5) for (let s = 0; s <= k; s++) { const t = (s / k) * L; addPile(A[0] + ux * t - nx * (ds[i] * 0.52), A[1] + uz * t - nz * (ds[i] * 0.52)); }
   }
+  // under the building: a grid of piles, cross beams and a dark soffit (the building stands on the beach on piles; see pierFrame/buildPierBuilding)
+  { const xs = fp.map((p) => p[0]), zs = fp.map((p) => p[1]), x0 = Math.min(...xs), x1 = Math.max(...xs), z0 = Math.min(...zs), z1 = Math.max(...zs), sp = 5;
+    for (let x = Math.ceil((x0 + 1.5) / sp) * sp; x < x1 - 1; x += sp) for (let z = Math.ceil((z0 + 1.5) / sp) * sp; z < z1 - 1; z += sp) if (pointInRing(x, z, core)) addPile(x, z);
+    for (let z = Math.ceil((z0 + 1.5) / sp) * sp; z < z1 - 1; z += sp) { let a = null, b = null; for (let x = x0; x <= x1; x += 0.5) if (pointInRing(x, z, core)) { if (a == null) a = x; b = x; } if (a != null && b - a > 2) box('timber', (a + b) / 2, -0.4, z, (b - a) / 2, 0.14, 0.12); }
+    for (let x = Math.ceil((x0 + 1.5) / sp) * sp; x < x1 - 1; x += sp) { let a = null, b = null; for (let z = z0; z <= z1; z += 0.5) if (pointInRing(x, z, core)) { if (a == null) a = z; b = z; } if (a != null && b - a > 2) box('timber', x, -0.4, (a + b) / 2, 0.12, 0.14, (b - a) / 2); }
+    { const zS = -17; let a = null, b = null; for (let x = x0; x <= x1; x += 0.25) if (pointInRing(x, zS, core)) { if (a == null) a = x; b = x; }
+      if (a != null) { box('charcoal', (a + b) / 2, -1.8, zS, (b - a) / 2, 1.2, 0.05); addCol('segment', [a, zS], [b, zS], 0.12, floorY - 9, floorY - 0.5, 'wall'); } } // solid skirt where the beach rises towards the front and the headroom runs out
+    const { verts, tris } = triangulate(core, []), pp = []; for (const [i, j, k] of tris) { const a = verts[i], b = verts[j], c = verts[k], cr = (b[1] - a[1]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[1] - a[1]), t = cr > 0 ? [a, c, b] : [a, b, c]; for (const q of t) pp.push(q[0], -0.62, q[1]); }
+    const gs = new THREE.BufferGeometry(); gs.setAttribute('position', new THREE.Float32BufferAttribute(pp, 3)); gs.computeVertexNormals(); group.add(new THREE.Mesh(gs, m.under)); }
   if (piles.length) {
     const pg = new THREE.CylinderGeometry(0.2, 0.23, 1, 9, 1, true), im = new THREE.InstancedMesh(pg, m.pile, piles.length), mt = new THREE.Matrix4(), col = new THREE.Color();
     piles.forEach(([x, z, y0, h], q) => { mt.compose(new THREE.Vector3(x, y0 + h / 2, z), new THREE.Quaternion(), new THREE.Vector3(1, h, 1)); im.setMatrixAt(q, mt); const w = r2(); im.setColorAt(q, col.set(w < 0.12 ? 0x55603f : w < 0.55 ? 0x6e3f2c : 0x5f3a2e)); });
@@ -243,7 +253,8 @@ export function buildBoardwalk(o) {
   // ---- ramps from the promenade up to the entrance terrace ----
   const ramps = [];
   const mkRamp = (xHigh, dir, lenR, id) => {
-    const xLow = xHigh + dir * lenR, z0 = 0.0, z1 = 6.1, probe = [0.5, 3, 5.6].map((z) => { const [wx, wz] = W2(xLow, z); return o.surfaceAt(wx, wz); });
+    const xLow = xHigh + dir * lenR, z0 = 0.0, z1 = 4.0, // stops short of the flood-wall gates (their paths join the promenade at z 6.5), so the gate exits stay level
+    probe = [0.5, 2, 3.6].map((z) => { const [wx, wz] = W2(xLow, z); return o.surfaceAt(wx, wz); });
     const hp = probe.reduce((s, v) => s + v, 0) / probe.length, yw = (s) => hp + s * (floorY - hp), sOf = (lx) => Math.min(1, Math.max(0, (lx - xLow) / (xHigh - xLow)));
     const top = (x, z) => [x, yw(sOf(x)) - floorY + 0.01, z], bot = hp - floorY - 0.7;
     const face = (a, b, c, d, out) => { const u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], w = [c[0] - a[0], c[1] - a[1], c[2] - a[2]]; const dn = (u[1] * w[2] - u[2] * w[1]) * out[0] + (u[2] * w[0] - u[0] * w[2]) * out[1] + (u[0] * w[1] - u[1] * w[0]) * out[2]; if (dn >= 0) G.stone.quad(a, b, c, d); else G.stone.quad(d, c, b, a); };
@@ -267,12 +278,15 @@ export function buildBoardwalk(o) {
       kiosk = true; const side = v[0] > 0 ? 1 : -1, off = side * (mouth.w / 2 - 1.3), ka = 15, kb = off;
       const kp = (a, b, y, hl, hh, hw2, g = 'blue') => { const p = P(ka + a, kb + b, 0); G[gk(g)].box(p[0], yDeck + y, p[2], u[0], u[1], hl, hh, hw2); };
       kp(0, 0, 1.3, 1.7, 1.3, 1.05); kp(0, 0, 2.65, 1.85, 0.06, 1.2, 'white'); kp(0, 0, 0.05, 1.72, 0.05, 1.07, 'white');
-      kp(0, -side * 1.06, 1.45, 1.1, 0.4, 0.02, 'hatch'); kp(0, -side * 1.18, 1.1, 1.15, 0.03, 0.15, 'white');
-      for (const [sa, sb, nx, nz, w] of [[-1.72, 0, -u[0], -u[1], 2.0], [0, -side * 1.07, -v[0] * side, -v[1] * side, 2.4]]) { // oval signs
-        const p = P(ka + sa, kb + sb, 0), sgm = new THREE.Mesh(new THREE.PlaneGeometry(w, w / 2), m.kioskSign); sgm.position.set(p[0] + nx * 0.03, yDeck + 2.05, p[2] + nz * 0.03); sgm.rotation.y = Math.atan2(nx, nz); group.add(sgm); }
+      // serving hatch on the face towards the pier building (-u): white frame, dark opening, shelf, striped-grey awning on two posts, oval sign above
+      kp(-1.725, 0, 1.2, 0.015, 0.46, 0.95, 'white'); kp(-1.74, 0, 1.2, 0.015, 0.4, 0.86, 'hatch'); kp(-1.9, 0, 0.8, 0.2, 0.03, 0.98, 'white');
+      kp(-2.0, 0, 1.82, 0.38, 0.025, 1.12, 'soffit'); kp(-2.38, 0, 1.78, 0.02, 0.07, 1.12, 'white');
+      for (const sb of [-1.0, 1.0]) kp(-2.33, sb, 0.9, 0.025, 0.9, 0.025, 'white');
+      for (const [sa, sb, nx, nz, w, sy] of [[-1.72, 0, -u[0], -u[1], 1.7, 2.24], [0, -side * 1.07, -v[0] * side, -v[1] * side, 2.0, 1.75]]) { // oval signs
+        const p = P(ka + sa, kb + sb, 0), sgm = new THREE.Mesh(new THREE.PlaneGeometry(w, w / 2), m.kioskSign); sgm.position.set(p[0] + nx * 0.03, yDeck + sy, p[2] + nz * 0.03); sgm.rotation.y = Math.atan2(nx, nz); group.add(sgm); }
       const kc = P(ka, kb, 0); addCol('segment', [kc[0] - u[0] * 1.7, kc[2] - u[1] * 1.7], [kc[0] + u[0] * 1.7, kc[2] + u[1] * 1.7], 1.05, floorY + yDeck, floorY + yDeck + 2.6, 'kiosk');
-      for (const a of [20.5, 24.5, 28.5]) { // picnic tables on the other side of the deck
-        const p = P(a, -off * 0.9, 0), W = (g, a2, b2, y, hl, hh, hw2) => { const q = [p[0] + u[0] * a2 + v[0] * b2, p[2] + u[1] * a2 + v[1] * b2]; G[gk(g)].box(q[0], yDeck + y, q[1], u[0], u[1], hl, hh, hw2); };
+      for (const a of [6.5, 9.5, 12.0]) { // picnic tables between the kiosk and the building (queue side), kept to the far side of the deck so the hatch stays clear
+        const p = P(a, -off * 1.05, 0), W = (g, a2, b2, y, hl, hh, hw2) => { const q = [p[0] + u[0] * a2 + v[0] * b2, p[2] + u[1] * a2 + v[1] * b2]; G[gk(g)].box(q[0], yDeck + y, q[1], u[0], u[1], hl, hh, hw2); };
         W('tableTop', 0, 0, 0.75, 1.0, 0.025, 0.38); W('bench', 0, -0.72, 0.46, 1.0, 0.025, 0.14); W('bench', 0, 0.72, 0.46, 1.0, 0.025, 0.14); W('white', -0.75, 0, 0.38, 0.03, 0.37, 0.75); W('white', 0.75, 0, 0.38, 0.03, 0.37, 0.75);
         addCol('circle', [p[0], p[2]], null, 1.0, floorY + yDeck, floorY + yDeck + 0.9, 'bench'); }
     }
