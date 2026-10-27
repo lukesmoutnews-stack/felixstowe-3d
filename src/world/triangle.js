@@ -10,7 +10,7 @@
 //   plan  = trianglePlan(features, terrain)      // before the ground is built: also gives levelRing + heightFn for terrain.addModifier
 //   built = buildTriangle(plan, ground)          // { meshes, colliders }
 import * as THREE from 'three';
-import { pointInRing, distToSegment } from '../geo/polygon.js';
+import { pointInRing, distToSegment, clipRingToRect } from '../geo/polygon.js';
 import { Geo } from './seafront.js';
 import { buildTreeMeshes } from './vegetation.js';
 
@@ -24,7 +24,7 @@ const EAST_ROAD = { half: 2.625, pts: [[116.95, -501.08], [116.3, -498.71], [115
 const GARDEN = [[92.47, -427.47], [95.68, -429.14], [102.3, -465.04], [108.67, -489.78], [108.2, -490.93], [106.92, -491.19], [96.87, -467.87], [91.09, -458.91], [75.98, -438.28], [73.56, -435.53], [73.44, -432.75], [74.7, -430.28]];
 const CANOPY_C = [94.0, -452.7];
 const KERB = 0.35, NORTH_Z = -495.5, PLAZA_R = 7.3, BED_H = 0.45, PAVE_LIFT = 0.04;
-const SOUTH_LINE = (x) => -430 + (x - 75) * (3 / 17); // the plaza's south edge runs along the OSM garden's south edge, extended to both kerbs
+const SOUTH_LINE = (x) => -429.6 + (x - 54.9) * 0.2137; // the plaza's south edge: the Cobbold Road footway's outer edge (road centre 54.9,-424.8 -> 103.2,-414.5, plus ~4.7 m)
 
 const lam = (color, o = {}) => new THREE.MeshLambertMaterial({ color, ...o });
 const std = (o) => new THREE.MeshStandardMaterial(o);
@@ -143,7 +143,13 @@ class Surf { // triangles laid on the ground (lift above it), with world-scaled 
     if ((b[1] - a[1]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[1] - a[1]) < 0) [b, c] = [c, b]; // face up
     const n0 = this.p.length / 3; for (const [x, z] of [a, b, c]) { this.p.push(x, this.g(x, z) + this.lift, z); this.n.push(0, 1, 0); this.uv.push(this.s ? x / this.s : 0, this.s ? z / this.s : 0); } this.i.push(n0, n0 + 1, n0 + 2);
   }
-  poly(ring) { const tr = THREE.ShapeUtils.triangulateShape(ring.map(([x, z]) => new THREE.Vector2(x, z)), []); for (const [i, j, k] of tr) this.tri(ring[i], ring[j], ring[k]); }
+  poly(ring, cell = 3) { // cut into cell-sized pieces so the surface follows the levelled ground between the (kerb-height) edge vertices
+    let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity; for (const [x, z] of ring) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
+    for (let x = Math.floor(x0 / cell) * cell; x < x1; x += cell) for (let z = Math.floor(z0 / cell) * cell; z < z1; z += cell) {
+      const pc = clipRingToRect(ring, { minX: x, maxX: x + cell, minZ: z, maxZ: z + cell }); if (!pc) continue;
+      const tr = THREE.ShapeUtils.triangulateShape(pc.map(([px, pz]) => new THREE.Vector2(px, pz)), []); for (const [i, j, k] of tr) this.tri(pc[i], pc[j], pc[k]);
+    }
+  }
   strip(pts, w) { for (let i = 1; i < pts.length; i++) { const [x0, z0] = pts[i - 1], [x1, z1] = pts[i], dx = x1 - x0, dz = z1 - z0, L = Math.hypot(dx, dz) || 1, nx = -dz / L * w / 2, nz = dx / L * w / 2; this.tri([x0 + nx, z0 + nz], [x0 - nx, z0 - nz], [x1 - nx, z1 - nz]); this.tri([x0 + nx, z0 + nz], [x1 - nx, z1 - nz], [x1 + nx, z1 + nz]); } }
   mesh(mat, order = 2) { if (!this.i.length) return null; const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(this.p, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(this.n, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(this.uv, 2)); g.setIndex(this.i); const m = new THREE.Mesh(g, mat); m.renderOrder = order; m.receiveShadow = true; return m; }
 }
@@ -212,10 +218,10 @@ export function buildTriangle(plan, ground) {
   const inBed = (x, z, edge) => plan.beds.some((b) => pointInRing(x, z, b) && distRing(x, z, b) > edge);
   const bb = (r) => { let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const [x, z] of r) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); } return [x0, x1, z0, z1]; };
   const scatter = (bed, n, edge, fn) => { const [x0, x1, z0, z1] = bb(bed); let placed = 0, tries = 0; while (placed < n && tries++ < n * 30) { const x = x0 + rnd() * (x1 - x0), z = z0 + rnd() * (z1 - z0); if (pointInRing(x, z, bed) && distRing(x, z, bed) > edge) { fn(x, z); placed++; } } };
-  const GRASSY = [0xc2a860, 0xb59a52, 0x9aa85a], GREEN = [0x4c6b34, 0x587a3a, 0x3f5c2e], LAV = [0x8d79b8, 0x9a85c4, 0x7b6aa8];
+  const GRASSY = [0xb4a468, 0xa39658, 0x8c9857], GREEN = [0x45652f, 0x517235, 0x3a552b], LAV = [0x8673ad, 0x9482bb, 0x76669f];
   plan.beds.forEach((bed, bi) => {
     const A = Math.abs(bed.reduce((s, p, i) => { const q = bed[(i + 1) % bed.length]; return s + (p[0] * q[1] - q[0] * p[1]); }, 0)) / 2;
-    scatter(bed, Math.round(A * 0.5), 0.45, (x, z) => { const y = ground(x, z) + BED_H, r = 0.25 + rnd() * 0.3, k = rnd(); if (k < 0.4) flora.add(x, y + r * 0.45, z, r * 0.9, r * 0.75, r * 0.9, GRASSY[(rnd() * 3) | 0], rnd); else if (k < 0.7) flora.add(x, y + r * 0.6, z, r * 1.1, r * 0.8, r * 1.1, GREEN[(rnd() * 3) | 0], rnd); else flora.add(x, y + 0.2, z, 0.3 + rnd() * 0.2, 0.2, 0.3 + rnd() * 0.2, LAV[(rnd() * 3) | 0], rnd); });
+    scatter(bed, Math.round(A * 0.4), 0.45, (x, z) => { const y = ground(x, z) + BED_H, r = 0.16 + rnd() * 0.22, k = rnd(); if (k < 0.4) flora.add(x, y + r * 0.8, z, r * 0.8, r * 1.0, r * 0.8, GRASSY[(rnd() * 3) | 0], rnd); else if (k < 0.75) flora.add(x, y + r * 0.7, z, r * 1.3, r * 0.9, r * 1.3, GREEN[(rnd() * 3) | 0], rnd); else flora.add(x, y + 0.1, z, 0.18 + rnd() * 0.12, 0.12, 0.18 + rnd() * 0.12, LAV[(rnd() * 3) | 0], rnd); });
     const nP = bi === 0 ? 2 : 4; // cordylines and palms
     scatter(bed, nP, 1.1, (x, z) => {
       const y = ground(x, z) + BED_H, h = 1.2 + rnd() * 1.8, ang = (rnd() - 0.5) * 0.14;

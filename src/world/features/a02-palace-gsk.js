@@ -28,10 +28,10 @@ let MT = null;
 function weatheredRender() {
   if (typeof document === 'undefined') return null;
   const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d');
-  x.fillStyle = '#d9d1bb'; x.fillRect(0, 0, 256, 256);
+  x.fillStyle = '#f6f1e2'; x.fillRect(0, 0, 256, 256);
   let s = 7; const r = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
-  for (let i = 0; i < 70; i++) { x.fillStyle = `rgba(${90 + r() * 30},${80 + r() * 25},60,${0.03 + r() * 0.05})`; x.fillRect(r() * 256, 0, 2 + r() * 14, 256); }          // vertical rain streaks
-  for (let i = 0; i < 60; i++) { x.fillStyle = `rgba(${r() > 0.5 ? '255,250,235' : '120,110,90'},${0.04 + r() * 0.07})`; x.beginPath(); x.ellipse(r() * 256, r() * 256, 10 + r() * 40, 8 + r() * 30, r() * 3, 0, 7); x.fill(); } // patchy paint
+  for (let i = 0; i < 70; i++) { x.fillStyle = `rgba(${100 + r() * 30},${90 + r() * 25},70,${0.015 + r() * 0.03})`; x.fillRect(r() * 256, 0, 2 + r() * 14, 256); }          // vertical rain streaks
+  for (let i = 0; i < 60; i++) { x.fillStyle = `rgba(${r() > 0.5 ? '255,252,240' : '130,120,100'},${0.03 + r() * 0.05})`; x.beginPath(); x.ellipse(r() * 256, r() * 256, 10 + r() * 40, 8 + r() * 30, r() * 3, 0, 7); x.fill(); } // patchy paint
   const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
 }
 function ledTexture() {
@@ -47,11 +47,11 @@ function mats(K) {
   if (MT) return MT;
   const D = THREE.DoubleSide, S = (o) => new THREE.MeshStandardMaterial({ side: D, ...o });
   const wr = weatheredRender();
-  const brick = K.m.brick.clone(); brick.side = D; brick.color = new THREE.Color(0.78, 0.55, 0.47);
+  const brick = K.m.brick.clone(); brick.side = D; brick.color = new THREE.Color(0.92, 0.66, 0.55);
   const rf = Textures.roofTexture('metal', 3);
   MT = {
     brick,
-    render: S({ map: wr, color: wr ? 0xffffff : 0xd9d1bb, roughness: 1 }),
+    render: S({ map: wr, color: wr ? 0xfffaf0 : 0xece6d2, roughness: 1, emissive: 0x3a362d }),
     roofMetal: S({ map: rf.map, normalMap: rf.normalMap, color: 0xc9d0d0, roughness: 0.6, metalness: 0.3 }),
     roofFelt: S({ color: 0x4a4b4c, roughness: 0.95 }),
     steel: S({ color: 0x4c5258, roughness: 0.5, metalness: 0.6 }),
