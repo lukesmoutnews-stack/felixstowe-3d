@@ -11,6 +11,7 @@
 
 import * as THREE from 'three';
 import { LAYER, GROUND_TEX_SIZE } from './materials.js';
+import { makeMeshY } from './mesh-clamp.js';
 
 const STEP = 5;           // must equal the base terrain grid step in landcover.js buildGround
 const LIFT = 0.05;
@@ -33,7 +34,7 @@ function rowInside(ring, z, x0, n, off, out) {
 
 /** Draw one beach/shingle polygon as base-mesh cells. ring: world [x,z] outer ring (holes ignored: none in the data). */
 export function buildBeachCells(a, tile, ctx) {
-  const { acc, ground } = ctx, r = tile.rect;
+  const { acc, ground } = ctx, r = tile.rect, meshY = makeMeshY(ctx);
   const ring = a.outer;
   let bx0 = Infinity, bx1 = -Infinity, bz0 = Infinity, bz1 = -Infinity;
   for (const [x, z] of ring) { bx0 = Math.min(bx0, x); bx1 = Math.max(bx1, x); bz0 = Math.min(bz0, z); bz1 = Math.max(bz1, z); }
@@ -50,7 +51,7 @@ export function buildBeachCells(a, tile, ctx) {
   const cache = new Map();
   const vtx = (i, j) => {
     const k = j * (nx + 1) + i; let v = cache.get(k); if (v) return v;
-    const x = x0 + i * STEP, z = z0 + j * STEP, y = ground(x, z);
+    const x = x0 + i * STEP, z = z0 + j * STEP, y = meshY(x, z, ground(x, z));
     const hx = ground(x + 1, z) - ground(x - 1, z), hz = ground(x, z + 1) - ground(x, z - 1);
     const l = Math.hypot(hx / 2, 1, hz / 2);
     // damp sand: darker where the ground within ~8 m falls to the waterline (vertex colour, interpolated across the cell)

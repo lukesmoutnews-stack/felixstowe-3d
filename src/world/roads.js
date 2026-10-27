@@ -300,9 +300,12 @@ function buildFootWay(W, ivs, ctx, layerKey) {
   const r = W.road, tex = r.kind === 'pedestrian' && (!r.surface || r.surface === 'paving_stones') ? 'blockpaving' : surfaceTex(r.surface, true), T = GROUND_TEX_SIZE[tex] || 3;
   const mid = W.pointAt(ivs[0][0]), m = acc.get(mid.x, mid.z, layerKey(tex, LAYER.path));
   const y = (s) => W.hc(s), hw = W.hw;
+  // the promenade slabs run 0.45 m under the sea wall and out past the seaward edge: the wall and the paving are
+  // built from differently mitred stations, so without this a wedge of grass showed between them
+  const pw = ctx.promIds && ctx.promIds.has(W.id) ? 0.45 : 0;
   for (const [a, b] of ivs) {
     const st = stations(W, a, b);
-    strip(m, st, -hw, hw, (s) => y(s), T);
+    strip(m, st, -hw - pw, hw + pw, (s) => y(s), T);
     if (hw >= 0.5) { wall(m, st, hw, y, (s) => y(s) - 0.16, 1, T); wall(m, st, -hw, y, (s) => y(s) - 0.16, -1, T); }
   }
   for (const end of [0, 1]) {

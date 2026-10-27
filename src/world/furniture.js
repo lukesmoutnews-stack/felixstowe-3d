@@ -96,6 +96,7 @@ export function buildProps(features, tile, ctx) {
   let mappedLamps = 0;
   for (const p of features.points) {
     if (!inRect(p.x, p.z)) continue;
+    if (ctx.skipFurniture && ctx.skipFurniture(p)) continue; // replaced by hand-modelled furniture (the clifftop lookout)
     // mapped street furniture on a bridge stands on the deck; its collider only spans that level
     const y = surf(p.x, p.z, Infinity), onDeck = y > ctx.ground(p.x, p.z) + 1;
     const lvl = onDeck ? { y0: y - 0.3, top: y + 6 } : {};

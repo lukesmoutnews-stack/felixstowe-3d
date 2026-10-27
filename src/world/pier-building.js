@@ -38,12 +38,22 @@ function mats() {
     navy: std({ color: 0x1c2638, roughness: 0.4, metalness: 0.5 }),
     deck: std({ color: 0x8a6b4e, roughness: 0.9 }),
     brick: std({ color: 0x8c4d3b, roughness: 0.9 }),
+    vault: std({ map: seamTex(), roughness: 0.5, metalness: 0.2, side: THREE.DoubleSide }),
+    domeBlue: std({ color: 0x7d93a6, roughness: 0.4, metalness: 0.5 }),
+    bulb: std({ color: 0x7a1410, emissive: 0xff1a08, emissiveIntensity: 0.9, roughness: 0.4 }),
+    fascia: std({ color: 0xe9edf0, roughness: 0.5, metalness: 0.1, side: THREE.DoubleSide }),
+    backGlass: std({ color: 0x27323d, roughness: 0.1, metalness: 0.5, emissive: 0x201710, emissiveIntensity: 0.35 }),
     letters: {},
   };
   return M;
 }
 function canvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; }
 function tex(c, repeat = false) { const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; if (repeat) t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; }
+function seamTex() { // white standing-seam metal roof: seams run down the slope (along u), a few metres apart
+  const [c, g] = canvas(128, 64); g.fillStyle = '#eef0f1'; g.fillRect(0, 0, 128, 64);
+  for (let x = 0; x < 128; x += 32) { g.fillStyle = 'rgba(140,150,158,0.8)'; g.fillRect(x, 0, 2, 64); g.fillStyle = 'rgba(255,255,255,0.8)'; g.fillRect(x + 2, 0, 1.5, 64); }
+  g.fillStyle = 'rgba(120,130,138,0.07)'; g.fillRect(0, 0, 128, 64); return tex(c, true);
+}
 function louvreTex() {
   const [c, g] = canvas(64, 128); g.fillStyle = '#2a3340'; g.fillRect(0, 0, 64, 128);
   for (let y = 4; y < 128; y += 14) { g.fillStyle = '#56616e'; g.fillRect(0, y, 64, 5); g.fillStyle = '#141a22'; g.fillRect(0, y + 5, 64, 3); }
@@ -208,7 +218,43 @@ export function buildPierBuilding(b, ctx) {
     const cap = new THREE.Mesh(capG, m.cap); cap.position.set(tx, (H.louvre + H.cap) / 2, 1.4 - tw / 2); cap.castShadow = true; local.add(cap);
     const slab = box(m.panel, tx - tw * 0.72, tx + tw * 0.72, H.cap - 0.12, H.cap + 0.02, 1.4 - tw / 2 - tw * 0.72, 1.4 - tw / 2 + tw * 0.72);
     slab.castShadow = true;
-    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.75, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), m.silver); dome.position.set(tx, H.cap, 1.4 - tw / 2); dome.scale.y = 0.6; local.add(dome);
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.75, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), m.domeBlue); dome.position.set(tx, H.cap, 1.4 - tw / 2); dome.scale.y = 0.6; local.add(dome);
+  }
+  // --- seaward (back) end, from the user's aerial photographs: a shallow barrel-vault roof in white standing-seam metal
+  //     running back to the sea, a curved fascia band along its seaward edge carrying a row of red lights (lights only: the
+  //     band itself is painted pale), a lower sloped canopy over the deck below it, a glazed back wall, and two small vents on the ridge.
+  { const toL = (x, z) => { const dx = x - Ox, dz = z - Oz; return [dx * Ex + dz * Ez, dx * Nx + dz * Nz]; };
+    const lo = outer.map(([x, z]) => toL(x, z)), zBack = Math.min(...lo.map((q) => q[1])) + 0.75, xs = lo.map((q) => q[0]);
+    const bx0 = Math.min(...xs) + 0.75, bx1 = Math.max(...xs) - 0.75;
+    const vx0 = -hw - 0.3, vx1 = hw + 0.3, base0 = H.body + 0.12, rise = 1.5, zF = -0.4, zB = zBack - 0.55, NS = 28;
+    const arc = (x) => { const t = (x - (vx0 + vx1) / 2) / ((vx1 - vx0) / 2); return base0 + rise * (1 - t * t); };
+    // roof surface
+    { const P = [], UV = [], I = [];
+      for (let i = 0; i <= NS; i++) { const x = vx0 + (vx1 - vx0) * i / NS, y = arc(x); P.push(x, y, zF, x, y, zB); UV.push(x / 2.4, 0, x / 2.4, (zF - zB) / 4); }
+      for (let i = 0; i < NS; i++) { const a = i * 2; I.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(UV, 2)); g.setIndex(I); g.computeVertexNormals();
+      const me = new THREE.Mesh(g, m.vault); me.castShadow = me.receiveShadow = true; local.add(me); }
+    // gable infill between the eave line and the arc, then the curved fascia band, then the lights
+    { const P = [], I = [], FP = [], FI = []; let k = 0, kf = 0;
+      for (let i = 0; i < NS; i++) { const xa = vx0 + (vx1 - vx0) * i / NS, xb = vx0 + (vx1 - vx0) * (i + 1) / NS, ya = arc(xa), yb = arc(xb), z = zB + 0.02;
+        P.push(xa, H.body - 0.05, z, xb, H.body - 0.05, z, xb, yb - 0.5, z, xa, ya - 0.5, z); I.push(k, k + 2, k + 1, k, k + 3, k + 2); k += 4;
+        const zo = zB - 0.35; FP.push(xa, ya - 0.95, zo, xb, yb - 0.95, zo, xb, yb + 0.06, zo, xa, ya + 0.06, zo, xa, ya - 0.95, zB, xb, yb - 0.95, zB, xb, yb + 0.06, zB, xa, ya + 0.06, zB);
+        const o = kf; FI.push(o, o + 2, o + 1, o, o + 3, o + 2, o + 4, o + 5, o + 6, o + 4, o + 6, o + 7, o, o + 1, o + 5, o, o + 5, o + 4, o + 3, o + 7, o + 6, o + 3, o + 6, o + 2); kf += 8; }
+      for (const [PP, II, mat] of [[P, I, m.fascia], [FP, FI, m.fascia]]) { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(PP, 3)); g.setIndex(II); g.computeVertexNormals(); const me = new THREE.Mesh(g, mat); me.castShadow = true; local.add(me); } }
+    const bulbs = []; // warm-red light fittings along the arc and along the canopy lip
+    for (let x = vx0 + 0.5; x <= vx1 - 0.4; x += 0.85) bulbs.push([x, arc(x) - 0.45, zB - 0.4]);
+    // lower sloped canopy over the deck, with a lit lip
+    const cz0 = zBack - 0.05, cz1 = zBack - 3.0, cx0 = bx0 - 0.3, cx1 = bx1 + 0.3, cy0 = H.body - 1.9, cy1 = H.body - 2.7;
+    { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute([cx0, cy0, cz0, cx1, cy0, cz0, cx1, cy1, cz1, cx0, cy1, cz1], 3)); g.setIndex([0, 2, 1, 0, 3, 2]); g.computeVertexNormals();
+      const me = new THREE.Mesh(g, m.vault); me.castShadow = me.receiveShadow = true; local.add(me); }
+    box(m.fascia, cx0, cx1, cy1 - 0.32, cy1 + 0.04, cz1 - 0.05, cz1 + 0.05);
+    for (let x = cx0 + 0.4; x <= cx1 - 0.3; x += 0.8) bulbs.push([x, cy1 - 0.17, cz1 - 0.1]);
+    { const bg = new THREE.BoxGeometry(0.2, 0.2, 0.12), im = new THREE.InstancedMesh(bg, m.bulb, bulbs.length), mt = new THREE.Matrix4(); bulbs.forEach((p, q) => { mt.makeTranslation(p[0], p[1], p[2]); im.setMatrixAt(q, mt); }); im.instanceMatrix.needsUpdate = true; local.add(im); }
+    // glazed back wall under the canopy (dark glass with white mullions)
+    box(m.backGlass, bx0 + 1.2, bx1 - 1.2, 0.6, H.body - 2.3, zBack - 0.06, zBack - 0.02);
+    for (let x = bx0 + 1.2; x <= bx1 - 1.1; x += 2.6) box(m.white, x - 0.06, x + 0.06, 0.6, H.body - 2.3, zBack - 0.12, zBack - 0.02);
+    // two small vents on the ridge
+    for (const vz of [-13, -27]) { box(m.white, -0.7, 0.7, base0 + rise - 0.05, base0 + rise + 0.75, vz - 0.5, vz + 0.5); box(m.cap, -0.78, 0.78, base0 + rise + 0.75, base0 + rise + 0.85, vz - 0.58, vz + 0.58); }
   }
   // terrace, steps and railings
   const T = STEPS.terrace, run = STEPS.n * STEPS.tread, stepX0 = -hw + W * 0.3; // steps on the right 70 %, wall + railing on the left

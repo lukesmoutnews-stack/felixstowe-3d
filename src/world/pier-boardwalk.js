@@ -284,6 +284,7 @@ export function buildBoardwalk(o) {
       for (const sb of [-1.0, 1.0]) kp(-2.33, sb, 0.9, 0.025, 0.9, 0.025, 'white');
       for (const [sa, sb, nx, nz, w, sy] of [[-1.72, 0, -u[0], -u[1], 1.7, 2.24], [0, -side * 1.07, -v[0] * side, -v[1] * side, 2.0, 1.75]]) { // oval signs
         const p = P(ka + sa, kb + sb, 0), sgm = new THREE.Mesh(new THREE.PlaneGeometry(w, w / 2), m.kioskSign); sgm.position.set(p[0] + nx * 0.03, yDeck + sy, p[2] + nz * 0.03); sgm.rotation.y = Math.atan2(nx, nz); group.add(sgm); }
+      { const lp = P(ka + 1.76, kb + side * 0.3, 0), lb = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.075, 8, 18), new THREE.MeshStandardMaterial({ color: 0xc8161d, roughness: 0.6 })); lb.position.set(lp[0], yDeck + 1.35, lp[2]); lb.rotation.y = Math.atan2(u[0], u[1]); group.add(lb); } // red lifebuoy ring on the seaward end wall
       const kc = P(ka, kb, 0); addCol('segment', [kc[0] - u[0] * 1.7, kc[2] - u[1] * 1.7], [kc[0] + u[0] * 1.7, kc[2] + u[1] * 1.7], 1.05, floorY + yDeck, floorY + yDeck + 2.6, 'kiosk');
       for (const a of [6.5, 9.5, 12.0]) { // picnic tables between the kiosk and the building (queue side), kept to the far side of the deck so the hatch stays clear
         const p = P(a, -off * 1.05, 0), W = (g, a2, b2, y, hl, hh, hw2) => { const q = [p[0] + u[0] * a2 + v[0] * b2, p[2] + u[1] * a2 + v[1] * b2]; G[gk(g)].box(q[0], yDeck + y, q[1], u[0], u[1], hl, hh, hw2); };

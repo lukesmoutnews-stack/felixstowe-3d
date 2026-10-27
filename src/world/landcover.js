@@ -5,6 +5,7 @@ import { LAYER, GROUND_TEX_SIZE, groundTexName, waterMaterial } from './material
 import { triangulate, subdivide } from './accum.js';
 import { clipRingToRect, area } from '../geo/polygon.js';
 import { buildBeachCells } from './beach.js';
+import { makeMeshY } from './mesh-clamp.js';
 
 const AREA_LAYER = {
   residential: LAYER.landuse, commercial: LAYER.landuse, industrial: LAYER.landuse, port: LAYER.landuse, railway: LAYER.landuse,
@@ -14,11 +15,11 @@ const AREA_LAYER = {
   paved: LAYER.paved, parking: LAYER.paved, playground: LAYER.paved, quay: LAYER.paved,
 };
 
-function polyToAcc(acc, outer, holes, ground, texSize, lift, hasTerrain, step = 6) {
+function polyToAcc(acc, outer, holes, ground, texSize, lift, hasTerrain, step = 6, meshY = null) {
   let { verts, tris } = triangulate(outer, holes);
   if (!tris.length) return;
   ({ verts, tris } = subdivide(verts, tris, hasTerrain ? step : 150)); // also avoids huge triangles
-  const V = verts.map(([x, z]) => [x, ground(x, z) + lift, z]);
+  const V = verts.map(([x, z]) => [x, (meshY ? meshY(x, z, ground(x, z)) : ground(x, z)) + lift, z]);
   for (const [i, j, k] of tris) {
     const a = V[i], b = V[j], c = V[k];
     const ny = (b[2] - a[2]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[2] - a[2]);
@@ -36,12 +37,13 @@ export function buildGround(tile, ctx) {
   if (terrain.hasTerrain) {
     // 250 m blocks (aligned to the culling chunks): a 5 m mesh for near views and a 25 m mesh
     // used beyond ~700 m (switched in App.cullChunks).
-    const grid = (step, k) => {
+    const meshY = makeMeshY(ctx);
+    const grid = (step, k, clamp) => {
       for (let bz = r.minZ; bz < r.maxZ - 0.01; bz += 250) for (let bx = r.minX; bx < r.maxX - 0.01; bx += 250) {
         const a = acc.get(bx + 1, bz + 1, k);
         const n = Math.round(250 / step) + 1, base = a.count;
         for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
-          const x = bx + i * step, z = bz + j * step, y = ground(x, z);
+          const x = bx + i * step, z = bz + j * step, y = clamp ? meshY(x, z, ground(x, z)) : ground(x, z);
           const hx = ground(x + 1, z) - ground(x - 1, z), hz = ground(x, z + 1) - ground(x, z - 1);
           const nn = new THREE.Vector3(-hx / 2, 1, -hz / 2).normalize();
           a.vert(x, y, z, nn.x, nn.y, nn.z, x / GROUND_TEX_SIZE.grass, -z / GROUND_TEX_SIZE.grass);
@@ -49,7 +51,7 @@ export function buildGround(tile, ctx) {
         for (let j = 0; j < n - 1; j++) for (let i = 0; i < n - 1; i++) { const p = base + j * n + i; a.tri(p, p + n, p + 1); a.tri(p + 1, p + n, p + n + 1); }
       }
     };
-    grid(5, key); grid(25, 'lod:' + key);
+    grid(5, key, true); grid(25, 'lod:' + key, false);
   } else {
     for (const land of tile.land) {
       polyToAcc(acc.get(cx, cz, key), land.outer, land.holes, ground, GROUND_TEX_SIZE.grass, 0, false);
@@ -67,7 +69,7 @@ export function buildGround(tile, ctx) {
 }
 
 export function buildAreas(areas, tile, ctx) {
-  const { acc, ground } = ctx;
+  const { acc, ground } = ctx; const meshY = makeMeshY(ctx);
   const stats = { drawn: 0 };
   // Draw large areas first within a layer (renderOrder ties are broken by material, so
   // keep one material per kind and layer).
@@ -82,7 +84,7 @@ export function buildAreas(areas, tile, ctx) {
     const tex = groundTexName(a.kind);
     // paved ground sits a little higher on a finer mesh so the terrain's LiDAR noise never pokes through it as green patches
     const hard = layer === LAYER.paved;
-    polyToAcc(acc.get(cx, cz, `ground:${a.kind}:${layer}`), outer, holes, ground, GROUND_TEX_SIZE[tex] || 6, hard ? 0.075 : 0.03, ctx.hasTerrain, hard ? 3.5 : 6);
+    polyToAcc(acc.get(cx, cz, `ground:${a.kind}:${layer}`), outer, holes, ground, GROUND_TEX_SIZE[tex] || 6, hard ? 0.075 : 0.03, ctx.hasTerrain, hard ? 3.5 : 6, ctx.hasTerrain && !hard ? meshY : null);
     stats.drawn++;
   }
   return stats;

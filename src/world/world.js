@@ -27,6 +27,9 @@ import { forecourtPlan, buildForecourt, FORECOURT_ID, FORECOURT_ROAD_EDGE } from
 import { isFishDish, buildFishDish } from './fish-dish.js';
 import { isRegal, buildRegal } from './regal.js';
 import { isTownHall, buildTownHall } from './town-hall.js';
+import { isFlatsSlab, isFlatsWing, buildFlatsSlab, buildFlatsWing } from './flats-83.js';
+import { isUndercliffRestaurant, buildUndercliffRestaurant, undercliffPlan } from './undercliff-restaurant.js';
+import { lookoutPlan } from './lookout.js';
 import { isTownHallGarden, gardenPlan, buildTownHallGardens } from './town-hall-gardens.js';
 import { isSpaPavilion, buildSpaPavilion, spaFloorLevel } from './spa-pavilion.js';
 import { isLeisureCentre, buildLeisureCentre, leisureMaterial } from './leisure-centre.js';
@@ -266,7 +269,7 @@ export class World extends EventTarget {
     for (const b of ownBuildings) if ((b.name && matchLandmark({ name: b.name, tags: {} })) || lmAreas.some((p) => pointInRing(b.cx, b.cz, p.ring))) b.landmark = true;
 
     const styleOf = (b) => { const base = landmarkStyle(b); return b.frontage?.style ? { ...(base || {}), ...b.frontage.style } : base; };
-    const ctx = { acc, ground: this.ground, terrain: this.terrain, hasTerrain: this.terrain.hasTerrain, landmarkStyle: styleOf, settings: this.settings, coastLines: f.coastLines || [],
+    const ctx = { skipFurniture: (p) => !!this.lookoutHas && this.lookoutHas(p.x, p.z) && (p.kind === 'bench' || p.kind === 'lamp' || p.kind === 'bin'), acc, ground: this.ground, terrain: this.terrain, hasTerrain: this.terrain.hasTerrain, landmarkStyle: styleOf, settings: this.settings, coastLines: f.coastLines || [],
       isClear: this.isClear, nearestRoad: (x, z, d, f) => this.nearestRoad(x, z, d, f), isLand: (x, z) => this.isLand(x, z) || this._tileLand(tile, x, z), roadGrid: this.roadGrid, surfaceAt: null, points: f.points.filter((p) => inTile(p.x, p.z)) };
 
     // --- ground, areas ---
@@ -275,7 +278,9 @@ export class World extends EventTarget {
     }
     // Town Hall Garden: terrace the slope before the ground mesh is built (see town-hall-gardens.js)
     const gardenArea = f.areas.find(isTownHallGarden);
-    if (gardenArea && !this.terrain.mods?.some((m) => m.id === 'town-hall-garden')) { this.gardenPlan = gardenPlan(gardenArea, this.terrain, ownBuildings); this.terrain.addModifier('town-hall-garden', this.gardenPlan.ring, this.gardenPlan.fn); }
+    if (gardenArea && !this.terrain.mods?.some((m) => m.id === 'town-hall-garden')) { this.gardenPlan = gardenPlan(gardenArea, this.terrain, ownBuildings); this.terrain.addModifier('town-hall-garden', this.gardenPlan.ring, this.gardenPlan.fn); } if (this.gardenPlan && !this.terrain.mods?.some((m) => m.id === 'town-hall-lookout')) { const lp = lookoutPlan(this.gardenPlan, this.terrain); this.terrain.addModifier('town-hall-lookout', lp.ring, lp.fn); this.lookoutHas = lp.has; }
+    // Undercliff restaurant (91-95): level the forecourt strip so the ground floor sits on one plinth (undercliff-restaurant.js)
+    { const urB = ownBuildings.find((b) => isUndercliffRestaurant(b) && !b.isPart); if (urB && !this.terrain.mods?.some((m) => m.id === 'undercliff-restaurant')) { this.undercliffPlan = undercliffPlan(urB, this.terrain); this.terrain.addModifier('undercliff-restaurant', this.undercliffPlan.ring, this.undercliffPlan.fn); } }
     // Pier Bight car park (the start): one level tarmac area out to the sea wall, with marked bays (pier-bight.js)
     let pierBight = null;
     { const pb = pierBightPlan(f, this.terrain), c = pb && pb.ring.reduce((m, q) => [m[0] + q[0] / pb.ring.length, m[1] + q[1] / pb.ring.length], [0, 0]);
@@ -300,6 +305,7 @@ export class World extends EventTarget {
     this.roads.addPoints(f.points);
     this.roads.addWays(f.roads, this.profiles, tile.key);
     this.roads.prepareCores(r, tile.key);
+    ctx.net = this.roads;
     buildGround(tile, ctx);
     buildAreas(f.areas, tile, ctx);
     for (const a of f.areas) if (a.kind === 'parking' && a.outer.length >= 3) this.parkingLots.push({ tile: tile.key, id: a.id, ring: a.outer, bays: pierBight && a.id === PB.lotId ? pierBight.bays : null });
@@ -314,9 +320,9 @@ export class World extends EventTarget {
       });
     }
     ctx.net = this.roads; ctx.rect = r; ctx.tileKey = tile.key;
+    const promIds = promenadeWays(f.roads, f.coastLines || []); ctx.promIds = promIds;
     tile.roadStats = buildRoads(f.roads, ctx);
     // seafront: brick flood wall along the landward side of the promenade, with blue flood gates (seafront.js)
-    const promIds = promenadeWays(f.roads, f.coastLines || []);
     const pierB = ownBuildings.find((b) => isPierBuilding(b) && !b.isPart), gaps = pierB ? [pierStepsGap(pierB, this.ground)] : []; { const fc = f.areas.find((a) => a.id === 91786029); if (fc) gaps.push({ ring: fc.outer, r: 3 }); } // the flood wall is opened where the pier steps come down to it
     const seaWall = promIds.size ? buildSeafrontWall(promIds, { net: this.roads, rect: r, coastLines: f.coastLines || [], gaps }) : null;
     tile.seafront = seaWall ? { gates: seaWall.gates.length, wallColliders: seaWall.colliders.length } : null;
@@ -399,6 +405,18 @@ export class World extends EventTarget {
       if (this.gardenPlan?.shelter.id != null && b.id === this.gardenPlan.shelter.id) { b.geom = null; b.customModel = 'garden-shelter'; b.enterable = true; b.height = -8; continue; } // built as Mr. Felixstowe's Shelter (open oak shelter you can walk into)
       if (isTownHall(b) && !b.isPart) {
         const th = buildTownHall(b, ctx); landmarkMeshes.push(th.group); this._addCollider(tile, b, th.collider); b.geom = null; b.customModel = 'town-hall'; this.townHall = th.front;
+        continue;
+      }
+      if (isUndercliffRestaurant(b) && !b.isPart) {
+        const ur = buildUndercliffRestaurant(b, ctx, this.undercliffPlan); landmarkMeshes.push(ur.group); this._addCollider(tile, b, ur.collider); for (const c of ur.colliders) this._addPrimitive(tile, c); b.geom = null; b.customModel = 'undercliff-restaurant';
+        continue;
+      }
+      if (isFlatsSlab(b) && !b.isPart) {
+        const fs = buildFlatsSlab(b, ctx); landmarkMeshes.push(fs.group); this._addCollider(tile, b, fs.collider); b.geom = null; b.customModel = 'flats-slab';
+        continue;
+      }
+      if (isFlatsWing(b) && !b.isPart) {
+        const fw = buildFlatsWing(b, ctx); landmarkMeshes.push(fw.group); this._addCollider(tile, b, fw.collider); for (const c of fw.colliders) this._addPrimitive(tile, c); b.geom = null; b.customModel = 'flats-wing';
         continue;
       }
       if (isRegal(b) && !b.isPart) {

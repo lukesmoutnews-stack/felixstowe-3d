@@ -19,12 +19,13 @@ import { ensureCCW, pointInRing, distToSegment, orientedBox, hash01 } from '../g
 import { LAYER } from './materials.js';
 import { ribbon, disc } from './roads.js';
 import { instances } from './furniture.js';
+import { buildLookout } from './lookout.js';
 
 export const GARDEN_ID = 402525404;
 export const isTownHallGarden = (a) => a.id === GARDEN_ID; // several Seafront Gardens sections share the name "Felixstowe Gardens"
 
 // R0: the flat lawn at the bottom (fountain level with the road); terraces rise from its edge by steps.
-const R0 = 10, BAND = 3.0, N = 7;
+const R0 = 8, BAND = 2.8, N = 7, KX = 0.6; // elliptical terrace metric: lateral distances count KX, so the terraces are a wide horseshoe (satellite plan)
 const lerp = (a, b, t) => a + (b - a) * t, clamp01 = (v) => Math.max(0, Math.min(1, v));
 
 /** Work out the layout from the outline and the raw (unmodified) terrain. */
@@ -37,10 +38,11 @@ export function gardenPlan(area, terrain, buildings = []) {
   if ((cen[0] - mid[0]) * n[0] + (cen[1] - mid[1]) * n[1] < 0) n = [-n[0], -n[1]];
   const c = [mid[0] + n[0] * 6.5, mid[1] + n[1] * 6.5];
   const raw = (x, z) => terrain.rawHeightAt(x, z);
-  const P = { ring, c, axis: n, along, base: raw(c[0], c[1]) + 0.05, L: [], area };
-  P.polar = (x, z) => { const dx = x - c[0], dz = z - c[1]; const up = dx * n[0] + dz * n[1], lat = dx * along[0] + dz * along[1]; return { r: Math.hypot(dx, dz), up, lat }; };
-  P.at = (r, lat) => { const up = Math.sqrt(Math.max(0, r * r - lat * lat)); return [c[0] + n[0] * up + along[0] * lat, c[1] + n[1] * up + along[1] * lat]; };
-  P.atAngle = (r, th) => [c[0] + (n[0] * Math.cos(th) + along[0] * Math.sin(th)) * r, c[1] + (n[1] * Math.cos(th) + along[1] * Math.sin(th)) * r];
+  const P = { ring, c, axis: n, along, base: raw(c[0], c[1]) + 0.05, L: [], area, roadEdge: { a, b, len: best } };
+  P.polar = (x, z) => { const dx = x - c[0], dz = z - c[1]; const up = dx * n[0] + dz * n[1], lat = dx * along[0] + dz * along[1]; return { r: Math.hypot(lat * KX, up), up, lat }; };
+  P.at = (r, lat) => { const up = Math.sqrt(Math.max(0, r * r - lat * lat * KX * KX)); return [c[0] + n[0] * up + along[0] * lat, c[1] + n[1] * up + along[1] * lat]; };
+  P.atAngle = (r, th) => [c[0] + n[0] * Math.cos(th) * r + along[0] * Math.sin(th) * r / KX, c[1] + n[1] * Math.cos(th) * r + along[1] * Math.sin(th) * r / KX];
+  P.fc = [c[0] + along[0] * 2.5 - n[0] * 1.5, c[1] + along[1] * 2.5 - n[1] * 1.5]; // fountain: just right of the axis, near the road (satellite plan)
   P.edgeDist = (x, z) => { let d = Infinity; for (let i = 0; i < ring.length; i++) { const p = ring[i], q = ring[(i + 1) % ring.length]; d = Math.min(d, distToSegment(x, z, p[0], p[1], q[0], q[1]).d); } return pointInRing(x, z, ring) ? d : -d; };
   // level of each terrace band: the mean ground across it (inside the garden), always rising
   let prev = P.base;
@@ -58,18 +60,18 @@ export function gardenPlan(area, terrain, buildings = []) {
   // The shelter sits square to the garden: centred on its axis at the top, long side parallel to the
   // terraces, facing straight down to the fountain (the machine-traced footprint is slightly skewed,
   // so only its size and distance up the slope are used).
-  { const up = Math.max(18, P.polar(obb.cx, obb.cz).up), L = Math.max(obb.length, obb.width), W = Math.min(obb.length, obb.width);
+  { const up = 21, L = Math.max(10.4, obb.length, obb.width), W = Math.max(4.2, Math.min(obb.length, obb.width));
     obb = { cx: c[0] + n[0] * up, cz: c[1] + n[1] * up, ux: along[0], uz: along[1], length: L, width: W }; }
   // The shelter sits square to the garden: centred on its axis at the top, long side parallel to the
   // terraces, facing straight down to the fountain (the machine-traced footprint is slightly skewed,
   // so only its size and distance up the slope are used).
-  { const up = Math.max(18, P.polar(obb.cx, obb.cz).up), L = Math.max(obb.length, obb.width), W = Math.min(obb.length, obb.width);
+  { const up = 21, L = Math.max(10.4, obb.length, obb.width), W = Math.max(4.2, Math.min(obb.length, obb.width));
     obb = { cx: c[0] + n[0] * up, cz: c[1] + n[1] * up, ux: along[0], uz: along[1], length: L, width: W }; }
   const sp = P.polar(obb.cx, obb.cz), band = Math.min(N - 1, Math.max(0, Math.floor((sp.r - R0) / BAND)));
   P.shelter = { ...obb, id: fp?.id ?? null, level: P.L[band], band, traced: !!fp };
   P.inShelter = (x, z, m = 1.2) => { const dx = x - obb.cx, dz = z - obb.cz; return Math.abs(dx * obb.ux + dz * obb.uz) < obb.length / 2 + m && Math.abs(-dx * obb.uz + dz * obb.ux) < obb.width / 2 + m; };
   // stair flights: twin flights up from the fountain level, then one central flight to the shelter
-  P.flights = []; for (let j = 0; j < N; j++) { const lo = j ? P.L[j - 1] : P.base, hi = P.L[j], run = Math.max(1.4, (hi - lo) / 0.55); if (j === 0) for (const lat of [-3.4, 3.4]) P.flights.push({ j, lat, lo, hi, run, re: R0 }); else if (j <= band) P.flights.push({ j, lat: 0, lo, hi, run, re: R0 + j * BAND }); }
+  P.flights = []; for (let j = 0; j < N; j++) { const lo = j ? P.L[j - 1] : P.base, hi = P.L[j], run = Math.max(1.4, (hi - lo) / 0.55); if (j === 0) for (const lat of [-10, 0, 10]) P.flights.push({ j, lat, lo, hi, run, re: R0 }); else if (j <= band) P.flights.push({ j, lat: 0, lo, hi, run, re: R0 + j * BAND }); }
   P.onFlight = (j, lat, pad = 0) => P.flights.find((f) => f.j === j && Math.abs(lat - f.lat) < 1.25 + pad);
   /** Reshaped ground: level terraces, ramps through the stair flights, blended out at the garden edge. */
   P.fn = (x, z, h) => {
@@ -94,18 +96,18 @@ function stoneTexture() {
     const c = document.createElement('canvas'); c.width = 512; c.height = 256; const g = c.getContext('2d');
     g.fillStyle = '#6f6556'; g.fillRect(0, 0, 512, 256); let s = 7;
     const rnd = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
-    for (let y = 0; y < 256;) { const h = 22 + rnd() * 26; for (let x = -20; x < 512;) { const w = 34 + rnd() * 60; const t = rnd(); g.fillStyle = `hsl(${36 + t * 10}, ${28 + t * 18}%, ${56 + rnd() * 18}%)`; g.beginPath(); g.roundRect(x + 2, y + 2, w - 4, h - 4, 6); g.fill(); g.fillStyle = 'rgba(0,0,0,0.08)'; g.fillRect(x + 2, y + h - 8, w - 4, 5); x += w; } y += h; }
+    for (let y = 0; y < 256;) { const h = 22 + rnd() * 26; for (let x = -20; x < 512;) { const w = 34 + rnd() * 60; const t = rnd(); g.fillStyle = `hsl(${34 + t * 14}, ${10 + t * 16}%, ${44 + rnd() * 22}%)`; g.beginPath(); g.roundRect(x + 2, y + 2, w - 4, h - 4, 6); g.fill(); g.fillStyle = 'rgba(0,0,0,0.08)'; g.fillRect(x + 2, y + h - 8, w - 4, 5); x += w; } y += h; }
     const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
   });
 }
 const stoneMat = () => M('stone', () => new THREE.MeshStandardMaterial({ map: stoneTexture(), roughness: 0.95 }));
 const copingMat = () => M('coping', () => new THREE.MeshStandardMaterial({ color: 0xc9b48e, roughness: 0.9 }));
-const oakMat = () => M('oak', () => new THREE.MeshStandardMaterial({ color: 0xc89a62, roughness: 0.75 }));
+const oakMat = () => M('oak', () => new THREE.MeshStandardMaterial({ color: 0xa59d8c, roughness: 0.85 }));
 const pavingMat = () => M('paving', () => new THREE.MeshStandardMaterial({ color: 0xd6c7a6, roughness: 0.9 }));
 function tileTexture() {
   return M('tileTex', () => {
     const c = document.createElement('canvas'); c.width = 256; c.height = 256; const g = c.getContext('2d');
-    for (let y = 0; y < 256; y += 16) for (let x = -16; x < 256; x += 24) { const o = (y / 16) % 2 ? 12 : 0; const l = 42 + ((x * 7 + y * 13) % 11); g.fillStyle = `hsl(14, 62%, ${l}%)`; g.fillRect(x + o, y, 23, 15); g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(x + o, y + 13, 23, 3); }
+    for (let y = 0; y < 256; y += 16) for (let x = -16; x < 256; x += 24) { const o = (y / 16) % 2 ? 12 : 0; const l = 42 + ((x * 7 + y * 13) % 11); g.fillStyle = `hsl(22, 58%, ${l + 2}%)`; g.fillRect(x + o, y, 23, 15); g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(x + o, y + 13, 23, 3); }
     const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; return t;
   });
 }
@@ -141,6 +143,7 @@ function plantGeo(kind) {
     if (kind === 'grass') return col(new THREE.ConeGeometry(0.28, 0.75, 7).translate(0, 0.37, 0), 0xa7a96a);
     if (kind === 'shrub') { const g = new THREE.IcosahedronGeometry(0.45, 1); g.scale(1, 0.8, 1); g.translate(0, 0.35, 0); return col(g, 0x5b7a3e); }
     if (kind === 'cordyline') { const parts = [col(new THREE.CylinderGeometry(0.06, 0.09, 1.4, 6).translate(0, 0.7, 0), 0x7a6650)]; for (let k = 0; k < 10; k++) { const a = k * 0.63; parts.push(col(new THREE.ConeGeometry(0.035, 0.75, 3).translate(0, 0.37, 0).rotateZ(0.9 + (k % 3) * 0.25).rotateY(a).translate(0, 1.4, 0), 0x6d8a3a)); } return mergeGeometries(parts); }
+    if (kind === 'mound' || kind === 'mound2' || kind === 'mound3') { const g = new THREE.IcosahedronGeometry(0.75, 1); g.scale(1, 0.62, 1); g.translate(0, 0.38, 0); return col(g, kind === 'mound' ? 0x3d5f33 : kind === 'mound2' ? 0x86a03e : 0x6e3a31); }
     if (kind === 'yellow') { const g = new THREE.SphereGeometry(0.3, 8, 5); g.scale(1, 0.6, 1); g.translate(0, 0.16, 0); return col(g, 0xe9c441); }
     return null;
   });
@@ -182,15 +185,15 @@ function fountain(c, y) {
 function shelter(S, ground) {
   const g = new THREE.Group(); const y0 = S.level + 0.12; g.position.set(S.cx, y0, S.cz); g.rotation.y = Math.atan2(S.ux, S.uz) - Math.PI / 2;
   // local frame: +x along the long side, +z = front (towards the fountain); set by the caller via S.front
-  const L = S.length, W = S.width, oak = oakMat(), H = 2.55;
+  const L = S.length, W = S.width, oak = oakMat(), post = M('darkpost', () => new THREE.MeshStandardMaterial({ color: 0x2b2d30, roughness: 0.6, metalness: 0.2 })), H = 2.55;
   g.add(box(L + 0.4, 0.24, W + 0.4, pavingMat(), 0, -0.12, 0)); // floor
   const front = W / 2, back = -W / 2, xs = []; const nb = Math.round(L / 1.55); for (let i = 0; i <= nb; i++) xs.push(-L / 2 + (i * L) / nb);
   const posts = [...xs.map((x) => [x, front]), ...xs.map((x) => [x, back]), [-L / 2, 0], [L / 2, 0]];
-  for (const [x, z] of posts) { g.add(box(0.2, H, 0.2, oak, x, H / 2, z)); g.add(box(0.26, 0.12, 0.26, M('plinth', () => new THREE.MeshStandardMaterial({ color: 0x8c8478 })), x, 0.06, z)); }
+  for (const [x, z] of posts) { g.add(box(0.2, H, 0.2, post, x, H / 2, z)); g.add(box(0.26, 0.12, 0.26, M('plinth', () => new THREE.MeshStandardMaterial({ color: 0x8c8478 })), x, 0.06, z)); }
   // wall plates and curved knee braces
-  for (const z of [front, back]) g.add(box(L + 0.2, 0.22, 0.2, oak, 0, H + 0.08, z));
-  for (const x of [-L / 2, L / 2]) g.add(box(0.2, 0.22, W + 0.2, oak, x, H + 0.08, 0));
-  for (const [x, z] of posts) for (const sx of [-1, 1]) { if (Math.abs(x + sx * 0.5) > L / 2 + 0.01) continue; const k = box(0.12, 0.12, 0.7, oak, x + sx * 0.28, H - 0.26, z, Math.PI / 2); k.rotation.order = 'YXZ'; k.rotation.x = sx * 0.78; g.add(k); }
+  for (const z of [front, back]) g.add(box(L + 0.2, 0.22, 0.2, post, 0, H + 0.08, z));
+  for (const x of [-L / 2, L / 2]) g.add(box(0.2, 0.22, W + 0.2, post, x, H + 0.08, 0));
+  for (const [x, z] of posts) for (const sx of [-1, 1]) { if (Math.abs(x + sx * 0.5) > L / 2 + 0.01) continue; const k = box(0.12, 0.12, 0.7, post, x + sx * 0.28, H - 0.26, z, Math.PI / 2); k.rotation.order = 'YXZ'; k.rotation.x = sx * 0.78; g.add(k); }
   // X-pattern balustrade between front posts (gap in the middle for the steps) and on the ends
   const bay = (x0, z0, x1, z1) => { const Lb = Math.hypot(x1 - x0, z1 - z0), a = Math.atan2(x1 - x0, z1 - z0), mx = (x0 + x1) / 2, mz = (z0 + z1) / 2; g.add(box(0.1, 0.1, Lb, oak, mx, 1.0, mz, a)); g.add(box(0.08, 0.08, Lb, oak, mx, 0.15, mz, a)); const d = Math.hypot(Lb, 0.85), da = Math.atan2(0.85, Lb); for (const sg of [1, -1]) { const dd = box(0.06, 0.06, d, oak, mx, 0.58, mz, a); dd.rotation.order = 'YXZ'; dd.rotation.x = sg * da; g.add(dd); } };
   const mi = Math.floor(xs.length / 2);
@@ -247,7 +250,7 @@ export function buildTownHallGardens(P, ctx) {
       run = [];
     };
     let u = 0;
-    for (let th = -1.45; th <= 1.45; th += 0.7 / re) {
+    for (let th = -1.45; th <= 1.45; th += 0.7 * KX / re) {
       const [x, z] = P.atAngle(re - 0.2, th), d = P.edgeDist(x, z), { lat } = P.polar(x, z);
       const ok = d > 0.9 && !P.onFlight(j, lat, 0.05) && !P.inShelter(x, z, 0.6);
       if (!ok) { flush(); continue; }
@@ -259,12 +262,20 @@ export function buildTownHallGardens(P, ctx) {
   }
   meshes.push(walls.mesh(stoneMat()), coping.mesh(copingMat()));
   // --- stair flights: stone treads and oak X-balustrades ---
-  const treadM = M('tread', () => new THREE.MeshStandardMaterial({ color: 0xd8c9a6, roughness: 0.85 }));
+  const treadM = M('tread', () => new THREE.MeshStandardMaterial({ color: 0xb6a07c, roughness: 0.9 }));
   for (const f of P.flights) {
     const n = Math.max(3, Math.round((f.hi - f.lo) / 0.16)), w = 2.3;
     const pA = P.at(Math.max(0.1, f.re - f.run / 2), f.lat), pB = P.at(f.re + f.run / 2, f.lat), dx = pB[0] - pA[0], dz = pB[1] - pA[1], L = Math.hypot(dx, dz), ang = Math.atan2(dx, dz);
     for (let k = 0; k < n; k++) { const t = (k + 0.5) / n, y = f.lo + (f.hi - f.lo) * ((k + 1) / n); const tr = box(w, 0.16, L / n + 0.02, treadM, pA[0] + dx * t, y - 0.08, pA[1] + dz * t, ang); meshes.push(tr); }
-    for (const s of [-1, 1]) {
+    const stoneN = M('newel', () => new THREE.MeshStandardMaterial({ color: 0xa79d88, roughness: 0.95 })), capN = M('newelcap', () => new THREE.MeshStandardMaterial({ color: 0xbab099, roughness: 0.9 }));
+    for (const s of [-1, 1]) for (const t of [0, 1]) { const nxp = pA[0] + dx * t + Math.cos(ang) * (w / 2 + 0.1) * s, nzp = pA[1] + dz * t - Math.sin(ang) * (w / 2 + 0.1) * s, ny = f.lo + (f.hi - f.lo) * t; meshes.push(box(0.38, 0.9, 0.38, stoneN, nxp, ny + 0.4, nzp, ang)); const cap = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.16, 4), capN); cap.rotation.y = ang + Math.PI / 4; cap.position.set(nxp, ny + 0.98, nzp); meshes.push(cap); }
+    if (f.lat === 0 && f.j > 0) { // the central flight: twin stainless-steel handrails on slim posts down the middle
+      const steel = M('steel', () => new THREE.MeshStandardMaterial({ color: 0xc9ced2, roughness: 0.3, metalness: 0.85 }));
+      for (let k = 0; k <= 4; k++) { const t = k / 4, py = f.lo + (f.hi - f.lo) * t, post = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.0, 6), steel); post.position.set(pA[0] + dx * t, py + 0.5, pA[1] + dz * t); meshes.push(post); }
+      for (const hy of [0.95, 0.55]) { const a0 = [pA[0], f.lo + hy, pA[1]], b0 = [pB[0], f.hi + hy, pB[1]], d3 = new THREE.Vector3(b0[0] - a0[0], b0[1] - a0[1], b0[2] - a0[2]), rail = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, d3.length(), 6), steel); rail.position.set((a0[0] + b0[0]) / 2, (a0[1] + b0[1]) / 2, (a0[2] + b0[2]) / 2); rail.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d3.normalize()); meshes.push(rail); }
+      colliders.push({ type: 'segment', a: [pA[0], pA[1]], b: [pB[0], pB[1]], r: 0.05, y0: f.lo - 0.5, top: f.hi + 1.0, kind: 'railing' });
+    }
+    else for (const s of [-1, 1]) {
       const ox = Math.cos(ang) * (w / 2 + 0.1) * s, oz = -Math.sin(ang) * (w / 2 + 0.1) * s;
       const pts = []; for (let k = 0; k <= 4; k++) { const t = k / 4; pts.push([pA[0] + dx * t + ox, f.lo + (f.hi - f.lo) * t, pA[1] + dz * t + oz]); }
       oakFence(fences, pts, 0.95, 1.2);
@@ -275,20 +286,25 @@ export function buildTownHallGardens(P, ctx) {
   const [mx, mz] = P.c;
   for (let j = 0; j < N - 1; j++) {
     const r = R0 + j * BAND + 1.25, pts = [];
-    for (let th = -1.45; th <= 1.45; th += 0.9 / r) { const p = P.atAngle(r, th); if (P.edgeDist(p[0], p[1]) > 1.6 && !P.inShelter(p[0], p[1], 0.4)) pts.push(p); else if (pts.length > 1) { ribbon(ctx.acc.get(mx, mz, `ground:gravel:${LAYER.path}`), pts.splice(0), -0.75, 0.75, ground, 4); } else pts.length = 0; }
+    for (let th = -1.45; th <= 1.45; th += 0.9 * KX / r) { const p = P.atAngle(r, th); if (P.edgeDist(p[0], p[1]) > 1.6 && !P.inShelter(p[0], p[1], 0.4)) pts.push(p); else if (pts.length > 1) { ribbon(ctx.acc.get(mx, mz, `ground:gravel:${LAYER.path}`), pts.splice(0), -0.75, 0.75, ground, 4); } else pts.length = 0; }
     if (pts.length > 1) ribbon(ctx.acc.get(mx, mz, `ground:gravel:${LAYER.path}`), pts, -0.75, 0.75, ground, 4);
   }
-  // the flat lawn at the bottom, a gravel ring round the fountain, and gravel paths to the steps
-  disc(ctx.acc.get(mx, mz, `ground:park:${LAYER.landcover}`), mx, mz, R0 - 0.25, ground, 6, 0.04, 48);
-  { const ring = []; for (let k = 0; k <= 48; k++) { const a = (k / 48) * Math.PI * 2; ring.push([mx + Math.cos(a) * 3.6, mz + Math.sin(a) * 3.6]); } ribbon(ctx.acc.get(mx, mz, `ground:gravel:${LAYER.path}`), ring, -0.8, 0.8, ground, 4); }
-  for (const f of P.flights.filter((q) => q.j === 0)) { const a = P.at(4.2, f.lat * 0.6), b = P.at(R0 - f.run / 2, f.lat); ribbon(ctx.acc.get(mx, mz, `ground:gravel:${LAYER.path}`), [a, b], -1.0, 1.0, ground, 4); }
-  { const a = [mx - P.axis[0] * 4.2, mz - P.axis[1] * 4.2], b = [mx - P.axis[0] * 8, mz - P.axis[1] * 8]; ribbon(ctx.acc.get(mx, mz, `ground:gravel:${LAYER.path}`), [a, b], -1.0, 1.0, ground, 4); }
+  // the flat ground at the bottom (satellite plan): a broad gravel promenade behind the road hedge, the small round fountain just right of the axis, a long rounded lawn strip to its right,
+  // and the horseshoe gravel path sweeping round the central planted bed up to the foot of the central steps
+  { const g6 = ctx.acc.get(mx, mz, `ground:gravel:${LAYER.paved}`), W = (lat, up) => [P.c[0] + P.axis[0] * up + P.along[0] * lat, P.c[1] + P.axis[1] * up + P.along[1] * lat];
+    ribbon(g6, [W(-17, -2.8), W(-8, -2.8), W(0, -2.8), W(8, -2.8), W(17, -2.8)], -3.0, 3.0, ground, 4);
+    ribbon(g6, [W(-14, 1.5), W(-14, 4), W(-12, 6)], -1.0, 1.0, ground, 4);
+    const hs = []; for (let th = -1.5; th <= 1.5; th += 0.12) hs.push(P.atAngle(R0 - 1.0, th));
+    ribbon(ctx.acc.get(mx, mz, `ground:gravel:${LAYER.path}`), hs, -0.95, 0.95, ground, 4);
+    const lawn = ctx.acc.get(mx, mz, `ground:park:${LAYER.path}`), a = W(9.0, -0.7), b = W(16.6, -0.7);
+    ribbon(lawn, [a, b], -1.9, 1.9, ground, 6, 0.06); disc(lawn, a[0], a[1], 1.9, ground, 6, 0.06, 20); disc(lawn, b[0], b[1], 1.9, ground, 6, 0.06, 20); }
+  for (const f of P.flights.filter((q) => q.j === 0 && q.lat !== 0)) { const a = P.at(R0 - 1.0, f.lat), b = P.at(R0 - f.run / 2, f.lat); ribbon(ctx.acc.get(mx, mz, `ground:gravel:${LAYER.path}`), [a, b], -1.0, 1.0, ground, 4); }
   // --- fountain (collider, sign, point of interest) ---
-  meshes.push(fountain(P.c, P.base));
-  colliders.push({ type: 'circle', x: P.c[0], z: P.c[1], r: 2.75, y0: P.base - 0.5, top: P.base + 4, kind: 'fountain' });
+  { const fo = fountain(P.fc, P.base); fo.scale.set(0.68, 0.68, 0.68); meshes.push(fo); }
+  colliders.push({ type: 'circle', x: P.fc[0], z: P.fc[1], r: 1.95, y0: P.base - 0.5, top: P.base + 4, kind: 'fountain' });
   const signTex = M('signTex', () => { const c = document.createElement('canvas'); c.width = 256; c.height = 160; const g = c.getContext('2d'); g.fillStyle = '#1b1f24'; g.fillRect(0, 0, 256, 160); g.fillStyle = '#fff'; g.font = '700 26px Georgia, serif'; g.fillText('Town Hall Fountain', 14, 40); g.font = '16px Georgia, serif'; g.fillStyle = '#d7d7d7'; g.fillText('Felixstowe Seafront Gardens', 14, 70); g.fillText('Please do not climb', 14, 96); g.fillText('on the fountain', 14, 118); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; });
-  { const sp = [P.c[0] + P.along[0] * 4.2 - P.axis[0] * 2.8, P.c[1] + P.along[1] * 4.2 - P.axis[1] * 2.8]; const sg = new THREE.Group(); sg.position.set(sp[0], ground(sp[0], sp[1]), sp[1]); sg.rotation.y = Math.atan2(-P.axis[0], -P.axis[1]); sg.add(box(0.06, 1.1, 0.06, M('signpost', () => new THREE.MeshStandardMaterial({ color: 0x1b1f24 })), 0, 0.55, 0)); const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.32), new THREE.MeshBasicMaterial({ map: signTex })); plate.position.set(0, 1.15, 0.04); plate.rotation.x = -0.35; sg.add(plate); meshes.push(sg); }
-  pois.push({ id: 'g:fountain', name: 'Town Hall Fountain', kind: 'fountain', x: P.c[0], z: P.c[1], tags: { amenity: 'fountain', note: 'position reconstructed on the garden axis' } });
+  { const sp = [P.fc[0] - P.along[0] * 3.0 - P.axis[0] * 1.2, P.fc[1] - P.along[1] * 3.0 - P.axis[1] * 1.2]; const sg = new THREE.Group(); sg.position.set(sp[0], ground(sp[0], sp[1]), sp[1]); sg.rotation.y = Math.atan2(-P.axis[0], -P.axis[1]); sg.add(box(0.06, 1.1, 0.06, M('signpost', () => new THREE.MeshStandardMaterial({ color: 0x1b1f24 })), 0, 0.55, 0)); const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.32), new THREE.MeshBasicMaterial({ map: signTex })); plate.position.set(0, 1.15, 0.04); plate.rotation.x = -0.35; sg.add(plate); meshes.push(sg); }
+  pois.push({ id: 'g:fountain', name: 'Town Hall Fountain', kind: 'fountain', x: P.fc[0], z: P.fc[1], tags: { amenity: 'fountain', note: 'position reconstructed on the garden axis' } });
   pois.push({ id: 'g:garden', name: 'Town Hall Garden (Seafront Gardens)', kind: 'garden', x: P.c[0] + P.axis[0] * 14, z: P.c[1] + P.axis[1] * 14, tags: { leisure: 'garden' }, ring: P.ring });
   // --- Mr. Felixstowe's Shelter (open-sided: you can walk in; the Town Hall itself stays closed in the game) ---
   const S = P.shelter, sx = S.ux, sz = S.uz; let fx = -sz, fz = sx; // short-axis normal
@@ -301,22 +317,58 @@ export function buildTownHallGardens(P, ctx) {
   surfaces.push({ id: 'garden:shelter', ring: [Lx(-hw - 0.2, -hd - 0.2), Lx(hw + 0.2, -hd - 0.2), Lx(hw + 0.2, hd + 0.2), Lx(-hw - 0.2, hd + 0.2)], heightAt: () => yS, name: 'Mr. Felixstowe’s Shelter', meshes: [] });
   pois.push({ id: 'g:shelter', name: 'Mr. Felixstowe’s Shelter', kind: 'shelter', x: S.cx, z: S.cz, tags: { amenity: 'shelter', shelter_type: 'gazebo' } });
   // --- planting and benches on the terraces ---
-  const plants = { poker: [], lavender: [], grass: [], shrub: [], cordyline: [], yellow: [] }, benches = [];
+  const plants = { poker: [], lavender: [], grass: [], shrub: [], cordyline: [], yellow: [], mound: [], mound2: [], mound3: [] }, benches = [];
   const rnd = (i) => hash01(i * 7919 + 13);
   let id = 0;
   for (let j = 0; j < N - 1; j++) {
     const r0 = R0 + j * BAND + 2.15, r1 = R0 + (j + 1) * BAND - 0.55;
-    for (let th = -1.4; th <= 1.4; th += 0.55 / (r0 + 0.5)) for (let rr = r0; rr <= r1; rr += 0.55) {
+    for (let th = -1.4; th <= 1.4; th += 0.42 * KX / (r0 + 0.5)) for (let rr = r0; rr <= r1; rr += 0.42) {
       id++; const jit = (rnd(id) - 0.5) * 0.3, p = P.atAngle(rr + jit, th + (rnd(id + 1) - 0.5) * 0.05), d = P.edgeDist(p[0], p[1]), { lat } = P.polar(p[0], p[1]);
       if (d < 1.4 || P.inShelter(p[0], p[1], 0.8) || P.flights.some((f) => Math.abs(lat - f.lat) < 1.8 && Math.abs(rr - f.re) < f.run / 2 + 1.5)) continue;
       const y = ground(p[0], p[1]), t = rnd(id + 2);
       const kind = Math.abs(th) > 1.15 && t < 0.25 ? 'cordyline' : t < 0.26 ? 'poker' : t < 0.52 ? 'lavender' : t < 0.68 ? 'grass' : t < 0.86 ? 'shrub' : 'yellow';
-      plants[kind].push({ x: p[0], y, z: p[1], rot: rnd(id + 3) * 6.28, s: 0.8 + rnd(id + 4) * 0.45 });
+      const big = rnd(id + 5);
+      if (big < 0.1) plants[big < 0.05 ? 'mound' : big < 0.075 ? 'mound2' : 'mound3'].push({ x: p[0], y, z: p[1], rot: rnd(id + 3) * 6.28, s: 1.1 + rnd(id + 4) * 0.9, sy: 1 });
+      else plants[kind].push({ x: p[0], y, z: p[1], rot: rnd(id + 3) * 6.28, s: (kind === 'cordyline' ? 1.4 : 0.8) + rnd(id + 4) * 0.45 });
     }
     for (const th of [-0.95, -0.45, 0.45, 0.95]) { const p = P.atAngle(R0 + j * BAND + 2.05, th); if (P.edgeDist(p[0], p[1]) < 1.6 || P.inShelter(p[0], p[1], 1)) continue; benches.push({ x: p[0], y: ground(p[0], p[1]), z: p[1], rot: Math.atan2(P.c[0] - p[0], P.c[1] - p[1]) + Math.PI }); colliders.push({ type: 'circle', x: p[0], z: p[1], r: 0.5, y0: ground(p[0], p[1]) - 0.2, top: ground(p[0], p[1]) + 1, kind: 'bench' }); }
   }
+  for (let rr = 2.6; rr <= R0 - 2.0; rr += 0.55) for (let th = -1.25; th <= 1.25; th += 0.4 * KX / rr) { id++; const p = P.atAngle(rr, th), { lat } = P.polar(p[0], p[1]); const sp = P.polar(p[0], p[1]); if (Math.hypot(p[0] - P.fc[0], p[1] - P.fc[1]) < 3 || sp.up < 1.8) continue; const t = rnd(id + 2); const kind = t < 0.3 ? 'mound' : t < 0.45 ? 'mound2' : t < 0.55 ? 'mound3' : t < 0.7 ? 'cordyline' : t < 0.82 ? 'lavender' : 'shrub'; plants[kind].push({ x: p[0], y: ground(p[0], p[1]), z: p[1], rot: rnd(id) * 6.28, s: 0.9 + rnd(id + 4) * 0.7, sy: 1 }); void lat; }
   for (let th = -1.45; th <= 1.45; th += 0.05) { const p = P.atAngle(R0 - 0.9, th), { lat } = P.polar(p[0], p[1]); if (P.edgeDist(p[0], p[1]) < 1.2 || P.flights.some((f) => f.j === 0 && Math.abs(lat - f.lat) < 1.8)) continue; id++; plants[rnd(id) < 0.5 ? 'poker' : 'lavender'].push({ x: p[0], y: ground(p[0], p[1]), z: p[1], rot: th * 7, s: 0.9 }); } // bed along the foot of the first terrace
   for (const [k, list] of Object.entries(plants)) { const m = plantMesh(k, list); if (m) meshes.push(m); }
   const bm = instances('bench', benches); if (bm) meshes.push(bm);
+  // --- the road edge: low cream retaining wall, black bow-top railing, clipped hedge; Victorian lamps, blue lamp column with baskets, info board, bin, pillar box ---
+  { const E = P.roadEdge, ex = (E.b[0] - E.a[0]) / E.len, ez = (E.b[1] - E.a[1]) / E.len, [inx, inz] = P.axis, K2 = [];
+    const at = (t, d) => [E.a[0] + ex * t + inx * d, E.a[1] + ez * t + inz * d];
+    const latOf = (t) => { const q = at(t, 0); return P.polar(q[0], q[1]).lat; };
+    const cream = M('cream', () => new THREE.MeshStandardMaterial({ color: 0xc9bfa6, roughness: 0.95 })), black = M('railblack', () => new THREE.MeshStandardMaterial({ color: 0x23201d, roughness: 0.6, metalness: 0.4 })), hedge = M('hedge', () => new THREE.MeshStandardMaterial({ color: 0x35582d, roughness: 1 }));
+    const gap = (t) => Math.abs(latOf(t)) < 1.9;
+    const segs = Math.floor(E.len / 1.5);
+    for (let i = 0; i < segs; i++) { const t0 = i * 1.5, t1 = t0 + 1.5, tm = (t0 + t1) / 2; if (gap(tm) || P.edgeDist(...at(tm, 0.2)) < 0.05) continue;
+      const w0 = at(t0, 0.35), w1 = at(t1, 0.35), r0 = at(t0, -0.2), g0 = ground(w0[0], w0[1]), g1 = ground(w1[0], w1[1]), gr = Math.min(ground(r0[0], r0[1]), g0) - 0.15, top = Math.max(g0, g1) + 0.3;
+      const m1 = box(0.42, top - gr, 1.55, cream, (w0[0] + w1[0]) / 2, (top + gr) / 2, (w0[1] + w1[1]) / 2, Math.atan2(ex, ez)); meshes.push(m1);
+      colliders.push({ type: 'segment', a: w0, b: w1, r: 0.25, y0: gr, top: top + 0.8, kind: 'garden-wall' });
+      const h0 = at(tm, 1.35), hy = ground(h0[0], h0[1]); for (const k of [-0.5, 0, 0.5]) { const hb = new THREE.Mesh(new THREE.IcosahedronGeometry(0.62, 1), hedge); hb.scale.set(1, 0.95, 1.05); hb.position.set(h0[0] + ex * k, hy + 0.5, h0[1] + ez * k); hb.rotation.y = k * 3; hb.castShadow = true; meshes.push(hb); }
+      const rp = at(t0, 0.85), rq = at(t1, 0.85), ry = ground(rp[0], rp[1]);
+      meshes.push(box(0.05, 0.85, 0.05, black, rp[0], ry + 0.42, rp[1])); meshes.push(box(0.03, 0.03, 1.5, black, (rp[0] + rq[0]) / 2, ry + 0.8, (rp[1] + rq[1]) / 2, Math.atan2(ex, ez))); meshes.push(box(0.025, 0.025, 1.5, black, (rp[0] + rq[0]) / 2, ry + 0.3, (rp[1] + rq[1]) / 2, Math.atan2(ex, ez)));
+      for (let k = 1; k < 6; k++) { const q = at(t0 + k * 0.25, 0.85); meshes.push(box(0.016, 0.5, 0.016, black, q[0], ry + 0.55, q[1])); } }
+    void K2;
+    const lampMesh = (x, z, h = 3.3) => { const y = ground(x, z), g = new THREE.Group(); g.position.set(x, y, z); g.add(box(0.07, h, 0.07, black, 0, h / 2, 0)); g.add(box(0.2, 0.4, 0.2, black, 0, 0.2, 0)); const lan = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.12, 0.4, 4), M('lantern', () => new THREE.MeshStandardMaterial({ color: 0xf0e2b0, emissive: 0xf0d890, emissiveIntensity: 0.3 }))); lan.rotation.y = Math.PI / 4; lan.position.y = h + 0.1; g.add(lan); const cap = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.25, 4), black); cap.rotation.y = Math.PI / 4; cap.position.y = h + 0.42; g.add(cap); meshes.push(g); colliders.push({ type: 'circle', x, z, r: 0.18, y0: y - 0.3, top: y + h, kind: 'lamp' }); };
+    for (const [r, lat] of [[11, -7.5], [11, 7.5], [17, -9], [17, 9], [23, -9], [23, 9], [27.5, -5], [27.5, 5]]) { const p = P.at(r, lat); if (P.edgeDist(p[0], p[1]) > 1.6 && !P.inShelter(p[0], p[1], 1.2)) lampMesh(p[0], p[1]); }
+    // the blue Victorian lamp column on the pavement, with two hanging baskets
+    { const tm = E.len / 2 - 8, q = at(tm, -1.0), y = ground(q[0], q[1]), blue = M('bluecol', () => new THREE.MeshStandardMaterial({ color: 0x2f4e8c, roughness: 0.5, metalness: 0.4 })), g = new THREE.Group(); g.position.set(q[0], y, q[1]);
+      g.add(box(0.1, 5.0, 0.1, blue, 0, 2.5, 0)); const base = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.2, 0.9, 10), blue); base.position.y = 0.45; g.add(base);
+      for (const sx of [-1, 1]) { g.add(box(0.8, 0.04, 0.04, blue, sx * 0.4, 3.9, 0)); const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.2, 0.28, 10), M('pot', () => new THREE.MeshStandardMaterial({ color: 0x6f8a80, roughness: 0.7 }))); pot.position.set(sx * 0.8, 3.65, 0); g.add(pot); const fl = new THREE.Mesh(new THREE.SphereGeometry(0.34, 8, 6), M('geranium', () => new THREE.MeshStandardMaterial({ color: 0xd8445a, roughness: 0.9 }))); fl.scale.y = 0.65; fl.position.set(sx * 0.8, 3.9, 0); g.add(fl); }
+      g.add(box(0.3, 0.4, 0.3, black, 0, 5.2, 0)); meshes.push(g); colliders.push({ type: 'circle', x: q[0], z: q[1], r: 0.2, y0: y - 0.3, top: y + 5, kind: 'lamp' }); }
+    // information board (black frame on two posts) facing the road
+    { const q = [P.c[0] + P.along[0] * -6 - P.axis[0] * 4.2, P.c[1] + P.along[1] * -6 - P.axis[1] * 4.2], y = ground(q[0], q[1]), g = new THREE.Group(); g.position.set(q[0], y, q[1]); g.rotation.y = Math.atan2(-P.axis[0], -P.axis[1]); for (const sx of [-0.4, 0.4]) g.add(box(0.05, 0.95, 0.05, black, sx, 0.47, 0)); const bd = box(1.0, 0.55, 0.05, M('board', () => new THREE.MeshStandardMaterial({ color: 0xcfcab8, roughness: 0.6 })), 0, 1.0, 0); bd.rotation.x = -0.25; g.add(bd); meshes.push(g); colliders.push({ type: 'circle', x: q[0], z: q[1], r: 0.5, y0: y - 0.3, top: y + 1.4, kind: 'sign' }); }
+    // pillar box and litter bin beside the central path
+    { const q = at(E.len / 2 + 0, -0.4), px = q[0] + ex * 2.6 + inx * 1.2, pz = q[1] + ez * 2.6 + inz * 1.2, y = ground(px, pz), g = new THREE.Group(); g.position.set(px, y, pz);
+      const red = M('pillar', () => new THREE.MeshStandardMaterial({ color: 0xc4161c, roughness: 0.45, metalness: 0.2 }));
+      g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 1.3, 14), red).translateY(0.65)); g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.28, 0.14, 14), red).translateY(1.37)); g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.3, 0.1, 14), red).translateY(1.47)); g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.29, 0.25, 14), black).translateY(0.12)); meshes.push(g); colliders.push({ type: 'circle', x: px, z: pz, r: 0.35, y0: y - 0.3, top: y + 1.5, kind: 'postbox' });
+      const bx = q[0] + ex * 1.6 + inx * 2.2, bz = q[1] + ez * 1.6 + inz * 2.2, by = ground(bx, bz), bin = new THREE.Group(); bin.position.set(bx, by, bz); bin.add(new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.25, 0.9, 10), black).translateY(0.45)); bin.add(new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.07, 10), M('bingold', () => new THREE.MeshStandardMaterial({ color: 0xc2a24a, metalness: 0.6, roughness: 0.4 }))).translateY(0.93)); meshes.push(bin); colliders.push({ type: 'circle', x: bx, z: bz, r: 0.3, y0: by - 0.3, top: by + 1, kind: 'bin' }); }
+  }
+  // --- the clifftop lookout above the shelter ---
+  { const lk = buildLookout(P, ctx); meshes.push(...lk.meshes); colliders.push(...lk.colliders); }
   return { meshes, colliders, surfaces, pois };
 }
