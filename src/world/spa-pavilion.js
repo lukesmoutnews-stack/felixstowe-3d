@@ -29,7 +29,7 @@ function mats() {
   const posterColours = [['#1f1147', '#e94f8a'], ['#0e3b43', '#f3c64b'], ['#3b0d0d', '#f28c28'], ['#13233f', '#7fd1e8'], ['#2a1a05', '#e8d06a'], ['#24123a', '#b48cf2']];
   const posterWords = ['LIVE ON STAGE', 'COMEDY NIGHT', 'TRIBUTE CONCERT', 'FAMILY PANTO', 'DANCE SHOW', 'MUSIC NIGHT'];
   M = {
-    render: std({ color: 0xf0e9d2, roughness: 0.85, side: THREE.DoubleSide }),
+    render: std({ color: 0xf5f2e8, roughness: 0.85, side: THREE.DoubleSide }),
     brown: std({ color: 0x5a3e2e, roughness: 0.7 }),
     steps: std({ color: 0xcdcac2, roughness: 0.9 }),
     nosing: std({ color: 0xe8c22a, roughness: 0.6 }),
@@ -41,11 +41,20 @@ function mats() {
     blue: std({ color: 0x2c5da8, roughness: 0.5 }),          // exterior panels, frames, planters (were red)
     white: std({ color: 0xf6f6f2, roughness: 0.6 }),
     dark: std({ color: 0x23272c, roughness: 0.9 }),
-    bigLetters: letters('SPA PAVILION', '#1e3f86', 1536, 192, `700 150px ${SANS}`),
+    bigLetters: letters('SPA PAVILION', '#b98f45', 1536, 192, `700 150px ${SANS}`),   // gilt lettering on the cream gable (photo)
     smallSign: std({ map: cnv(1024, 128, (g, w, h) => { g.fillStyle = '#1f4f9c'; g.fillRect(0, 0, w, h); g.fillStyle = '#f4efe0'; g.font = `700 88px ${SANS}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('SPA PAVILION', w / 2, h / 2 + 4); }), roughness: 0.5 }),
-    loungeSign: std({ map: cnv(512, 128, (g, w, h) => { g.fillStyle = '#2b2d33'; g.fillRect(0, 0, w, h); g.fillStyle = '#e9c34a'; g.font = `700 86px ${SANS}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('LOUNGE', w / 2, h / 2 + 4); }), roughness: 0.5 }),
+    loungeSign: std({ map: cnv(1024, 128, (g, w, h) => { g.fillStyle = '#9b5530'; g.fillRect(0, 0, w, h); g.strokeStyle = '#efe3c8'; g.lineWidth = 6; g.strokeRect(5, 5, w - 10, h - 10); g.fillStyle = '#f4ead2'; g.font = `700 92px ${SANS}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('LOUNGE', w / 2, h / 2 + 5); }), roughness: 0.5 }),   // copper-brown fascia, cream letters (photo)
+    stripes: std({ map: cnv(256, 32, (g, w, h) => { for (let i = 0; i < 8; i++) { g.fillStyle = i % 2 ? '#f4f4f0' : '#cf2a22'; g.fillRect(i * w / 8, 0, w / 8, h); } }), roughness: 0.6 }),
+    stopSign: std({ map: cnv(128, 128, (g, w, h) => { g.fillStyle = '#d0201c'; g.fillRect(0, 0, w, h); g.strokeStyle = '#fff'; g.lineWidth = 7; g.beginPath(); g.arc(w / 2, h / 2, w * 0.45, 0, 7); g.stroke(); g.fillStyle = '#fff'; g.font = `700 34px ${SANS}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('STOP', w / 2, h / 2 + 2); }), roughness: 0.5, side: THREE.DoubleSide }),
+    orange: std({ color: 0xe8741c, roughness: 0.5 }),
+    leaf: std({ color: 0x55803a, roughness: 0.8, side: THREE.DoubleSide }),
+    trunk: std({ color: 0x6b5a45, roughness: 0.9 }),
+    soil: std({ color: 0x4a3a2a, roughness: 1 }),
+    reed: std({ color: 0xc9b27a, roughness: 0.9 }),
+    bench: std({ color: 0x6a4a2c, roughness: 0.8 }),
+    stone: std({ color: 0xb9b5a8, roughness: 0.95 }),
     terraceSign: std({ map: cnv(512, 96, (g, w, h) => { g.fillStyle = '#d9dcdf'; g.fillRect(0, 0, w, h); g.fillStyle = '#2f3338'; g.font = `600 60px ${SANS}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('TERRACE', w / 2, h / 2 + 3); }), roughness: 0.6 }),
-    pantile: std({ color: 0xb4553a, roughness: 0.85, side: THREE.DoubleSide }),
+    pantile: std({ color: 0xc4532e, roughness: 0.85, side: THREE.DoubleSide }),
     window: std({ color: 0x2f3c48, roughness: 0.1, metalness: 0.5 }),
     banners: posterColours.slice(0, 3).map(([bg, fg], i) => std({ map: cnv(512, 160, (g, w, h) => { const gr = g.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, bg); gr.addColorStop(1, '#111'); g.fillStyle = gr; g.fillRect(0, 0, w, h); g.fillStyle = fg; g.font = `700 54px ${SANS}`; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(posterWords[i], 24, h * 0.42); g.fillStyle = '#fff'; g.font = `500 28px ${SANS}`; g.fillText('SPA PAVILION · BOOK NOW', 26, h * 0.78); }), roughness: 0.7, side: THREE.DoubleSide })),
     restaurant: std({ map: cnv(1024, 128, (g, w, h) => { g.fillStyle = '#f2f0ea'; g.fillRect(0, 0, w, h); g.fillStyle = '#2f3338'; g.font = `500 80px ${SANS}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('RESTAURANT', w / 2, h / 2 + 3); }), roughness: 0.6 }),
@@ -309,7 +318,52 @@ export function buildSpaPavilion(b, ctx) {
   // seaward lounge end: blue mullions on the glazing and the LOUNGE sign above it
   for (const v of [1.3, 3.2, 5.1, 7.0, 8.8]) box(m.blue, -0.16, 0.0, LF + 0.3, LT - 0.05, v - 0.06, v + 0.06);
   box(m.blue, -0.16, 0.0, LF + 0.25, LF + 0.4, 1.2, 8.9); box(m.blue, -0.16, 0.0, LT - 0.15, LT, 1.2, 8.9);
-  facePlane(m.loungeSign, -0.2, 3.0, 7.0, LT + 0.75, LT + 1.75); box(m.dark, -0.12, 0.2, LT + 0.7, LT + 1.8, 2.9, 7.1);
+  box(m.render, -0.3, 0.1, LT + 0.5, LT + 1.9, 1.2, 8.9); box(m.blue, -0.32, -0.28, LT + 0.5, LT + 1.9, 8.8, 8.95);   // parapet carrying the copper LOUNGE fascia, blue edge (photo)
+  facePlane(m.loungeSign, -0.33, 1.7, 8.5, LT + 0.75, LT + 1.65);
+
+  // ---------- street furniture from the photos: roundabout boat planter, ticket barrier, lamp post, bench, cordylines ----------
+  const extraCol = [];
+  const colAt = (u, v, r, y0, top, kind) => { const w = W(u, v); extraCol.push({ type: 'circle', x: w[0], z: w[1], r, y0, top, kind }); };
+  { // blue-and-white rowing boat planter on the Undercliff Road roundabout island (photo: far side of the island, long axis across the view)
+    const [bu, bv] = toL(272.5, -83.2), by = gw(bu, bv) + 0.05;
+    const hull = (hw, hl) => { const sh = new THREE.Shape(); sh.moveTo(-hl, 0); sh.quadraticCurveTo(0, hw * 1.5, hl, 0); sh.quadraticCurveTo(0, -hw * 1.5, -hl, 0); return sh; };
+    const slab = (shape, depth, mat, y) => { const g = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false }); g.rotateX(-Math.PI / 2); const me = new THREE.Mesh(g, mat); me.position.set(bu, by + y, Z(bv)); return add(me, false); };
+    slab(hull(0.62, 1.95), 0.5, m.white, 0.0); slab(hull(0.66, 2.0), 0.07, m.blue, 0.46);
+    slab(hull(0.5, 1.8), 0.04, m.soil, 0.53);
+    for (let k = 0; k < 7; k++) { const t = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.5, 5), m.reed); t.position.set(bu - 1.2 + k * 0.4, by + 0.78, Z(bv + (k % 2 ? 0.14 : -0.14))); t.rotation.z = (k % 3 - 1) * 0.25; add(t, false); }
+    colAt(bu, bv, 1.5, by - 0.5, by + 0.7, 'furniture');
+  }
+  { // orange ticket barrier with red/white boom and STOP sign across the promenade strip (photo: gateway barrier)
+    const bu2 = -3.2, bvA = -3.7, bvB = -9.6, gy = gw(bu2, -6);
+    box(m.orange, bu2 - 0.22, bu2 + 0.22, gy, gy + 1.05, bvA - 0.22, bvA + 0.22); box(m.black, bu2 - 0.2, bu2 + 0.2, gy + 1.05, gy + 1.1, bvA - 0.2, bvA + 0.2);
+    box(m.stripes, bu2 - 0.04, bu2 + 0.04, gy + 0.98, gy + 1.08, bvB, bvA - 0.22, false);
+    box(m.orange, bu2 - 0.08, bu2 + 0.08, gy, gy + 1.05, bvB - 0.1, bvB + 0.1);
+    box(m.black, bu2 - 0.02, bu2 + 0.02, gy + 0.7, gy + 1.7, -7.0, -6.96, false);
+    const stop = new THREE.Mesh(new THREE.CircleGeometry(0.3, 8, Math.PI / 8), m.stopSign); stop.position.set(bu2 - 0.06, gy + 1.65, Z(-6.98)); stop.rotation.y = -Math.PI / 2; add(stop, false);
+    colAt(bu2, bvA, 0.25, gy - 0.5, gy + 1.1, 'furniture');
+  }
+  { // black Victorian lamp post in front of the stair, brown bench and cordylines either side of it (photos 1 and 3)
+    const lp = pq(-3.4, qBot + 1.2);
+    const lg = gw(...lp);
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.08, 4.2, 8), m.black); pole.position.set(lp[0], lg + 2.1, Z(lp[1])); add(pole, false);
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.17, 0.9, 8), m.black); base.position.set(lp[0], lg + 0.45, Z(lp[1])); add(base, false);
+    const lan = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.14, 0.55, 6), m.pendant); lan.position.set(lp[0], lg + 4.4, Z(lp[1])); add(lan, false);
+    const cap = new THREE.Mesh(new THREE.ConeGeometry(0.34, 0.25, 6), m.black); cap.position.set(lp[0], lg + 4.8, Z(lp[1])); add(cap, false);
+    colAt(lp[0], lp[1], 0.15, lg - 0.5, lg + 4.2, 'column');
+    const bp = pq(-5.6, qBot + 0.3), bg = gw(...bp); // bench, back to the cliff
+    box(m.bench, bp[0] - 0.9, bp[0] + 0.9, bg + 0.42, bg + 0.48, bp[1] - 0.25, bp[1] + 0.25, false); box(m.bench, bp[0] - 0.9, bp[0] + 0.9, bg + 0.55, bg + 0.95, bp[1] + 0.22, bp[1] + 0.27, false);
+    for (const du of [-0.8, 0.8]) box(m.black, bp[0] + du - 0.03, bp[0] + du + 0.03, bg, bg + 0.42, bp[1] - 0.22, bp[1] + 0.22, false);
+  }
+  { // cordyline palms: two by the stair, two on the promenade by the barrier, two more along the sea-front (photo 3)
+    const spots = [pq(-4.4, qBot + 0.2), pq(-5.2, qBot - 0.8), [3.5, -5.2], [9.5, -5.6], [15.5, -5.2], [21.5, -5.5]];
+    const leaf = new THREE.ConeGeometry(0.06, 1.7, 4); leaf.translate(0, 0.85, 0);
+    const per = 16, im = new THREE.InstancedMesh(leaf, m.leaf, spots.length * per), mt = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), sc = new THREE.Vector3(), ps = new THREE.Vector3();
+    spots.forEach(([u, v], i) => { const g0 = gw(u, v), h = 2.0 + (i % 3) * 0.55;
+      const t = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.11, h, 6), m.trunk); t.position.set(u, g0 + h / 2, Z(v)); add(t, false);
+      for (let k = 0; k < per; k++) { const az = k / per * Math.PI * 2 + i, tilt = 0.55 + (k % 3) * 0.3; e.set(Math.cos(az) * tilt, 0, Math.sin(az) * tilt); q.setFromEuler(e); ps.set(u, g0 + h, Z(v)); const L = 0.85 + (k % 4) * 0.12; sc.set(1, L, 1); mt.compose(ps, q, sc); im.setMatrixAt(i * per + k, mt); }
+      colAt(u, v, 0.2, g0 - 0.5, g0 + h, 'column'); });
+    add(im, false);
+  }
 
   // ---------- interior ----------
   const IN = { e0: bu0, e1: -3.0, f1: 4.5, a1: 30.0, s1: 37.5, v0: 9.6, v1: 30.2 }; // kept inside the OSM footprint
@@ -434,6 +488,7 @@ export function buildSpaPavilion(b, ctx) {
   const interiorRing = ringW([[bu0, bv0], [IN.e1, bv0], [IN.e1, IN.v0], [IN.s1, IN.v0], [IN.s1, IN.v1], [IN.e1, IN.v1], [IN.e1, bv1], [bu0, bv1]]);
   const interior = { id: 'spa-pavilion', name: 'Spa Pavilion Theatre', ring: interiorRing, top: E, ceilingAt: (x, z) => { const [u, v] = toL(x, z); if (u < IN.e1) return F + 3.2; if (u < IN.f1) return fy; if (u < IN.a1) return arcY(v); return F + 5.8; } };
   const loungeInterior = { id: 'spa-lounge', name: 'Spa Pavilion lounge', ring: ringW([[0.0, -0.1], [35.7, -0.1], [35.7, 8.7], [0.0, 8.7]]), top: LT, bottom: LF - 0.6, ceilingAt: () => LT - 0.15 };
+  colliders.push(...extraCol);
   return { group, colliders, surfaces, interior, extraInteriors: [loungeInterior], floorY: F, info: { F, nSteps: ns, entranceFaces: 'sea, 18 deg towards Undercliff Road', seats: seatPos.length } };
 }
 
