@@ -224,7 +224,7 @@ export function buildBoardwalk(o) {
       const me = new THREE.Mesh(gl, m.glass); me.position.set(x0 + 0.03, 0.1 + 1.475, cZ); group.add(me);
       box('white', x0 + 0.06, 0.05, cZ, 0.06, 0.05, (len - 1.6) / 2); box('white', x0 + 0.06, 3.0, cZ, 0.06, 0.05, (len - 1.6) / 2); }
     // soffit over the terrace: grey underside, charcoal sign fascia on the outer edge, slim silver columns
-    const out = 3.9, xs0 = x0 - 0.02, xs1 = x0 + out, zA = zNear + 0.1, zB = zFar - 0.1, sl = zA - zB, sc = (zA + zB) / 2;
+    const out = 3.6, xs0 = x0 - 0.02, xs1 = x0 + out, zA = zNear + 0.1, zB = zFar - 0.1, sl = zA - zB, sc = (zA + zB) / 2;
     box('soffit', (xs0 + xs1) / 2, 3.3, sc, (xs1 - xs0) / 2, 0.22, sl / 2);
     box('white', (xs0 + xs1) / 2, 3.55, sc, (xs1 - xs0) / 2 + 0.02, 0.03, sl / 2 + 0.02);
     { const bh = 1.4; box('charcoal', xs1 + 0.12, 3.08 + bh / 2, sc, 0.1, bh / 2, sl / 2); box('silver', xs1 + 0.12, 3.08 + bh + 0.04, sc, 0.13, 0.04, sl / 2 + 0.03);
@@ -236,17 +236,18 @@ export function buildBoardwalk(o) {
       for (let z = zB + 0.5; z < zA - 0.5; z += 0.55, q++) { const y = 3.04 - Math.sin(((z - zB) % 4.1) / 4.1 * Math.PI) * 0.18; pos.push(x, y, z - 0.22, x, y, z + 0.22, x, y - 0.4, z); for (let k = 0; k < 3; k++) colr.push(...cs[q % 3]); }
       const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(colr, 3)); g.computeVertexNormals(); group.add(new THREE.Mesh(g, m.bunting)); }
     // umbrellas, picnic tables, cafe tables and chairs
-    const xu = xo + 4.8, zu = []; for (let z = zFar + 3.8; z < zNear - 4; z += 4.8) zu.push(z);
+    // the picnic tables stand against the outer rail so a clear aisle (about 2 m between the soffit columns and the table edges) runs the whole length of the cafe terrace
+    const xu = xo + 5.75, zu = []; for (let z = zFar + 3.8; z < zNear - 4; z += 4.8) zu.push(z);
     const um = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.02, 2.26, 0.66, 4, 1, true).rotateY(Math.PI / 4), m.umbrella, zu.length), pm = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.04, 0.04, 2.9, 6), m.pole, zu.length), mt = new THREE.Matrix4();
     zu.forEach((z, q) => { mt.makeTranslation(xu, 2.58, z); um.setMatrixAt(q, mt); mt.makeTranslation(xu, 1.45, z); pm.setMatrixAt(q, mt);
       box('tableTop', xu, 0.75, z, 0.4, 0.025, 1.0); box('bench', xu - 0.76, 0.46, z, 0.15, 0.025, 1.0); box('bench', xu + 0.76, 0.46, z, 0.15, 0.025, 1.0);
       for (const dz of [-0.8, 0.8]) { box('white', xu, 0.38, z + dz, 0.8, 0.37, 0.03); }
-      addCol('circle', [xu, z], null, 1.15, floorY, floorY + 0.95, 'bench'); });
+      addCol('segment', [xu, z - 0.1], [xu, z + 0.1], 0.95, floorY, floorY + 0.95, 'bench'); }); // table and benches: 1.9 m across x 2.0 m along the deck
     um.castShadow = true; group.add(um, pm);
     for (let z = zFar + 1.8; z < zNear - 1.2; z += 3.1) { const x = xs0 + 1.9;
       box('tableTop', x, 0.74, z, 0.38, 0.02, 0.38); box('white', x, 0.37, z, 0.03, 0.37, 0.03); box('white', x, 0.02, z, 0.22, 0.02, 0.03);
       for (const sx of [-0.78, 0.78]) { const cx = x + sx; box('chair', cx, 0.45, z, 0.21, 0.025, 0.21); box('chair', cx + Math.sign(sx) * 0.2, 0.7, z, 0.02, 0.22, 0.21); box('chair', cx, 0.22, z, 0.17, 0.22, 0.02); }
-      addCol('circle', [x, z], null, 0.5, floorY, floorY + 0.8, 'bench'); }
+      addCol('segment', [x - 0.55, z], [x + 0.55, z], 0.4, floorY, floorY + 0.8, 'bench'); } // table and its two chairs, against the glazing side of the terrace
     o.cafe = { x0, xs1, zNear, zFar, sc, sl };
   }
 
@@ -286,10 +287,10 @@ export function buildBoardwalk(o) {
         const p = P(ka + sa, kb + sb, 0), sgm = new THREE.Mesh(new THREE.PlaneGeometry(w, w / 2), m.kioskSign); sgm.position.set(p[0] + nx * 0.03, yDeck + sy, p[2] + nz * 0.03); sgm.rotation.y = Math.atan2(nx, nz); group.add(sgm); }
       { const lp = P(ka + 1.76, kb + side * 0.3, 0), lb = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.075, 8, 18), new THREE.MeshStandardMaterial({ color: 0xc8161d, roughness: 0.6 })); lb.position.set(lp[0], yDeck + 1.35, lp[2]); lb.rotation.y = Math.atan2(u[0], u[1]); group.add(lb); } // red lifebuoy ring on the seaward end wall
       const kc = P(ka, kb, 0); addCol('segment', [kc[0] - u[0] * 1.7, kc[2] - u[1] * 1.7], [kc[0] + u[0] * 1.7, kc[2] + u[1] * 1.7], 1.05, floorY + yDeck, floorY + yDeck + 2.6, 'kiosk');
-      for (const a of [6.5, 9.5, 12.0]) { // picnic tables between the kiosk and the building (queue side), kept to the far side of the deck so the hatch stays clear
-        const p = P(a, -off * 1.05, 0), W = (g, a2, b2, y, hl, hh, hw2) => { const q = [p[0] + u[0] * a2 + v[0] * b2, p[2] + u[1] * a2 + v[1] * b2]; G[gk(g)].box(q[0], yDeck + y, q[1], u[0], u[1], hl, hh, hw2); };
+      for (const a of [6.0, 9.0, 18.8]) { // picnic tables along the kiosk's side of the pier (two on the queue side, one beyond its seaward end), so the other 2.5 m of the deck stays a clear walkway past the kiosk
+        const p = P(a, off, 0), W = (g, a2, b2, y, hl, hh, hw2) => { const q = [p[0] + u[0] * a2 + v[0] * b2, p[2] + u[1] * a2 + v[1] * b2]; G[gk(g)].box(q[0], yDeck + y, q[1], u[0], u[1], hl, hh, hw2); };
         W('tableTop', 0, 0, 0.75, 1.0, 0.025, 0.38); W('bench', 0, -0.72, 0.46, 1.0, 0.025, 0.14); W('bench', 0, 0.72, 0.46, 1.0, 0.025, 0.14); W('white', -0.75, 0, 0.38, 0.03, 0.37, 0.75); W('white', 0.75, 0, 0.38, 0.03, 0.37, 0.75);
-        addCol('circle', [p[0], p[2]], null, 1.0, floorY + yDeck, floorY + yDeck + 0.9, 'bench'); }
+        addCol('segment', [p[0] - u[0] * 0.15, p[2] - u[1] * 0.15], [p[0] + u[0] * 0.15, p[2] + u[1] * 0.15], 0.95, floorY + yDeck, floorY + yDeck + 0.9, 'bench'); }
     }
   }
   o.mouth = mouth;

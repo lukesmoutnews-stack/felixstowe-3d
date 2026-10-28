@@ -82,5 +82,8 @@ for (const c of CLOSURES) {
   ok(d < 1.5, `closure ${c.name || c.road} is ${d.toFixed(1)} m off its way`);
   { const P = densify(r.pts, 1), dEnd = Math.min(...[P[0], P.at(-1)].map((e) => Math.hypot(e[0] - c.x, e[1] - c.z))); const wayLen = P.length - 1; ok(dEnd > 7 || c.kind === 'foot' || wayLen < 16, `closure ${c.name || c.road} is ${dEnd.toFixed(1)} m from the end of its way (in a junction)`); }
 }
+// 5. the pier building's boardwalk can be walked all the way round (south-west cafe side, back, north-east side) and out onto the pier
+{ const { pierWalkChecks } = await import('./pier-walk.mjs'); await pierWalkChecks(ok); }
+
 console.log(`${pass}/${pass + fail} zone checks passed`);
 process.exit(fail ? 1 : 0);
