@@ -6,3 +6,6 @@ data/lidar-raw/
 data/*.osm.pbf
 data/overture-buildings.geojson
 node_modules/
+
+# local copy of the OSM tiles (from the data branch) used by tools/build-zone.mjs and test/zone.test.mjs
+fx/
