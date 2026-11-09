@@ -16,7 +16,7 @@ export function leisureFront(outer) {
   return best;
 }
 
-const PL = { u: 20.5, w: 12.5, A0: 7.0, A1: 5.7, h0: 0.2, h1: 0.42 };   // platform centre in the front frame, apothems of the two steps, heights
+const PL = { u: 20.5, w: 12.5, A0: 7.0, A1: 5.7, h0: 0.16, h1: 0.32 };   // platform centre in the front frame, apothems of the two steps, heights
 
 /** Terrain modifier for the raised platform: { ring, fn, g, cx, cz }. `terrain` needs rawHeightAt. */
 export function plazaPlan(b, terrain) {
@@ -38,13 +38,13 @@ function mats() {
   const cv = (w, h, draw, rep = true) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; if (rep) t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; };
   let s = 7; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
   // herringbone block paving in pinkish brown with a few darker and greyer blocks
-  const paving = cv(256, 256, (g, w, h) => { g.fillStyle = '#7e6a60'; g.fillRect(0, 0, w, h); const bw = 32, bh = 16;
-    for (let y = 0; y < h; y += bh) for (let x = 0; x < w; x += bw) { const k = ((x / bw) + (y / bh)) % 2; const l = 50 + (r() - 0.5) * 12; g.fillStyle = `hsl(${12 + r() * 10},${22 + r() * 12}%,${l}%)`; if (k) g.fillRect(x + 1, y + 1, bw - 2, bh - 2); else g.fillRect(x + 1, y + 1, bh - 2, bw - 2); } });
+  const paving = cv(256, 256, (g, w, h) => { g.fillStyle = '#6f635b'; g.fillRect(0, 0, w, h); const bw = 32, bh = 16;
+    for (let y = 0; y < h; y += bh) for (let x = 0; x < w; x += bw) { const k = ((x / bw) + (y / bh)) % 2; const l = 50 + (r() - 0.5) * 12; g.fillStyle = `hsl(${14 + r() * 12},${9 + r() * 9}%,${l - 8}%)`; if (k) g.fillRect(x + 1, y + 1, bw - 2, bh - 2); else g.fillRect(x + 1, y + 1, bh - 2, bw - 2); } });
   const stepBrick = cv(256, 128, (g, w, h) => { g.fillStyle = '#4a3a34'; g.fillRect(0, 0, w, h); const ch = h / 6, bw = w / 6;
     for (let row = 0; row < 6; row++) for (let k = -1; k < 7; k++) { const x = k * bw + (row % 2) * bw / 2; g.fillStyle = `hsl(${8 + r() * 8},${38 + r() * 12}%,${26 + r() * 10}%)`; g.fillRect(x + 1.5, row * ch + 1.5, bw - 3, ch - 3); } });
   const hatch = cv(256, 256, (g, w, h) => { g.clearRect(0, 0, w, h); g.strokeStyle = '#e8c92e'; g.lineWidth = 8; g.strokeRect(6, 6, w - 12, h - 12); g.lineWidth = 7; for (let k = -h; k < w + h; k += 34) { g.beginPath(); g.moveTo(k, h); g.lineTo(k + h, 0); g.stroke(); } }, false);
   M = {
-    paving: std({ map: paving, side: THREE.DoubleSide }), stepBrick: std({ map: stepBrick, side: THREE.DoubleSide }), top: std({ map: paving, color: 0xe6d6cc, side: THREE.DoubleSide }), coping: std({ color: 0x8b8178, roughness: 0.85 }),
+    paving: std({ map: paving, side: THREE.DoubleSide }), stepBrick: std({ map: stepBrick, side: THREE.DoubleSide }), top: std({ map: paving, color: 0xd8c4b4, side: THREE.DoubleSide }), coping: std({ color: 0x8b8178, roughness: 0.85 }),
     hatch: new THREE.MeshStandardMaterial({ map: hatch, transparent: true, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3, depthWrite: false }),
     pave: new THREE.MeshStandardMaterial({ map: paving, roughness: 0.95, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }),
     bin: std({ color: 0x1c1d1f, roughness: 0.6 }), binLid: std({ color: 0xb8964a, roughness: 0.45, metalness: 0.5 }), navy: std({ color: 0x1f2d4d, roughness: 0.5, metalness: 0.3 }),
@@ -73,7 +73,7 @@ export function buildLeisurePlaza(b, ctx, front, plan) {
     quad(m.hatch, pts[0], pts[1], pts[2], pts[3], [[0, 0], [1, 0], [1, 1], [0, 1]]); }
 
   // ---- the raised octagonal platform: two brick steps and a paved top, benches on the top
-  { const oct = (A) => octagon(f, cx, cz, A), yBot = g - 0.5;
+  { const oct = (A) => octagon(f, cx, cz, A), yBot = g - 0.3;
     const ring = (A, y0, y1, mat) => { const o = oct(A); for (let k = 0; k < 8; k++) { const p = o[k], q = o[(k + 1) % 8], L = Math.hypot(q[0] - p[0], q[1] - p[1]);
       quad(mat, [p[0], y0, p[1]], [q[0], y0, q[1]], [q[0], y1, q[1]], [p[0], y1, p[1]], [[0, 0], [L / 1.6, 0], [L / 1.6, (y1 - y0) / 0.8], [0, (y1 - y0) / 0.8]]); } };
     const cap = (A, y, mat, uvs = 2) => { const o = oct(A); for (let k = 0; k < 8; k++) { const p = o[k], q = o[(k + 1) % 8]; tri(mat, [cx, y, cz], [p[0], y, p[1]], [q[0], y, q[1]], [cx / uvs, cz / uvs, p[0] / uvs, p[1] / uvs, q[0] / uvs, q[1] / uvs]); } };

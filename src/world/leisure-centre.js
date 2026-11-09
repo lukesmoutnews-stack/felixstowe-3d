@@ -59,12 +59,14 @@ function mats() {
   });
   const doorsTex = cnv(256, 160, (g, w, h) => { g.fillStyle = '#1f2124'; g.fillRect(0, 0, w, h); g.strokeStyle = '#3d4045'; g.lineWidth = 3; g.strokeRect(6, 6, w / 2 - 9, h - 12); g.strokeRect(w / 2 + 3, 6, w / 2 - 9, h - 12); });
   const glazedTex = cnv(256, 160, (g, w, h) => { g.fillStyle = '#2a323c'; g.fillRect(0, 0, w, h); g.fillStyle = 'rgba(200,215,230,.22)'; g.fillRect(0, 0, w, h * 0.3); g.strokeStyle = '#8f1f26'; g.lineWidth = 6; for (let i = 0; i <= 4; i++) { g.beginPath(); g.moveTo(i * w / 4, 0); g.lineTo(i * w / 4, h); g.stroke(); } g.beginPath(); g.moveTo(0, h * 0.3); g.lineTo(w, h * 0.3); g.stroke(); g.strokeRect(3, 3, w - 6, h - 6); });
+  const railTex = cnv(128, 128, (g, w, h) => { g.clearRect(0, 0, w, h); g.fillStyle = '#1b2a5c'; g.fillRect(0, 8, w, 7); g.fillRect(0, h - 12, w, 7); for (let x = 6; x < w; x += 12.8) g.fillRect(x, 8, 3.5, h - 12); });
   sign.wrapS = THREE.ClampToEdgeWrapping;
   M = {
+    railing: std({ map: railTex, transparent: true, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 0.6 }), railPost: std({ color: 0x1b2a5c, roughness: 0.6 }),
     clere: std({ map: clere, roughness: 0.4, metalness: 0.1 }),
     entrance: std({ map: entrance, roughness: 0.25, metalness: 0.2 }),
     sign: std({ map: sign, roughness: 0.5 }),
-    post: std({ color: 0x3b3d40, roughness: 0.6 }),
+    post: std({ color: 0x57544f, roughness: 0.8 }),
     fasciaBrown: std({ color: 0x4a3b30, roughness: 0.7 }),
     door: std({ color: 0x2a2b2e, roughness: 0.5 }),
     bowls: std({ map: bowls, roughness: 0.3, metalness: 0.15 }),
@@ -95,37 +97,55 @@ export function buildLeisureCentre(b, ctx) {
   for (const e of E) { const q = cardinal(e); e.bowls = (q.north || q.ene) && e.L > 4 && (q.north || e.mz < 213); }
   const frontE = E.filter((e) => e.nx * 0.41 + e.nz * 0.91 > 0.95 && e.L > 12).sort((p2, q2) => q2.mx - p2.mx)[0] || null;
   const eastE = E.filter((e) => e !== frontE && e.nx * 0.89 + e.nz * -0.45 > 0.7 && e.L > 6 && e.mz > 222 && e.mz < 245 && e.mx > -292);
+  // hall edges (bowls club and the west end) are two storeys under a low overhanging roof; the plaza side keeps the lower pent roof
+  const hallE = E.map((e) => !!e.bowls || (e.nx * -0.91 + e.nz * 0.41 > 0.8 && e.L > 4));
+  for (let k = 0; k < 3; k++) E.forEach((e, i) => { if (!hallE[i] && e.L < 6 && hallE[(i + nOut - 1) % nOut] && hallE[(i + 1) % nOut]) hallE[i] = true; });
+  const YH = 7.4, yE = base + Y.eave, yHall = base + YH, yTop = base + Y.clerestoryTop;
   const walls = insetRing(outer, Y.colonnade) || insetRing(outer, 1) || outer;
   const eaveRing = insetRing(outer, -0.4) || outer;
   const brick = acc.get(cx, cz, 'facade:brick_red:false:0', true), roof = acc.get(cx, cz, 'roof:concrete_tile', true);
-  const BAY = 3.2, ST = 2.9, tint = [0.95, 0.88, 0.86], rtint = [0.62, 0.5, 0.42];
+  const BAY = 3.2, ST = 2.9, tint = [0.95, 0.88, 0.86], rtint = [0.5, 0.49, 0.48];
   const wallQ = (ring, y0, y1, a2 = brick) => { for (let i = 0; i < ring.length; i++) { const a = ring[i], c = ring[(i + 1) % ring.length], L = Math.hypot(c[0] - a[0], c[1] - a[1]); if (L < 0.05) continue; a2.quad([a[0], y0, a[1]], [c[0], y0, c[1]], [c[0], y1, c[1]], [a[0], y1, a[1]], [0, 0], [L / BAY, 0], [L / BAY, (y1 - y0) / ST], [0, (y1 - y0) / ST], tint); } };
-  wallQ(walls, g0 - 0.3, base + Y.eave);
-  // hip ring between two rings (same vertex count), roof tiles UV in metres/2
-  const ringRoof = (o, inn, y0, y1) => { for (let i = 0; i < o.length; i++) {
+  wallQ(walls, g0 - 0.3, yE);
+  // hip ring between two rings (same vertex count), roof tiles UV in metres/2; y0f / y1f give the heights per edge
+  const ringRoof = (o, inn, y0, y1, only) => { for (let i = 0; i < o.length; i++) { if (only && !only(i)) continue;
     const a = o[i], c = o[(i + 1) % o.length], ia = inn[i], ic = inn[(i + 1) % o.length], ex = c[0] - a[0], ez = c[1] - a[1], el = Math.hypot(ex, ez) || 1;
     const uv = (p) => [((p[0] - a[0]) * ex + (p[1] - a[1]) * ez) / el / 2, Math.abs((p[0] - a[0]) * -ez + (p[1] - a[1]) * ex) / el * 1.1 / 2];
     roof.quad([a[0], y0, a[1]], [c[0], y0, c[1]], [ic[0], y1, ic[1]], [ia[0], y1, ia[1]], uv(a), uv(c), uv(ic), uv(ia), rtint);
   } };
   const tan = Math.tan(Y.pitch * Math.PI / 180);
-  // lower roof: from the eaves over the colonnade up to the clerestory
   const lowInner = insetRing(outer, Y.lowerInset) || insetRing(outer, 3.5);
-  const yE = base + Y.eave, yL = yE + (Y.lowerInset + 0.4) * tan;
-  if (lowInner) ringRoof(eaveRing, lowInner, yE, yL);
-  // soffit under the eaves (seen from the colonnade) and a brown fascia board
-  wallQ(eaveRing, yE - Y.fascia, yE, acc.get(cx, cz, 'facade:timber:false:0', true));
-  // clerestory band and upper hipped roof
-  const clere = lowInner && insetRing(outer, Y.lowerInset + 0.5);
+  const yL = yE + (Y.lowerInset + 0.4) * tan;
+  const ring48 = insetRing(outer, Y.lowerInset - 0.4);
+  const okRings = lowInner && ring48 && lowInner.length === nOut && ring48.length === nOut && eaveRing.length === nOut && walls.length === nOut;
+  if (okRings) {
+    // plaza side: pent roof from the eaves up to the clerestory; hall side: a low overhanging roof straight up to the foot of the upper roof
+    ringRoof(eaveRing, lowInner, yE, yL, (i) => !hallE[i]); ringRoof(eaveRing, ring48, yHall, yTop, (i) => hallE[i]);
+    // where pent meets hall: a brick end wall on the corner bisector
+    for (let v = 0; v < nOut; v++) { const i0 = (v + nOut - 1) % nOut; if (hallE[i0] === hallE[v]) continue; const ev = eaveRing[v], r48 = ring48[v], li = lowInner[v];
+      const P = [[ev[0], yE, ev[1]], [ev[0], yHall, ev[1]], [r48[0], yTop, r48[1]], [li[0], yL, li[1]]];
+      brick.quad(P[0], P[1], P[2], P[3], [0, 0], [0, 2], [2, 2], [2, 0], tint); brick.quad(P[3], P[2], P[1], P[0], [2, 0], [2, 2], [0, 2], [0, 0], tint); }
+    // hall side, first floor: dark soffit, window wall between the piers, blue-grey fascia under the roof edge
+    const upper = insetRing(outer, 0.45), soff = acc.get(cx, cz, 'facade:timber:false:0', true), ba = acc.get(cx, cz, 'pb:bowls');
+    for (let i = 0; i < nOut; i++) { const e = E[i]; if (!hallE[i] || e.L < 1) continue; const a = walls[i], c = walls[(i + 1) % nOut];
+      if (upper && upper.length === nOut) { const ua = upper[i], uc = upper[(i + 1) % nOut], nb = Math.max(1, Math.round(e.L / 6));
+        soff.quad([a[0], yE + 0.1, a[1]], [c[0], yE + 0.1, c[1]], [uc[0], yE + 0.1, uc[1]], [ua[0], yE + 0.1, ua[1]], [0, 0], [e.L / BAY, 0], [e.L / BAY, 0.5], [0, 0.5], [0.8, 0.8, 0.8]);
+        ba.quad([ua[0], yE + 0.1, ua[1]], [uc[0], yE + 0.1, uc[1]], [uc[0], yHall - 0.45, uc[1]], [ua[0], yHall - 0.45, ua[1]], [0, 0], [nb, 0], [nb, 1], [0, 1]); }
+      const fa = eaveRing[i], fc = eaveRing[(i + 1) % nOut]; soff.quad([fa[0], yHall - 0.5, fa[1]], [fc[0], yHall - 0.5, fc[1]], [fc[0], yHall, fc[1]], [fa[0], yHall, fa[1]], [0, 0], [e.L / BAY, 0], [e.L / BAY, 0.3], [0, 0.3], [0.55, 0.5, 0.45]); }
+    // pent side: a brown fascia board
+    for (let i = 0; i < nOut; i++) if (!hallE[i]) { const fa = eaveRing[i], fc = eaveRing[(i + 1) % nOut], L = E[i].L; acc.get(cx, cz, 'facade:timber:false:0', true).quad([fa[0], yE - Y.fascia, fa[1]], [fc[0], yE - Y.fascia, fc[1]], [fc[0], yE, fc[1]], [fa[0], yE, fa[1]], [0, 0], [L / BAY, 0], [L / BAY, 0.3], [0, 0.3], tint); }
+  }
+  // clerestory band on the pent edges and the upper hipped roof
+  const clere = okRings && insetRing(outer, Y.lowerInset + 0.5);
   if (clere) {
-    for (let i = 0; i < clere.length; i++) { const a = clere[i], c = clere[(i + 1) % clere.length], L = Math.hypot(c[0] - a[0], c[1] - a[1]); if (L < 0.5) continue;
-      const ca = acc.get(cx, cz, E[i]?.bowls ? 'pb:bowls' : 'pb:clere');
-      ca.quad([a[0], yL - 0.4, a[1]], [c[0], yL - 0.4, c[1]], [c[0], base + Y.clerestoryTop, c[1]], [a[0], base + Y.clerestoryTop, a[1]], [0, 0], [L / 4, 0], [L / 4, 1], [0, 1]); }
-    let prev = insetRing(outer, Y.lowerInset - 0.4) || clere, y = base + Y.clerestoryTop;
+    for (let i = 0; i < clere.length; i++) { const a = clere[i], c = clere[(i + 1) % clere.length], L = Math.hypot(c[0] - a[0], c[1] - a[1]); if (L < 0.5 || hallE[i]) continue;
+      const ca = acc.get(cx, cz, 'pb:clere');
+      ca.quad([a[0], yL - 0.4, a[1]], [c[0], yL - 0.4, c[1]], [c[0], yTop, c[1]], [a[0], yTop, a[1]], [0, 0], [L / 4, 0], [L / 4, 1], [0, 1]); }
+    let prev = ring48, y = yTop;
     for (const step of [1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5]) { // stepped inward until the ring collapses (a hip roof)
-      const d = (prev === clere ? 0 : 0) + step; const inn = insetRing(prev, d); if (!inn || inn.length !== prev.length) break;
-      ringRoof(prev, inn, y, y + d * tan); y += d * tan; prev = inn;
+      const inn = insetRing(prev, step); if (!inn || inn.length !== prev.length) break;
+      ringRoof(prev, inn, y, y + step * tan); y += step * tan; prev = inn;
     }
-    // close the top
     if (prev.length >= 3) { const r = acc.get(cx, cz, 'roof:concrete_tile', true); const c0 = prev.reduce((s, p) => [s[0] + p[0] / prev.length, s[1] + p[1] / prev.length], [0, 0]); for (let i = 0; i < prev.length; i++) { const a = prev[i], c = prev[(i + 1) % prev.length]; r.triFlat([a[0], y, a[1]], [c[0], y, c[1]], [c0[0], y + 0.5, c0[1]], [0, 0], [1, 0], [0.5, 0.5], rtint); } }
   }
   // ---------- posts, piers, signs and windows (hand-placed details on the real edges)
@@ -136,16 +156,27 @@ export function buildLeisureCentre(b, ctx) {
   for (const e of E) {
     if (e.L < 4) continue; const n = Math.max(1, Math.round(e.L / 6));
     for (let k = 0; k <= n; k++) { if (k === n && E[(e.i + 1) % nOut].L >= 4) continue; const u = e.L * k / n, p = at(e, u, -0.35), g = gAt(p[0], p[1]);
-      if (e.bowls) { K.fbox(Fe(e), m.pier, u - 0.45, u + 0.45, g - 0.3, yE + 0.15, -0.8, 0.1); colliders.push({ type: 'circle', x: p[0], z: p[1], r: 0.55, y0: g - 0.3, top: yE, kind: 'pier' }); }
-      else { K.fbox(Fe(e), m.post, u - 0.22, u + 0.22, g - 0.3, yE, -0.58, -0.12); colliders.push({ type: 'circle', x: p[0], z: p[1], r: 0.3, y0: g - 0.3, top: yE, kind: 'post' }); } }
+      if (hallE[e.i]) { K.fbox(Fe(e), m.pier, u - 0.5, u + 0.5, g - 0.3, yHall, -0.7, 0.3); colliders.push({ type: 'circle', x: p[0], z: p[1], r: 0.6, y0: g - 0.3, top: yHall, kind: 'pier' }); }
+      else { K.fbox(Fe(e), m.post, u - 0.35, u + 0.35, g - 0.3, yE, -0.85, -0.15); colliders.push({ type: 'circle', x: p[0], z: p[1], r: 0.3, y0: g - 0.3, top: yE, kind: 'post' }); } }
     // ground floor of the bowls club: louvred panels in the brick between the piers, red-framed glazed doors under the gable
-    if (e.bowls) { const n2 = Math.max(1, Math.round(e.L / 6)), bw = e.L / n2;
+    if (hallE[e.i]) { const n2 = Math.max(1, Math.round(e.L / 6)), bw = e.L / n2;
       for (let k = 0; k < n2; k++) { const u = k * bw + bw / 2; if (k % 2 === 0) K.fbox(Fe(e), m.louvre, u - 1.0, u + 1.0, yE - 1.5, yE - 0.15, -Wd + 0.02, -Wd + 0.08); }
       if (e.mz < 213 && e.nx * 0.89 + e.nz * -0.45 > 0.9) K.fbox(Fe(e), m.glazed, e.L / 2 - 1.6, e.L / 2 + 1.6, gAt(e.mx, e.mz), yE - 0.9, -Wd + 0.02, -Wd + 0.08); }
   }
   // gold-on-blue club boards on the east gable, on the eave fascia above the piers
   for (const e of E.filter((q) => q.bowls && q.nx * 0.89 + q.nz * -0.45 > 0.9 && q.mz < 213)) {
-    K.fbox(Fe(e), e.L > 10 ? m.bowlsSign1 : m.bowlsSign2, 0.4, e.L - 0.4, yE - 0.56, yE - 0.02, 0.4, 0.46);
+    K.fbox(Fe(e), e.L > 10 ? m.bowlsSign1 : m.bowlsSign2, 0.9, e.L - 0.9, yHall - 1.15, yHall - 0.5, 0.42, 0.48);
+  }
+  // navy railings along the kerb in front of the road-side piers (found from the nearest road)
+  for (const e of E.filter((q) => q.bowls && q.L > 4)) {
+    const rd = ctx.nearestRoad(e.mx + e.nx * 6, e.mz + e.nz * 6, 30, (r) => r.car); if (!rd) continue;
+    const w = Math.min(16, Math.max(3.5, 2 + rd.d)), Fr = Fe(e), u0 = 0.3, u1 = Math.min(e.L - 0.3, 38), nseg = Math.max(1, Math.round((u1 - u0) / 2.4));
+    for (let k = 0; k < nseg; k++) { const a0 = u0 + (u1 - u0) * k / nseg, a1 = u0 + (u1 - u0) * (k + 1) / nseg, pa = at(e, a0, w), pb = at(e, a1, w), gy = Math.min(gAt(pa[0], pa[1]), gAt(pb[0], pb[1]));
+      const gg = new THREE.PlaneGeometry(a1 - a0 - 0.08, 1.05), uv = gg.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * (a1 - a0) / 1.2, uv.getY(i));
+      gg.translate((a0 + a1) / 2, gy + 0.65, w); gg.rotateY(Fr.th); gg.translate(Fr.ox, 0, Fr.oz); K.put(m.railing, gg);
+      K.fbox(Fr, m.railPost, a0 - 0.04, a0 + 0.04, gAt(pa[0], pa[1]) - 0.1, gAt(pa[0], pa[1]) + 1.2, w - 0.04, w + 0.04);
+      colliders.push({ type: 'segment', a: pa, b: pb, r: 0.06, y0: gy - 0.2, top: gy + 1.15, kind: 'railing' }); }
+    const pe = at(e, u1, w); K.fbox(Fr, m.railPost, u1 - 0.04, u1 + 0.04, gAt(pe[0], pe[1]) - 0.1, gAt(pe[0], pe[1]) + 1.2, w - 0.04, w + 0.04);
   }
   if (frontE) {
     const e = frontE, L = e.L, Fr = Fe(e);
