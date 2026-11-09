@@ -14,7 +14,7 @@ import { RoadNetwork } from './road-surface.js';
 import { promenadeWays, buildSeafrontWall, isSeafrontShelter, buildShelter } from './seafront.js';
 import { FRONTAGES, FRONTAGE_AREAS, SPLITS } from '../content/frontages.js';
 import { PB, pierBightPlan, buildPierBight } from './pier-bight.js';
-import { CLOSURES, inZone } from './zone.js';
+import { CLOSURES, FENCES, inZone } from './zone.js';
 import { buildClosures } from './roadworks.js';
 import { buildFrontageDetails, buildAreaFrontage } from './frontage-details.js';
 import { profileNetwork, buildBridge, buildRamp, BRIDGE } from './bridges.js';
@@ -354,9 +354,10 @@ export class World extends EventTarget {
     if (seaWall) { bridgeMeshes.push(...seaWall.meshes); for (const c of seaWall.colliders) this._addPrimitive(tile, c); tile.gates = seaWall.gates; }
     // road closures at the edge of the playable zone (world/zone.js, world/roadworks.js)
     const here = CLOSURES.filter((c) => inTile(c.x, c.z));
-    if (here.length) {
+    const fencesHere = FENCES.filter((q) => inTile(q.x + q.rx * q.len / 2, q.z + q.rz * q.len / 2));
+    if (here.length || fencesHere.length) {
       const byId = new Map(f.roads.map((rd) => [rd.id, rd]));
-      const rw = buildClosures(here, { surfaceAt: (x, z) => this.surfaceAt(x, z), roadById: (id) => byId.get(id), inBuilding: (x, z) => [...this.buildingGrid.query(x - 0.1, z - 0.1, x + 0.1, z + 0.1)].some((it) => pointInRing(x, z, it.outer)) });
+      const rw = buildClosures(here, { surfaceAt: (x, z) => this.surfaceAt(x, z), roadById: (id) => byId.get(id), inBuilding: (x, z) => [...this.buildingGrid.query(x - 0.1, z - 0.1, x + 0.1, z + 0.1)].some((it) => pointInRing(x, z, it.outer)) }, fencesHere);
       if (rw) { bridgeMeshes.push(...rw.meshes); for (const c of rw.colliders) this._addPrimitive(tile, c); tile.closures = { count: rw.count, cones: rw.cones }; }
     }
     if (this.gardenPlan && inTile(...this.gardenPlan.c)) {

@@ -93,8 +93,8 @@ function bar(G, a, b, t) {
  * @param ctx { surfaceAt(x,z), roadById(id) -> OSM road (for sidewalks) }
  * @returns { meshes, colliders, count }
  */
-export function buildClosures(list, ctx) {
-  if (!list.length) return null;
+export function buildClosures(list, ctx, fences = []) {
+  if (!list.length && !fences.length) return null;
   const k = kit(), G = { steel: new Geo(), rubber: new Geo(), plateBack: new Geo(), barrier: new Geo() }, SG = {}; const colliders = [], cones = [];
   const sg = (key) => (SG[key] ||= new Geo());
   const y = (x, z) => ctx.surfaceAt(x, z);
@@ -130,6 +130,8 @@ export function buildClosures(list, ctx) {
   };
   const cone = (x, z) => { cones.push([x, y(x, z), z, Math.random() * Math.PI]); colliders.push({ type: 'circle', x, z, r: 0.2, y0: y(x, z) - 0.3, top: y(x, z) + 0.8, kind: 'cone' }); };
 
+  // continuous barrier lines along the zone edge (lawn, beach): the run direction is the "right" vector, the outward normal "u"
+  for (const f of fences) barrier(f.x, f.z, f.rx, f.rz, 0, f.len, 0, f.nx, f.nz);
   for (const c of list) {
     const ux = c.ux, uz = c.uz, rx = -uz, rz = ux; // outward along the road; right-hand vector across it
     const road = ctx.roadById(c.road), side = road && road.sidewalk && road.sidewalk !== 'no' && road.sidewalk !== 'none' ? 2.1 : 0.7;
@@ -168,5 +170,5 @@ export function buildClosures(list, ctx) {
       im.computeBoundingSphere(); meshes.push(im);
     }
   }
-  return { meshes, colliders, count: list.length, cones: cones.length };
+  return { meshes, colliders, count: list.length, fences: fences.length, cones: cones.length };
 }

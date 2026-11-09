@@ -43,6 +43,13 @@ export function zoneMargin(x, z) {
 
 export const ZONE = Z;
 export const CLOSURES = Z.closures || [];
+/** Continuous barrier lines along the zone edge where there is no road to close (lawn, beach), cut into 12 m runs
+ *  (six 2 m barrier sections each): { x, z, rx, rz (run direction), nx, nz (outward normal), len }. */
+export const FENCES = [];
+for (const f of Z.fences || []) for (let i = 1; i < f.pts.length; i++) {
+  const a = f.pts[i - 1], b = f.pts[i], L = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(1, Math.round(L / 12)), rx = (b[0] - a[0]) / L, rz = (b[1] - a[1]) / L;
+  for (let k = 0; k < n; k++) { const s0 = L * k / n; FENCES.push({ x: a[0] + rx * s0, z: a[1] + rz * s0, rx, rz, nx: rz, nz: -rx, len: L / n }); }
+}
 
 // ---- the closure lines ----
 // Beyond each closure's barrier line, across a band either side of the road, counts as closed even where that
