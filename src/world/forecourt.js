@@ -4,7 +4,7 @@
 // lamp standards with a cluster of three bronze globes; navy steel guard railings along the road edge (open at the
 // pelican crossing); navy Sheffield cycle stands. Positions are estimated from the photos, not surveyed.
 import * as THREE from 'three';
-import { pointInRing, insetRing } from '../geo/polygon.js';
+import { pointInRing, insetRing, distToSegment } from '../geo/polygon.js';
 import { Geo } from './seafront.js';
 
 const std = (o) => new THREE.MeshStandardMaterial(o);
@@ -21,6 +21,7 @@ function mats() {
 }
 
 export const FORECOURT_ID = 91786029, FORECOURT_ROAD_EDGE = [[-247, 189], [-256, 182], [-275, 190], [-283, 195]]; // the Undercliff Road West side
+export const PELICAN_GAP = [-276.94, 183.69]; // the signal crossing (OSM node 25685835): the guard railings are open here
 
 /** Layout in the pier facade's frame (x along the facade towards the Leisure Centre, z outwards over the forecourt). */
 export function forecourtPlan(ring, fr) {
@@ -55,7 +56,7 @@ export function forecourtPlan(ring, fr) {
 }
 
 /** @param roadEdge polyline [[x,z],...] of the road side of the forecourt (offset inwards here) */
-export function buildForecourt(plan, ground, roadEdge) {
+export function buildForecourt(plan, ground, roadEdge, gapPoint) {
   const m = mats(), { W2, cx, cz, fr } = plan, group = new THREE.Group(); group.name = 'pier-forecourt';
   const colliders = [], surfaces = [];
   const Ex = fr.Ex, Ez = fr.Ez, Nx = fr.Nx, Nz = fr.Nz, ang = Math.atan2(Ex, Ez); // heading of the facade axis
@@ -119,7 +120,8 @@ export function buildForecourt(plan, ground, roadEdge) {
     const pts = roadEdge.map(([x, z], i) => { const a = roadEdge[Math.max(0, i - 1)], b = roadEdge[Math.min(roadEdge.length - 1, i + 1)], dx = b[0] - a[0], dz = b[1] - a[1], L = Math.hypot(dx, dz) || 1; let nx = -dz / L, nz = dx / L; if ((cen[0] - x) * nx + (cen[1] - z) * nz < 0) { nx = -nx; nz = -nz; } return [x + nx * 0.7, z + nz * 0.7]; });
     let acc = 0; const cum = [0]; for (let i = 1; i < pts.length; i++) { acc += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); cum.push(acc); }
     const at = (s) => { let i = 1; while (i < cum.length - 1 && cum[i] < s) i++; const t = (s - cum[i - 1]) / ((cum[i] - cum[i - 1]) || 1), a = pts[i - 1], b = pts[i]; return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, Math.atan2(b[0] - a[0], b[1] - a[1])]; };
-    const gapAt = acc * 0.52, gapW = 3.6; runs.push([0, gapAt - gapW / 2], [gapAt + gapW / 2, acc]);
+    let gapAt = acc * 0.52; const gapW = 4.0;
+    if (gapPoint) { let bestD = Infinity; for (let i = 1; i < pts.length; i++) { const d = distToSegment(gapPoint[0], gapPoint[1], pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1]); if (d.d < bestD) { bestD = d.d; gapAt = cum[i - 1] + d.t * (cum[i] - cum[i - 1]); } } } // open where the crossing is runs.push([0, gapAt - gapW / 2], [gapAt + gapW / 2, acc]);
     for (const [s0, s1] of runs) {
       const n = Math.max(1, Math.round((s1 - s0) / 2));
       for (let k = 0; k <= n; k++) { const [px, pz] = at(s0 + ((s1 - s0) * k) / n), y = ground(px, pz); geo.navy.box(px, y + 0.57, pz, 1, 0, 0.035, 0.57, 0.035); }

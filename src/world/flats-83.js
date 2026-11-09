@@ -92,12 +92,13 @@ const planeOn = (K, F, mat, u0, u1, y0, y1, w) => {
 function elevation(K, M, o) {
   const { F, W, floors, FH, y0, endW, endE, balconies, fins = true } = o;
   const u0 = endW, u1 = W - endE, nb = o.bays, bw = (u1 - u0) / nb, top = y0 + floors * FH;
+  const edge = (k) => (o.edges ? o.edges[k] : u0 + k * bw); // bay edges: uniform unless the photo gives uneven bays
   // end towers (brick)
   K.panel(F, M.brown, 0, endW, y0, top + 0.3, 0.015, [1.2, 0.6]); K.panel(F, M.brown, W - endE, W, y0, top + 0.3, 0.015, [1.2, 0.6]);
   // cladding band across the bays
   K.panel(F, M.clad, u0, u1, y0, top, 0.01, [1.6, 1.6]);
   for (let k = 0; k < nb; k++) {
-    const a = u0 + k * bw, c = a + bw;
+    const a = edge(k), c = edge(k + 1), bw = c - a;
     for (let f = 0; f < floors; f++) {
       const yf = y0 + f * FH;
       win(K, F, a + 0.3, c - 0.3, yf + 0.8, yf + 2.15, M, [0.34, 0.67], 0);
@@ -111,7 +112,7 @@ function elevation(K, M, o) {
       }
     }
   }
-  if (fins) for (let k = 0; k <= nb; k++) { const u = u0 + k * bw; K.fbox(F, M.concrete, u - 0.12, u + 0.12, y0 - 0.1, top + 0.95, 0, 0.5); }
+  if (fins) for (let k = 0; k <= nb; k++) { const u = edge(k); K.fbox(F, M.concrete, u - 0.12, u + 0.12, y0 - 0.1, top + 0.95, 0, 0.5); }
   // parapet and roof rail
   K.fbox(F, M.clad, 0, W, top, top + 0.5, 0, 0.32); K.fbox(F, M.concrete, 0, W, top + 0.5, top + 0.58, -0.02, 0.36);
   planeOn(K, F, M.railGrey, u0 - 0.2, u1 + 0.2, top + 0.58, top + 1.5, 0.27);
@@ -163,25 +164,41 @@ export function buildFlatsWing(b, ctx) {
   const F = K.face(0, 0, 0), colliders = [];
   // upper floors: a box that reaches over the undercroft to the front line
   K.box(M.clad, 0, W, U, top, -D, 0.0);
-  elevation(K, M, { F, W, floors, FH, y0: U, endW: 0.5, endE: 3.4, bays: 8, balconies: true, groundBalconies: true });
+  elevation(K, M, { F, W, floors, FH, y0: U, endW: 0.5, endE: 3.4, bays: 7, edges: [0.9, 3.7, 6.7, 9.9, 13.5, 17.4, 21.8, 26.7], balconies: true, groundBalconies: true }); // seven uneven bays, as photographed
   // underside of the cantilevered floor and the open undercroft: slab, back wall in dark brick, pilotis
   K.box(M.concreteDark, 0, W, U - 0.35, U, -BACK, 1.15);
   K.box(M.brown, 0, W, -FOOT, U - 0.35, -D, -BACK);              // the back wall and the closed rear of the building
   K.box(M.concrete, 0, W, -0.2, 0.05, -BACK, 1.2);               // the car-port floor
   K.fbox(F, M.brown, W - 3.4, W, 0, 0.0, 0, 0);
-  pilotis(K, M, F, [0.9, 7.0, 13.5, 20.0, 26.0, W - 3.6], 0, U - 0.35, 1.0);
-  // workshop and reception under the building: green fascia, roller shutters, a glazed office (no names)
-  { const FB = K.face(0, -BACK, 0);
-    K.fbox(FB, M.green, 6.0, 25.0, U - 1.25, U - 0.45, 0.02, 0.12);
-    K.fbox(FB, M.greenDark, 12.0, 17.5, U - 1.9, U - 1.25, 0.02, 0.5);
-    K.fbox(FB, M.glass, 12.3, 17.2, 0.1, U - 1.95, 0.02, 0.06); K.fbox(FB, M.green, 12.0, 12.3, 0.0, U - 1.25, 0.02, 0.12); K.fbox(FB, M.green, 17.2, 17.5, 0.0, U - 1.25, 0.02, 0.12); K.fbox(FB, M.green, 14.4, 14.7, 0.0, U - 1.95, 0.02, 0.1);
-    for (const [a, c] of [[6.4, 11.4], [18.2, 23.0]]) { K.fbox(FB, M.grey, a, c, 0.1, U - 1.35, 0.02, 0.08); for (let y = 0.3; y < U - 1.35; y += 0.18) K.fbox(FB, M.concreteDark, a, c, y, y + 0.02, 0.08, 0.1); } }
+  pilotis(K, M, F, [0.9, 3.7, 6.7, 9.9, 13.5, 17.4, 21.8, 26.0], 0, U - 0.35, 1.0);
+  // workshop and reception under the building (Sept 2026 photo, 79 Undercliff Road West): from the west a dark roller grille, the white
+  // "MOTs" panel, two bright green roller shutters, an open workshop bay with a lift, then a glazed RECEPTION office with its own flat roof;
+  // a continuous bright green fascia carries a lettered board over each: Tyres & Alignment Centre, M.O.T. Centre, Clutch Centre,
+  // Brakes Batteries Exhausts (All Servicing & Repairs) and Reception.
+  { const FB = K.face(0, -BACK, 0), zb = -BACK;
+    K.fbox(FB, M.green, 1.7, 22.0, U - 1.35, U - 0.35, 0.02, 0.14);                       // bright green fascia band
+    K.fbox(FB, M.dark, 1.8, 2.9, 0.1, U - 1.35, 0.02, 0.08);                               // dark grille door at the west end
+    for (let y = 0.3; y < U - 1.35; y += 0.14) K.fbox(FB, M.concreteDark, 1.8, 2.9, y, y + 0.02, 0.08, 0.1);
+    for (const [a, c] of [[4.5, 7.1], [7.3, 10.0]]) { K.fbox(FB, M.green, a, c, 0.1, U - 1.35, 0.02, 0.08); for (let y = 0.25; y < U - 1.35; y += 0.16) K.fbox(FB, M.greenDark, a, c, y, y + 0.025, 0.08, 0.1); } // green roller shutters
+    K.fbox(FB, M.dark, 10.2, 17.4, 0.05, U - 1.35, 0.02, 0.06);                            // the open workshop bay
+    K.fbox(FB, M.grey, 11.3, 11.6, 0.05, 1.85, 0.2, 0.5); K.fbox(FB, M.grey, 12.6, 12.9, 0.05, 1.85, 0.2, 0.5); K.fbox(FB, M.grey, 11.3, 12.9, 1.0, 1.1, 0.2, 0.5); // a vehicle lift
+    for (const u of [14.6, 15.2]) K.fbox(FB, M.black, u, u + 0.55, 0.05, 0.75, 0.3, 0.85);  // tyre stacks
+    K.fbox(FB, M.greenDark, 10.2, 17.4, U - 1.5, U - 1.35, 0.02, 0.2);
+    K.fbox(FB, M.green, 17.5, 22.0, U - 1.55, U - 1.2, 0.02, 0.9);                         // reception roof, projecting
+    K.fbox(FB, M.glass, 17.9, 21.6, 0.1, U - 1.6, 0.02, 0.06); for (const u of [17.5, 17.9, 19.0, 20.3, 21.6, 22.0]) K.fbox(FB, M.green, u - 0.05, u + 0.05, 0.0, U - 1.55, 0.02, 0.1); K.fbox(FB, M.green, 17.5, 22.0, 0.0, 0.1, 0.02, 0.1);
+    K.fbox(FB, M.white, 2.95, 4.15, 0.45, U - 1.4, 0.02, 0.09);                              // the white MOTs panel
+    const label = (txt, sub, u0, u1, y0, y1, bg, fg) => { const w = u1 - u0, h = y1 - y0, t = cv(512, Math.round(512 * h / w), (g, W_, H_) => { g.fillStyle = bg; g.fillRect(0, 0, W_, H_); g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `italic 800 ${sub ? H_ * 0.4 : H_ * 0.58}px "Arial Narrow", Arial, sans-serif`; g.fillText(txt, W_ / 2, sub ? H_ * 0.32 : H_ / 2 + 2, W_ - 24); if (sub) { g.font = `italic 700 ${H_ * 0.3}px "Arial Narrow", Arial, sans-serif`; g.fillText(sub, W_ / 2, H_ * 0.72, W_ - 24); } g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 3; g.strokeRect(5, 5, W_ - 10, H_ - 10); }, false);
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: t, roughness: 0.5 })); m.position.set((u0 + u1) / 2, (y0 + y1) / 2, zb + 0.16); local.add(m); };
+    const y0 = U - 1.3, y1 = U - 0.42;
+    label('TYRES & ALIGNMENT CENTRE', null, 4.55, 7.05, y0, y1, '#1f7a2a', '#ffffff'); label('M.O.T. CENTRE', null, 7.35, 9.95, y0, y1, '#1f7a2a', '#ffffff'); label('CLUTCH CENTRE', null, 10.25, 13.55, y0, y1, '#1f7a2a', '#ffffff');
+    label('BRAKES, BATTERIES, EXHAUSTS', 'ALL SERVICING & REPAIRS', 13.85, 17.35, y0, y1, '#2d8c32', '#ffffff'); label('RECEPTION', null, 18.4, 21.1, U - 1.5, U - 1.25, '#3da53a', '#ffffff');
+    label('MOTs', null, 3.0, 4.1, 1.5, 2.0, '#ffffff', '#1d4fa8'); }
   K.box(M.dark, 0, W, 0.0, 0.0, 0, 0);
   K.flush(local, 'flats-wing');
   // the wing is open below: collider for the walls only
   const rect = [toW(0, 0), toW(W, 0), toW(W, -D), toW(0, -D)];
   const colls = [];
-  for (const u of [0.9, 7.0, 13.5, 20.0, 26.0, W - 3.6]) { const p = toW(u, 1.0); colls.push({ type: 'circle', x: p[0], z: p[1], r: 0.2, y0: base - 0.3, top: base + U, kind: 'pilotis' }); }
+  for (const u of [0.9, 3.7, 6.7, 9.9, 13.5, 17.4, 21.8, 26.0]) { const p = toW(u, 1.0); colls.push({ type: 'circle', x: p[0], z: p[1], r: 0.2, y0: base - 0.3, top: base + U, kind: 'pilotis' }); }
   const rear = [[toW(0, -BACK), toW(W, -BACK)], [toW(0, -BACK), toW(0, 0)], [toW(W, -BACK), toW(W, 0)]];
   for (const [a, c] of rear) colls.push({ type: 'segment', a, b: c, r: 0.2, y0: base - 0.3, top: base + top, kind: 'building' });
   // ---- car park in front, boundary wall and street furniture ----
@@ -220,10 +237,15 @@ export function buildFlatsWing(b, ctx) {
     const mats_ = [M.leafC, M.leafA, M.leafB, M.leafD, M.leafC, M.leafA];
     for (let k = 0; k < 16; k++) { const a = k * 2.4, r = 1.2 + (k % 5) * 0.65, h = 5.0 + (k % 4) * 1.35; out.sph(mats_[k % 6], x + Math.cos(a) * r, y + h, z + Math.sin(a) * r, 1.5 + (k % 3) * 0.35, 0.85, 7); }
     out.sph(M.leafB, x, y + 8.4, z, 2.2, 0.8, 8); colliders.push({ type: 'circle', x: toW(x, z)[0], z: toW(x, z)[1], r: 0.55, y0: base - 0.5, top: base + 8, kind: 'tree' }); }
-  { const CC = [0x24282c, 0x1d4a9a, 0xb9bcc0, 0x2f4a3f, 0x8c1e1e]; const cm = CC.map((c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.35, metalness: 0.6 }));
-    [[5.6, 9.4, 0], [8.2, 9.4, 1], [14.2, 9.4, 2], [20.8, 9.2, 3], [24.4, 9.2, 4]].forEach(([x, z, k]) => { const y = Math.max(gAt(x, z) - base, -1) + 0.05, zc = Math.min(z, wallZ(x) - 3);
+  { const CC = [0x24282c, 0x1d4a9a, 0xb9bcc0, 0x2f4a3f, 0x8c1e1e, 0xf2f2f0, 0x4cb02c]; const cm = CC.map((c) => new THREE.MeshStandardMaterial({ color: c, roughness: c === 0xf2f2f0 || c === 0x4cb02c ? 0.55 : 0.35, metalness: c === 0xf2f2f0 || c === 0x4cb02c ? 0.1 : 0.6 }));
+    const car = (x, z, k) => { const y = Math.max(gAt(x, z) - base, -1) + 0.05, zc = Math.min(z, wallZ(x) - 3);
       out.box(cm[k], x - 0.85, x + 0.85, y + 0.25, y + 0.95, zc - 2.1, zc + 2.1); out.box(cm[k], x - 0.78, x + 0.78, y + 0.95, y + 1.4, zc - 1.1, zc + 0.9); out.box(M.glass, x - 0.8, x + 0.8, y + 0.98, y + 1.36, zc - 1.0, zc + 0.8);
-      for (const [dx, dz] of [[-0.8, -1.3], [0.8, -1.3], [-0.8, 1.3], [0.8, 1.3]]) out.cyl(M.black, x + dx, y, y + 0.62, zc + dz, 0.31, 0.31, 8); });
+      for (const [dx, dz] of [[-0.8, -1.3], [0.8, -1.3], [-0.8, 1.3], [0.8, 1.3]]) out.cyl(M.black, x + dx, y, y + 0.62, zc + dz, 0.31, 0.31, 8); };
+    const van = (x, z, k) => { const y = Math.max(gAt(x, z) - base, -1) + 0.05, zc = Math.min(z, wallZ(x) - 3);
+      out.box(cm[k], x - 0.95, x + 0.95, y + 0.3, y + 2.1, zc - 2.0, zc + 2.7); out.box(cm[k], x - 0.92, x + 0.92, y + 0.3, y + 1.35, zc + 2.7, zc + 3.3); out.box(M.glass, x - 0.9, x + 0.9, y + 1.35, y + 1.95, zc + 2.55, zc + 3.1);
+      for (const [dx, dz] of [[-0.9, -1.3], [0.9, -1.3], [-0.9, 2.2], [0.9, 2.2]]) out.cyl(M.black, x + dx, y, y + 0.66, zc + dz, 0.33, 0.33, 8); };
+    van(-4.2, 8.6, 5); van(-0.2, 8.0, 5); van(10.4, 6.8, 6);                                       // white vans at the west end, a green van by the shutters
+    car(6.4, 9.4, 4); car(12.0, 9.2, 2); car(20.6, 9.2, 2); car(25.2, 9.4, 2);                      // the red car, silver estate and hatchbacks as photographed
   }
   out.flush(loc2, 'flats-car-park');
   return { group, collider: { outer: rect, holes: [], base: base - FOOT, top: base + top + 0.6 }, colliders: [...colls, ...colliders] };

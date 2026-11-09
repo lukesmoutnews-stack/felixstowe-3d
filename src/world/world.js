@@ -23,7 +23,8 @@ import { placeTrees, buildTreeMeshes } from './vegetation.js';
 import { buildProps, buildBarriers, buildPiers } from './furniture.js';
 import { isPierBuilding, buildPierBuilding, pierStepsGap, pierStepsZone, pierFrame, pierUndercroft } from './pier-building.js';
 import { TRIANGLE, trianglePlan, buildTriangle } from './triangle.js';
-import { forecourtPlan, buildForecourt, FORECOURT_ID, FORECOURT_ROAD_EDGE } from './forecourt.js';
+import { forecourtPlan, buildForecourt, FORECOURT_ID, FORECOURT_ROAD_EDGE, PELICAN_GAP } from './forecourt.js';
+import { isPelican, buildPelican } from './pelican.js';
 import { isFishDish, buildFishDish } from './fish-dish.js';
 import { isBeachHouse, buildBeachHouse } from './beach-house.js';
 import { isRegal, buildRegal } from './regal.js';
@@ -334,6 +335,7 @@ export class World extends EventTarget {
     tile.surfaces = piers.surfaces; this.surfaces.push(...piers.surfaces);
     // decks/ramps are built once, by the tile that owns the first point of the profile
     const builtHere = new Set(), bridgeMeshes = []; tile.clearances = [];
+    for (const p of ctx.points || []) if (isPelican(p)) { const pe = buildPelican(p, f.roads, ctx); if (pe) { bridgeMeshes.push(pe.group); for (const c of pe.colliders) this._addPrimitive(tile, c); } } // signal-controlled pedestrian crossings (pelican.js)
     for (const w of netWays) {
       const p = this.profiles.get(w.id); if (!p || builtHere.has(p) || !p.pts.length) continue;
       const [x0, z0] = p.pts[0]; if (!(x0 >= r.minX && x0 < r.maxX && z0 >= r.minZ && z0 < r.maxZ)) continue;
@@ -349,7 +351,7 @@ export class World extends EventTarget {
       const fa = buildAreaFrontage(a, { nearestRoad: ctx.nearestRoad, ground: this.ground, roads: f.roads }); if (fa) { bridgeMeshes.push(fa.group); for (const cl of fa.colliders) this._addPrimitive(tile, cl); }
     }
     { const pb3 = ownBuildings.find((b) => isPierBuilding(b) && !b.isPart), fc = f.areas.find((a) => a.id === FORECOURT_ID);
-      if (pb3 && fc) { const fo = buildForecourt(forecourtPlan(fc.outer, pierFrame(pb3, this.ground)), this.ground, FORECOURT_ROAD_EDGE); bridgeMeshes.push(...fo.meshes); for (const c of fo.colliders) this._addPrimitive(tile, c); tile.surfaces.push(...fo.surfaces); this.surfaces.push(...fo.surfaces); } }
+      if (pb3 && fc) { const fo = buildForecourt(forecourtPlan(fc.outer, pierFrame(pb3, this.ground)), this.ground, FORECOURT_ROAD_EDGE, PELICAN_GAP); bridgeMeshes.push(...fo.meshes); for (const c of fo.colliders) this._addPrimitive(tile, c); tile.surfaces.push(...fo.surfaces); this.surfaces.push(...fo.surfaces); } }
     if (triangle) { const to = buildTriangle(triangle, this.ground); bridgeMeshes.push(...to.meshes); for (const c of to.colliders) this._addPrimitive(tile, c); }
     if (pierBight) { const pbo = buildPierBight(pierBight, this.ground); bridgeMeshes.push(...pbo.meshes); for (const c of pbo.colliders) this._addPrimitive(tile, c); }
     if (seaWall) { bridgeMeshes.push(...seaWall.meshes); for (const c of seaWall.colliders) this._addPrimitive(tile, c); tile.gates = seaWall.gates; }
