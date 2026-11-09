@@ -6,7 +6,7 @@
 // (90th percentile 11.6 m above ground). Proportions are estimates; no imagery is reproduced.
 
 import * as THREE from 'three';
-import { ensureCCW, insetRing } from '../geo/polygon.js';
+import { ensureCCW, insetRing, pointInRing } from '../geo/polygon.js';
 import { makeKit } from './geo-kit.js';
 
 export const isLeisureCentre = (b) => b.id === 91786059 || /^felixstowe leisure centre$/i.test(b.name || '');
@@ -141,12 +141,22 @@ export function buildLeisureCentre(b, ctx) {
     for (let i = 0; i < clere.length; i++) { const a = clere[i], c = clere[(i + 1) % clere.length], L = Math.hypot(c[0] - a[0], c[1] - a[1]); if (L < 0.5 || hallE[i]) continue;
       const ca = acc.get(cx, cz, 'pb:clere');
       ca.quad([a[0], yL - 0.4, a[1]], [c[0], yL - 0.4, c[1]], [c[0], yTop, c[1]], [a[0], yTop, a[1]], [0, 0], [L / 4, 0], [L / 4, 1], [0, 1]); }
-    let prev = ring48, y = yTop;
-    for (const step of [1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5]) { // stepped inward until the ring collapses (a hip roof)
-      const inn = insetRing(prev, step); if (!inn || inn.length !== prev.length) break;
-      ringRoof(prev, inn, y, y + step * tan); y += step * tan; prev = inn;
+    // the upper roof: one straight ridge along the long axis (as in the aerial view), a rectangle fitted inside the footprint
+    // ring, with the leftover jogs of the ring filled by a flat patch at the foot of the roof
+    { const tri = THREE.ShapeUtils.triangulateShape(ring48.map(([x, z]) => new THREE.Vector2(x, z)), []);
+      for (const [i0, i1, i2] of tri) { const q = [ring48[i0], ring48[i1], ring48[i2]]; roof.triFlat([q[0][0], yTop, q[0][1]], [q[1][0], yTop, q[1][1]], [q[2][0], yTop, q[2][1]], [0, 0], [1, 0], [0, 1], rtint); roof.triFlat([q[0][0], yTop, q[0][1]], [q[2][0], yTop, q[2][1]], [q[1][0], yTop, q[1][1]], [0, 0], [0, 1], [1, 0], rtint); } }
+    let axis = null; for (const e of E) if (!axis || e.L > axis.L) axis = e;
+    const ux = axis.ex, uz = axis.ez, vx = -uz, vz = ux, uu = (p) => p[0] * ux + p[1] * uz, vv = (p) => p[0] * vx + p[1] * vz;
+    let u0 = Infinity, u1 = -Infinity, v0 = Infinity, v1 = -Infinity; for (const p of ring48) { u0 = Math.min(u0, uu(p)); u1 = Math.max(u1, uu(p)); v0 = Math.min(v0, vv(p)); v1 = Math.max(v1, vv(p)); }
+    const inRing = (x, z) => pointInRing(x, z, ring48), W2 = (u, v) => [u * ux + v * vx, u * uz + v * vz];
+    let rect = null;
+    for (let k = 0; k < 40 && !rect; k++) { const d = k * 0.75, c = [W2(u0 + d, v0 + d), W2(u1 - d, v0 + d), W2(u1 - d, v1 - d), W2(u0 + d, v1 - d)]; if (u1 - u0 - 2 * d > 4 && v1 - v0 - 2 * d > 4 && c.every((q) => inRing(q[0], q[1]))) rect = c; }
+    if (rect) {
+      const tanU = Math.tan(14 * Math.PI / 180); let prev = ensureCCW(rect), y = yTop;
+      for (let k = 0; k < 14; k++) { const inn = insetRing(prev, 1.5); if (!inn || inn.length !== prev.length) break; ringRoof(prev, inn, y, y + 1.5 * tanU); y += 1.5 * tanU; prev = inn; }
+      const c0 = prev.reduce((s2, q) => [s2[0] + q[0] / prev.length, s2[1] + q[1] / prev.length], [0, 0]);
+      for (let i = 0; i < prev.length; i++) { const a2 = prev[i], c2 = prev[(i + 1) % prev.length]; roof.triFlat([a2[0], y, a2[1]], [c2[0], y, c2[1]], [c0[0], y + 0.3, c0[1]], [0, 0], [1, 0], [0.5, 0.5], rtint); }
     }
-    if (prev.length >= 3) { const r = acc.get(cx, cz, 'roof:concrete_tile', true); const c0 = prev.reduce((s, p) => [s[0] + p[0] / prev.length, s[1] + p[1] / prev.length], [0, 0]); for (let i = 0; i < prev.length; i++) { const a = prev[i], c = prev[(i + 1) % prev.length]; r.triFlat([a[0], y, a[1]], [c[0], y, c[1]], [c0[0], y + 0.5, c0[1]], [0, 0], [1, 0], [0.5, 0.5], rtint); } }
   }
   // ---------- posts, piers, signs and windows (hand-placed details on the real edges)
   const meshes = [], K = makeKit(), kg = new THREE.Group(); kg.name = 'leisure-details';
@@ -178,27 +188,28 @@ export function buildLeisureCentre(b, ctx) {
       colliders.push({ type: 'segment', a: pa, b: pb, r: 0.06, y0: gy - 0.2, top: gy + 1.15, kind: 'railing' }); }
     const pe = at(e, u1, w); K.fbox(Fr, m.railPost, u1 - 0.04, u1 + 0.04, gAt(pe[0], pe[1]) - 0.1, gAt(pe[0], pe[1]) + 1.2, w - 0.04, w + 0.04);
   }
+  // the entrance faces the plaza and car park (east): brick wall and double doors round the corner on the south face, then the red-framed
+  // glazed front with posters, a canted corner, and the open porch to the north, all under one blue fascia that wraps the corner
   if (frontE) {
-    const e = frontE, L = e.L, Fr = Fe(e);
-    // red-framed glazed front with posters, a porch, double doors in the brick to the west
-    K.fbox(Fr, m.front, 5.2, 12.2, gAt(...at(e, 8, -Wd)) + 0.05, yE - 0.5, -Wd + 0.02, -Wd + 0.08);
-    K.fbox(Fr, m.dark, 12.2, L - 1.4, gAt(...at(e, 14, -Wd)) + 0.05, yE - 0.4, -Wd + 0.02, -Wd + 0.08);
-    K.fbox(Fr, m.glazed, 13.0, 15.4, gAt(...at(e, 14, -Wd)) + 0.05, yE - 0.8, -Wd + 0.08, -Wd + 0.12); K.fbox(Fr, m.glazed, 16.4, 18.8, gAt(...at(e, 17, -Wd)) + 0.05, yE - 0.8, -Wd + 0.08, -Wd + 0.12);
-    K.fbox(Fr, m.doors, 1.3, 3.5, gAt(...at(e, 2, -Wd)) + 0.05, yE - 1.2, -Wd + 0.02, -Wd + 0.08);
-    K.fbox(Fr, m.louvre, 3.9, 4.9, yE - 2.5, yE - 1.3, -Wd + 0.02, -Wd + 0.08);
-    // long blue fascia in front of the eave, lettered twice
-    K.fbox(Fr, m.leisureSign, 5.0, L - 0.4, yE - 0.62, yE - 0.02, 0.43, 0.49);
-    for (const u of [5.0, 12.7]) { const p = at(e, u, 1.0), yb = gAt(p[0], p[1]); K.cyl(m.dark, p[0], yb, yb + 0.95, p[1], 0.055, 0.055, 6); K.cyl(m.yellow, p[0], yb + 0.8, yb + 0.95, p[1], 0.06, 0.06, 6); }
+    const e0 = frontE, e1 = E[(e0.i + 1) % nOut], e2 = E[(e0.i + 2) % nOut], F0 = Fe(e0), F1 = Fe(e1), F2 = Fe(e2), g1 = (e, u) => gAt(...at(e, u, -Wd)) + 0.05;
+    // south face (SSE): double doors, louvre and the first glazed facet at the corner
+    K.fbox(F0, m.doors, e0.L - 9.5, e0.L - 7.3, g1(e0, e0.L - 8), yE - 1.2, -Wd + 0.02, -Wd + 0.08);
+    K.fbox(F0, m.louvre, e0.L - 6.7, e0.L - 5.7, yE - 2.5, yE - 1.3, -Wd + 0.02, -Wd + 0.08);
+    K.fbox(F0, m.front, e0.L - 3.4, e0.L - 0.15, g1(e0, e0.L - 2), yE - 0.5, -Wd + 0.02, -Wd + 0.08);
+    K.fbox(F0, m.leisureSign, e0.L - 10.5, e0.L - 0.1, yE - 0.62, yE - 0.02, 0.43, 0.49);
+    // east face: main glazing with posters, then the porch
+    K.fbox(F1, m.front, 0.15, e1.L - 0.4, g1(e1, 3), yE - 0.5, -Wd + 0.02, -Wd + 0.08);
+    K.fbox(F1, m.leisureSign, 0.1, e1.L - 0.2, yE - 0.62, yE - 0.02, 0.43, 0.49);
+    K.fbox(F2, m.glazed, 0.4, e2.L - 0.3, g1(e2, 2), yE - 0.8, -Wd + 0.02, -Wd + 0.08); K.fbox(F2, m.leisureSign, 0.1, e2.L - 0.1, yE - 0.62, yE - 0.02, 0.43, 0.49);
+    for (const [e, u] of [[e0, e0.L - 10.5], [e1, 1.0], [e1, 7.5]]) { const p = at(e, u, 1.0), yb = gAt(p[0], p[1]); K.cyl(m.dark, p[0], yb, yb + 0.95, p[1], 0.055, 0.055, 6); K.cyl(m.yellow, p[0], yb + 0.8, yb + 0.95, p[1], 0.06, 0.06, 6); }
     // small red-and-white striped roof light on the lower roof above the porch
-    { const u0 = 12.4, u1 = 18.4, d0 = 2.2, d1 = 3.7, tn = Math.tan(Y.pitch * Math.PI / 180), hh = 0.55, yR = (d) => yE + tn * (d + 0.4) + 0.08;
+    { const e = e1, u0 = 2.6, u1 = Math.min(e1.L - 2.6, 7.2), d0 = 2.2, d1 = 3.7, tn = Math.tan(Y.pitch * Math.PI / 180), hh = 0.55, yR = (d) => yE + tn * (d + 0.4) + 0.08;
       const A = [at(e, u0, -d0), at(e, u1, -d0), at(e, u1, -d1), at(e, u0, -d1)], R = [at(e, u0 + 0.9, -(d0 + d1) / 2), at(e, u1 - 0.9, -(d0 + d1) / 2)];
       const pt = (q, y) => [q[0], y, q[1]], tri = (mat, a, b2, c2, uv) => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute([...a, ...b2, ...c2], 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.computeVertexNormals(); K.put(mat, g); };
       tri(m.stripe, pt(A[0], yR(d0)), pt(A[1], yR(d0)), pt(R[1], yR((d0 + d1) / 2) + hh), [0, 0, 6, 0, 6, 1]); tri(m.stripe, pt(A[0], yR(d0)), pt(R[1], yR((d0 + d1) / 2) + hh), pt(R[0], yR((d0 + d1) / 2) + hh), [0, 0, 6, 1, 0, 1]);
       tri(m.stripe, pt(A[3], yR(d1)), pt(A[2], yR(d1)), pt(R[1], yR((d0 + d1) / 2) + hh), [0, 0, 6, 0, 6, 1]); tri(m.stripe, pt(A[3], yR(d1)), pt(R[1], yR((d0 + d1) / 2) + hh), pt(R[0], yR((d0 + d1) / 2) + hh), [0, 0, 6, 1, 0, 1]);
       tri(m.red, pt(A[0], yR(d0)), pt(A[3], yR(d1)), pt(R[0], yR((d0 + d1) / 2) + hh), [0, 0, 1, 0, 0.5, 1]); tri(m.red, pt(A[1], yR(d0)), pt(A[2], yR(d1)), pt(R[1], yR((d0 + d1) / 2) + hh), [0, 0, 1, 0, 0.5, 1]); }
   }
-  // the blue fascia carries on round the plaza-side corner, with glazing behind
-  for (const e of eastE) { const Fq = Fe(e); K.fbox(Fq, m.leisureSign, 0.4, e.L - 0.2, yE - 0.62, yE - 0.02, 0.43, 0.49); K.fbox(Fq, m.glazed, 0.6, e.L - 0.6, gAt(e.mx, e.mz) + 0.05, yE - 0.8, -Wd + 0.02, -Wd + 0.08); }
   K.flush(kg, 'leisure-details'); meshes.push(kg);
   const front = frontE ? { a: frontE.a, c: frontE.c, nx: frontE.nx, nz: frontE.nz, ex: frontE.ex, ez: frontE.ez, L: frontE.L } : null;
   return { meshes, colliders, front, collider: { outer: walls, holes: [], base: g0 - 0.3, top: base + 11.6 } };

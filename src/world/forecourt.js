@@ -13,7 +13,7 @@ function mats() {
   if (M) return M;
   M = {
     navy: std({ color: 0x1b2a55, roughness: 0.45, metalness: 0.5 }),
-    brickDark: std({ color: 0x7c3c30, roughness: 0.9 }), brickMid: std({ color: 0xb15a3c, roughness: 0.9 }), top: std({ color: 0x9c6650, roughness: 0.95 }), coping: std({ color: 0xc9bfae, roughness: 0.9 }),
+    brickDark: std({ color: 0x4a3532, roughness: 0.9 }), brickMid: std({ color: 0x6b4a40, roughness: 0.9 }), top: std({ color: 0xb7a794, roughness: 0.95 }), coping: std({ color: 0xd2c6ae, roughness: 0.9 }),
     timber: std({ color: 0x8a6035, roughness: 0.8 }), black: std({ color: 0x15171a, roughness: 0.5, metalness: 0.4 }), gold: std({ color: 0xb98d3e, roughness: 0.35, metalness: 0.7 }),
     green: std({ color: 0x2e5a3a, roughness: 0.7 }), globe: std({ color: 0xcaa35a, roughness: 0.25, metalness: 0.85, emissive: 0x2a1f08, emissiveIntensity: 0.4 }), steel: std({ color: 0xaab0b6, roughness: 0.4, metalness: 0.7 }),
   };
