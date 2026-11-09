@@ -11,7 +11,7 @@ import { makeKit } from './geo-kit.js';
 
 export const isLeisureCentre = (b) => b.id === 91786059 || /^felixstowe leisure centre$/i.test(b.name || '');
 
-const Y = { eave: 3.5, fascia: 0.5, lowerInset: 5.2, pitch: 24, clerestoryTop: 7.0, colonnade: 1.9 };
+const Y = { eave: 3.5, fascia: 0.5, lowerInset: 5.2, pitch: 17, clerestoryTop: 7.0, colonnade: 1.9 };
 
 let M = null;
 function mats() {
@@ -23,6 +23,12 @@ function mats() {
     g.fillStyle = 'rgba(160,180,200,0.25)'; g.fillRect(8, h * 0.42, w - 16, 8);
     g.strokeStyle = '#a2262b'; g.lineWidth = 6; g.strokeRect(5, 5, w - 10, h - 10); g.beginPath(); g.moveTo(5, h * 0.42); g.lineTo(w - 5, h * 0.42); g.moveTo(w / 2, h * 0.42); g.lineTo(w / 2, h - 5); g.stroke();
   });
+  const porchTex = cnv(512, 160, (g, w, h) => { // the open porch: dark recess, four dark-framed glazed door leaves, pale lobby glow behind the middle pair
+    g.fillStyle = '#17181b'; g.fillRect(0, 0, w, h); const lw = w / 4;
+    for (let i = 0; i < 4; i++) { const x = i * lw; const gr = g.createLinearGradient(0, 0, 0, h); const mid = i === 1 || i === 2; gr.addColorStop(0, mid ? '#59636b' : '#2d343a'); gr.addColorStop(1, mid ? '#a9b2b8' : '#454d54'); g.fillStyle = gr; g.fillRect(x + 8, h * 0.08, lw - 16, h * 0.9);
+      g.strokeStyle = '#0d0e10'; g.lineWidth = 7; g.strokeRect(x + 8, h * 0.08, lw - 16, h * 0.9); g.beginPath(); g.moveTo(x + 8, h * 0.4); g.lineTo(x + lw - 8, h * 0.4); g.stroke(); }
+  });
+  const paveTex = cnv(128, 128, (g, w, h) => { g.fillStyle = '#8a5f4e'; g.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 16) for (let x = -32; x < w; x += 32) { const o = (y / 16) % 2 ? 16 : 0, t = ((x * 7 + y * 13) % 5) / 5; g.fillStyle = `hsl(${16 + t * 8},${30 + t * 8}%,${42 + t * 8}%)`; g.fillRect(x + o + 1, y + 1, 30, 14); } });
   const entrance = cnv(512, 160, (g, w, h) => { // red-framed glazed front with posters
     g.fillStyle = '#3a4652'; g.fillRect(0, 0, w, h); let s = 5; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
     for (let i = 0; i < 6; i++) { const x = i * (w / 6); g.fillStyle = i % 2 ? '#dfe3e6' : `hsl(${r() * 360},45%,${55 + r() * 20}%)`; g.fillRect(x + 10, h * 0.25, w / 6 - 20, h * 0.68); }
@@ -70,6 +76,8 @@ function mats() {
     fasciaBrown: std({ color: 0x4a3b30, roughness: 0.7 }),
     door: std({ color: 0x2a2b2e, roughness: 0.5 }),
     bowls: std({ map: bowls, roughness: 0.3, metalness: 0.15 }),
+    paveFloor: std({ map: paveTex, roughness: 0.9, side: THREE.DoubleSide }),
+    porchDoors: std({ map: porchTex, roughness: 0.35, metalness: 0.2 }),
     pier: std({ map: brickTex(20, 6, 28, 7), roughness: 0.95 }), brickLight: std({ map: brickTex(12, 62, 47, 10), roughness: 0.95 }),
     louvre: std({ map: louvreTex, roughness: 0.6 }), front: std({ map: frontTex, roughness: 0.25, metalness: 0.15 }), doors: std({ map: doorsTex, roughness: 0.5 }), glazed: std({ map: glazedTex, roughness: 0.25, metalness: 0.2 }),
     stripe: std({ map: stripeTex, roughness: 0.6, side: THREE.DoubleSide }), red: std({ color: 0x8f1f26, roughness: 0.6, side: THREE.DoubleSide }),
@@ -155,6 +163,9 @@ export function buildLeisureCentre(b, ctx) {
         soff.quad([a[0], yE + 0.1, a[1]], [c[0], yE + 0.1, c[1]], [uc[0], yE + 0.1, uc[1]], [ua[0], yE + 0.1, ua[1]], [0, 0], [e.L / BAY, 0], [e.L / BAY, 0.5], [0, 0.5], [0.8, 0.8, 0.8]);
         ba.quad([ua[0], yE + 0.1, ua[1]], [uc[0], yE + 0.1, uc[1]], [uc[0], yHall - 0.45, uc[1]], [ua[0], yHall - 0.45, ua[1]], [0, 0], [nb, 0], [nb, 1], [0, 1]); }
       const fa = eaveRing[i], fc = eaveRing[(i + 1) % nOut]; soff.quad([fa[0], yHall - 0.5, fa[1]], [fc[0], yHall - 0.5, fc[1]], [fc[0], yHall, fc[1]], [fa[0], yHall, fa[1]], [0, 0], [e.L / BAY, 0], [e.L / BAY, 0.3], [0, 0.3], [0.55, 0.5, 0.45]); }
+    // pent side: dark soffit under the porch / lower roof, from the fascia back to the wall line (both faces so it shows from below)
+    for (let i = 0; i < nOut; i++) if (!hallE[i]) { const fa = eaveRing[i], fc = eaveRing[(i + 1) % nOut], wa = walls[i], wc = walls[(i + 1) % nOut], L = E[i].L, dk = [0.3, 0.28, 0.27], y0 = yE - 0.04, sq = acc.get(cx, cz, 'facade:timber:false:0', true);
+      sq.quad([fa[0], y0, fa[1]], [fc[0], y0, fc[1]], [wc[0], y0, wc[1]], [wa[0], y0, wa[1]], [0, 0], [L / BAY, 0], [L / BAY, 0.7], [0, 0.7], dk); sq.quad([wa[0], y0, wa[1]], [wc[0], y0, wc[1]], [fc[0], y0, fc[1]], [fa[0], y0, fa[1]], [0, 0.7], [L / BAY, 0.7], [L / BAY, 0], [0, 0], dk); }
     // pent side: a brown fascia board
     for (let i = 0; i < nOut; i++) if (!hallE[i]) { const fa = eaveRing[i], fc = eaveRing[(i + 1) % nOut], L = E[i].L; acc.get(cx, cz, 'facade:timber:false:0', true).quad([fa[0], yE - Y.fascia, fa[1]], [fc[0], yE - Y.fascia, fc[1]], [fc[0], yE, fc[1]], [fa[0], yE, fa[1]], [0, 0], [L / BAY, 0], [L / BAY, 0.3], [0, 0.3], tint); }
   }
@@ -200,6 +211,10 @@ export function buildLeisureCentre(b, ctx) {
       for (let k = 0; k < n2; k++) { const u = k * bw + bw / 2; if (k % 2 === 0 && !glazedGround(e, u)) K.fbox(Fe(e), m.louvre, u - 1.0, u + 1.0, yE - 1.5, yE - 0.15, -Wd + 0.02, -Wd + 0.08); }
       }
   }
+  // paved floor under the colonnade and porch (the terrain there would otherwise show as grass)
+  for (let i = 0; i < nOut; i++) { const ext = (!hallE[i] || (squared && frontE && i === eAt(5).i)) ? 1.7 : 0, a = [outer[i][0] + E[i].nx * ext, outer[i][1] + E[i].nz * ext], c = [outer[(i + 1) % nOut][0] + E[i].nx * ext, outer[(i + 1) % nOut][1] + E[i].nz * ext], wa = walls[i], wc = walls[(i + 1) % nOut], L = E[i].L; if (L < 0.5) continue;
+    const P = [a, c, wc, wa].map(([x, z]) => [x, gAt(x, z) + 0.08, z]), ge = new THREE.BufferGeometry(); ge.setAttribute('position', new THREE.Float32BufferAttribute(P.flat(), 3));
+    ge.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, L / 2, 0, L / 2, 1, 0, 1], 2)); ge.setIndex([0, 1, 2, 0, 2, 3]); ge.computeVertexNormals(); K.put(m.paveFloor, ge); }
   // gold-on-blue club boards on the first two bays of the long road-side face, on the eave fascia above the piers
   { const e = eAt(rdK); if (e) { K.fbox(Fe(e), m.bowlsSign1, 0.7, 6.2, yHall - 1.15, yHall - 0.5, 0.42, 0.48); K.fbox(Fe(e), m.bowlsSign2, 6.8, 12.3, yHall - 1.15, yHall - 0.5, 0.42, 0.48); } }
   // front of the north end (flush, square corner): club boards above and the cafe sign over the first-floor glazing, as in the plaza photos
@@ -228,8 +243,8 @@ export function buildLeisureCentre(b, ctx) {
     // the glazed entrance bay: red-framed posters on e12, the canted corner e13 and the first part of e14; dark glazed doors in the porch
     for (const e of [e12, e13]) glaze(e, m.front, 0.1, e.L - 0.1, gu(e, e.L / 2), yE - 0.5, -Wd + 0.05);
     glaze(e14, m.front, 0.1, 7.1, gu(e14, 3), yE - 0.5, -Wd + 0.05);
-    K.fbox(Fe(e14), m.glazed, 7.5, e14.L - 1.0, gu(e14, 9), yE - 0.8, -Wd + 0.02, -Wd + 0.1); // the doors, set back behind the piers (in front of the brick wall line)
-    for (const e of [e12, e13, e14]) K.fbox(Fe(e), m.leisureSign, 0.05, e.L - 0.05, yE - 0.62, yE - 0.02, 0.43, 0.49);
+    K.fbox(Fe(e14), m.porchDoors, 7.5, e14.L - 1.0, gu(e14, 9), yE - 0.55, -Wd + 0.02, -Wd + 0.1); // the doors, set back behind the piers (in front of the brick wall line)
+    for (const e of [e12, e13, e14]) K.fbox(Fe(e), m.leisureSign, 0.05, e.L - 0.05, yE - 0.5, yE - 0.02, 0.43, 0.49);
     // road side, ground floor: dark glazed bays behind the piers (porch end and the first ~30 m)
     for (const [e, ua, ub] of (squared ? [[eAt(5), 0.2, eAt(5).L - 0.2], [eAt(6), 0.2, 30.5]] : [[eAt(5), 0.2, eAt(5).L - 0.2], [eAt(6), 0.2, eAt(6).L - 0.2], [eAt(7), 0.2, 30.5]])) { if (!e) continue; const ue = Math.min(ub, e.L - 0.2); glaze(e, m.glazed, ua, ue, gu(e, (ua + ue) / 2), yE - 0.15, -Wd + 0.05, 3.2); }
     // brick piers of the porch
