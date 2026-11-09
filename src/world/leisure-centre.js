@@ -11,7 +11,7 @@ import { makeKit } from './geo-kit.js';
 
 export const isLeisureCentre = (b) => b.id === 91786059 || /^felixstowe leisure centre$/i.test(b.name || '');
 
-const Y = { eave: 3.5, fascia: 0.5, lowerInset: 5.2, pitch: 24, clerestoryTop: 8.1, colonnade: 1.9 };
+const Y = { eave: 3.5, fascia: 0.5, lowerInset: 5.2, pitch: 24, clerestoryTop: 7.0, colonnade: 1.9 };
 
 let M = null;
 function mats() {
@@ -74,7 +74,7 @@ function mats() {
     louvre: std({ map: louvreTex, roughness: 0.6 }), front: std({ map: frontTex, roughness: 0.25, metalness: 0.15 }), doors: std({ map: doorsTex, roughness: 0.5 }), glazed: std({ map: glazedTex, roughness: 0.25, metalness: 0.2 }),
     stripe: std({ map: stripeTex, roughness: 0.6, side: THREE.DoubleSide }), red: std({ color: 0x8f1f26, roughness: 0.6, side: THREE.DoubleSide }),
     leisureSign: std({ map: board('FELIXSTOWE LEISURE CENTRE', '#1f4f94', '#ffffff', false), roughness: 0.5 }),
-    bowlsSign1: std({ map: board('FELIXSTOWE INDOOR', '#1b2f63', '#d9b250', true), roughness: 0.5 }), bowlsSign2: std({ map: board('BOWLS CLUB', '#1b2f63', '#d9b250', true), roughness: 0.5 }),
+    cafeSign: std({ map: board('CAFE  GREAT COFFEE', '#1a1a1c', '#e8a23a', true), roughness: 0.5 }), bowlsSign1: std({ map: board('FELIXSTOWE INDOOR', '#1b2f63', '#d9b250', true), roughness: 0.5 }), bowlsSign2: std({ map: board('BOWLS CLUB', '#1b2f63', '#d9b250', true), roughness: 0.5 }),
     fascia: std({ color: 0x1f4f94, roughness: 0.5 }), dark: std({ color: 0x25272a, roughness: 0.7 }), soffit: std({ color: 0x6e5f4d, roughness: 0.9 }),
     yellow: std({ color: 0xe7c829, roughness: 0.6 }), mapboard: std({ color: 0x3e79a8, roughness: 0.6 }),
   };
@@ -83,9 +83,27 @@ function mats() {
 
 export function leisureMaterial(key) { const m = mats(); return key === 'pb:clere' ? m.clere : key === 'pb:bowls' ? m.bowls : null; }
 
+/** The footprint steps in about 4 m at the north end of the plaza front (ground-floor recess under the cafe). In the photos the upper floor, roof and corner
+ *  pier run straight to a square corner, so the notch (three vertices) is replaced by the corner where the front line meets the road-side wall. */
+function squareCorner(ring) {
+  const n = ring.length, near = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1]) < 0.8, V15 = [-275.3, 201], V16 = [-280.7, 199.3], V17 = [-283.1, 194.5];
+  for (let i = 0; i < n; i++) { if (!near(ring[i], V15)) continue;
+    const f = near(ring[(i + 1) % n], V16) && near(ring[(i + 2) % n], V17), r = near(ring[(i + n - 1) % n], V16) && near(ring[(i + n - 2) % n], V17);
+    if (!f && !r) continue;
+    const prev = ring[(i + n - (f ? 1 : -1)) % n] , P15 = ring[i], far = ring[(i + (f ? 3 : n - 3)) % n], P17 = ring[(i + (f ? 2 : n - 2)) % n];
+    const d1 = [P15[0] - prev[0], P15[1] - prev[1]], d2 = [far[0] - P17[0], far[1] - P17[1]], den = d1[0] * d2[1] - d1[1] * d2[0]; if (Math.abs(den) < 1e-6) return ring;
+    const t = ((P17[0] - P15[0]) * d2[1] - (P17[1] - P15[1]) * d2[0]) / den, C = [P15[0] + d1[0] * t, P15[1] + d1[1] * t];
+    const out = []; for (let k = 0; k < n; k++) { const idx = (i + k) % n; if (f) { if (k === 1 || k === 2) { if (k === 1) out.push(C); continue; } out.push(ring[idx]); } else { out.push(ring[idx]); } }
+    if (f) return out; // forward order: P15, C, then the rest
+    // reversed order: ring runs ..., V17, V16, V15, ...; rebuild as ..., C, V15, ...
+    const o2 = []; for (let k = 0; k < n; k++) { const idx = (i + k) % n; if (k === n - 1) { o2.push(C); continue; } if (k === n - 2) continue; o2.push(ring[idx]); } return o2;
+  }
+  return ring;
+}
+
 /** Build into ctx.acc (walls, roofs) plus a few meshes. Returns { meshes, collider }. */
 export function buildLeisureCentre(b, ctx) {
-  const m = mats(), acc = ctx.acc, outer = ensureCCW(b.outer);
+  const m = mats(), acc = ctx.acc, outer = squareCorner(ensureCCW(b.outer));
   const cx = b.cx, cz = b.cz;
   let g0 = Infinity, gs = 0; for (const [x, z] of outer) { const g = ctx.ground(x, z); g0 = Math.min(g0, g); gs += g; }
   const base = gs / outer.length;
@@ -103,8 +121,9 @@ export function buildLeisureCentre(b, ctx) {
   // the plaza-side face, south to north (from the user's photos and aerial): e10 SSE wing, e11 door wall, e12 + e13 (canted) + e14 glazed
   // entrance bay and porch, e15 + e16 the porch's end and the first two-storey piers, e17 the long road-side face
   const eAt = (k) => (frontE ? E[(frontE.i + k) % nOut] : null);
-  if (frontE) { hallE[eAt(4).i] = false; hallE[eAt(5).i] = true; hallE[eAt(6).i] = true; hallE[eAt(7).i] = true; }
-  const YH = 7.4, yE = base + Y.eave, yHall = base + YH, yTop = base + Y.clerestoryTop;
+  const squared = outer.length === b.outer.length - 1, rdK = squared ? 6 : 7; // road-side edge offset from the entrance front
+  if (frontE) { hallE[eAt(4).i] = false; for (let k = 5; k <= rdK; k++) hallE[eAt(k).i] = true; }
+  const YH = 7.0, yE = base + Y.eave, yHall = base + YH, yTop = base + Y.clerestoryTop;
   const walls = insetRing(outer, Y.colonnade) || insetRing(outer, 1) || outer;
   const eaveRing = insetRing(outer, -0.4) || outer;
   const brick = acc.get(cx, cz, 'facade:brick_red:false:0', true), roof = acc.get(cx, cz, 'roof:concrete_tile', true);
@@ -124,7 +143,7 @@ export function buildLeisureCentre(b, ctx) {
   const okRings = lowInner && ring48 && lowInner.length === nOut && ring48.length === nOut && eaveRing.length === nOut && walls.length === nOut;
   if (okRings) {
     // plaza side: pent roof from the eaves up to the clerestory; hall side: a low overhanging roof straight up to the foot of the upper roof
-    ringRoof(eaveRing, lowInner, yE, yL, (i) => !hallE[i]); ringRoof(eaveRing, ring48, yHall, yTop, (i) => hallE[i]);
+    ringRoof(eaveRing, lowInner, yE, yL, (i) => !hallE[i]);
     // where pent meets hall: a brick end wall on the corner bisector
     for (let v = 0; v < nOut; v++) { const i0 = (v + nOut - 1) % nOut; if (hallE[i0] === hallE[v]) continue; const ev = eaveRing[v], r48 = ring48[v], li = lowInner[v];
       const P = [[ev[0], yE, ev[1]], [ev[0], yHall, ev[1]], [r48[0], yTop, r48[1]], [li[0], yL, li[1]]];
@@ -145,29 +164,31 @@ export function buildLeisureCentre(b, ctx) {
     for (let i = 0; i < clere.length; i++) { const a = clere[i], c = clere[(i + 1) % clere.length], L = Math.hypot(c[0] - a[0], c[1] - a[1]); if (L < 0.5 || hallE[i]) continue;
       const ca = acc.get(cx, cz, 'pb:clere');
       ca.quad([a[0], yL - 0.4, a[1]], [c[0], yL - 0.4, c[1]], [c[0], yTop, c[1]], [a[0], yTop, a[1]], [0, 0], [L / 4, 0], [L / 4, 1], [0, 1]); }
-    // the upper roof: one straight ridge along the long axis (as in the aerial view), a rectangle fitted inside the footprint
-    // ring, with the leftover jogs of the ring filled by a flat patch at the foot of the roof
-    { const tri = THREE.ShapeUtils.triangulateShape(ring48.map(([x, z]) => new THREE.Vector2(x, z)), []);
-      for (const [i0, i1, i2] of tri) { const q = [ring48[i0], ring48[i1], ring48[i2]]; roof.triFlat([q[0][0], yTop, q[0][1]], [q[1][0], yTop, q[1][1]], [q[2][0], yTop, q[2][1]], [0, 0], [1, 0], [0, 1], rtint); roof.triFlat([q[0][0], yTop, q[0][1]], [q[2][0], yTop, q[2][1]], [q[1][0], yTop, q[1][1]], [0, 0], [0, 1], [1, 0], rtint); } }
-    let axis = null; for (const e of E) if (!axis || e.L > axis.L) axis = e;
-    const ux = axis.ex, uz = axis.ez, vx = -uz, vz = ux, uu = (p) => p[0] * ux + p[1] * uz, vv = (p) => p[0] * vx + p[1] * vz;
-    let u0 = Infinity, u1 = -Infinity, v0 = Infinity, v1 = -Infinity; for (const p of ring48) { u0 = Math.min(u0, uu(p)); u1 = Math.max(u1, uu(p)); v0 = Math.min(v0, vv(p)); v1 = Math.max(v1, vv(p)); }
-    const inRing = (x, z) => pointInRing(x, z, ring48), W2 = (u, v) => [u * ux + v * vx, u * uz + v * vz];
-    let rect = null;
-    for (let k = 0; k < 40 && !rect; k++) { const d = k * 0.75, c = [W2(u0 + d, v0 + d), W2(u1 - d, v0 + d), W2(u1 - d, v1 - d), W2(u0 + d, v1 - d)]; if (u1 - u0 - 2 * d > 4 && v1 - v0 - 2 * d > 4 && c.every((q) => inRing(q[0], q[1]))) rect = c; }
-    if (rect) {
-      const tanU = Math.tan(19 * Math.PI / 180); let prev = ensureCCW(rect), y = yTop;
-      for (let k = 0; k < 14; k++) { const inn = insetRing(prev, 1.5); if (!inn || inn.length !== prev.length) break; ringRoof(prev, inn, y, y + 1.5 * tanU); y += 1.5 * tanU; prev = inn; }
-      const c0 = prev.reduce((s2, q) => [s2[0] + q[0] / prev.length, s2[1] + q[1] / prev.length], [0, 0]);
-      for (let i = 0; i < prev.length; i++) { const a2 = prev[i], c2 = prev[(i + 1) % prev.length]; roof.triFlat([a2[0], y, a2[1]], [c2[0], y, c2[1]], [c0[0], y + 0.3, c0[1]], [0, 0], [1, 0], [0.5, 0.5], rtint); }
-    }
+    // the upper roof: one hipped roof over the whole building. Its eave is level all round (the same line over the porch clerestory and over the
+    // two-storey end, as in the photos); on the plaza side it sits just in front of the clerestory, on the hall sides it overhangs the piers.
+    // Height = eave + pitch x distance to the nearest eave edge, so the hips and ridge fall out of the footprint.
+    { const dOff = (i) => (hallE[i] ? -0.9 : Y.lowerInset - 0.4), line = (i) => ({ nx: E[i].nx, nz: E[i].nz, k: E[i].nx * E[i].a[0] + E[i].nz * E[i].a[1] - dOff(i) });
+      const R0 = []; for (let v = 0; v < nOut; v++) { const i0 = (v + nOut - 1) % nOut;
+        if (hallE[i0] === hallE[v]) { R0.push(hallE[v] ? insetRing(outer, -0.9)?.[v] || eaveRing[v] : ring48[v]); continue; }
+        const l1 = line(i0), l2 = line(v), det = l1.nx * l2.nz - l1.nz * l2.nx;
+        R0.push(Math.abs(det) < 0.2 ? ring48[v] : [(l1.k * l2.nz - l1.nz * l2.k) / det, (l1.nx * l2.k - l1.k * l2.nx) / det]); }
+      const tri = THREE.ShapeUtils.triangulateShape(R0.map(([x, z]) => new THREE.Vector2(x, z)), []);
+      const segD = (x, z) => { let d = Infinity; for (let i = 0; i < nOut; i++) { const a = R0[i], c = R0[(i + 1) % nOut], ex = c[0] - a[0], ez = c[1] - a[1], l2 = ex * ex + ez * ez || 1, t = Math.max(0, Math.min(1, ((x - a[0]) * ex + (z - a[1]) * ez) / l2)); d = Math.min(d, Math.hypot(x - a[0] - ex * t, z - a[1] - ez * t)); } return d; };
+      const tanR = Math.tan(22 * Math.PI / 180), hAt = (q) => yTop + tanR * segD(q[0], q[1]);
+      let axis = null; for (const e of E) if (!axis || e.L > axis.L) axis = e; const ux = axis.ex, uz = axis.ez, uvq = (q) => [(q[0] * ux + q[1] * uz) / 2, (q[0] * -uz + q[1] * ux) * 1.08 / 2];
+      const emit = (A, B, C2, depth) => { const dAB = Math.hypot(A[0] - B[0], A[1] - B[1]), dBC = Math.hypot(B[0] - C2[0], B[1] - C2[1]), dCA = Math.hypot(C2[0] - A[0], C2[1] - A[1]), mx = Math.max(dAB, dBC, dCA);
+        if (mx > 1.3 && depth < 9) { const mid = (P, Q) => [(P[0] + Q[0]) / 2, (P[1] + Q[1]) / 2];
+          if (mx === dAB) { const M2 = mid(A, B); emit(A, M2, C2, depth + 1); emit(M2, B, C2, depth + 1); } else if (mx === dBC) { const M2 = mid(B, C2); emit(A, B, M2, depth + 1); emit(A, M2, C2, depth + 1); } else { const M2 = mid(C2, A); emit(A, B, M2, depth + 1); emit(M2, B, C2, depth + 1); } return; }
+        const P3 = [A, B, C2].map((q) => [q[0], hAt(q), q[1]]), U = [A, B, C2].map(uvq);
+        roof.triFlat(P3[0], P3[1], P3[2], U[0], U[1], U[2], rtint); roof.triFlat(P3[0], P3[2], P3[1], U[0], U[2], U[1], rtint); };
+      for (const [i0, i1, i2] of tri) emit(R0[i0], R0[i1], R0[i2], 0); }
   }
   // ---------- posts, piers, signs and windows (hand-placed details on the real edges)
   const meshes = [], K = makeKit(), kg = new THREE.Group(); kg.name = 'leisure-details';
   const colliders = [], Wd = Y.colonnade, gAt = (x, z) => ctx.ground(x, z);
   const Fe = (e) => K.face(e.a[0], e.a[1], e.th), at = (e, u, w) => [e.a[0] + e.ex * u + e.nx * w, e.a[1] + e.ez * u + e.nz * w];
   // the first bays of the road side (round the porch end) have a full-height dark glazed ground floor behind the piers, as in the street photos
-  const glazedGround = (e, u) => !!frontE && ((e.i === eAt(5).i || e.i === eAt(6).i) || (e.i === eAt(7).i && u < 31));
+  const glazedGround = (e, u) => !!frontE && ((e.i === eAt(5).i && rdK === 7) || (rdK === 7 && e.i === eAt(6).i) || (rdK === 6 && e.i === eAt(5).i) || (e.i === eAt(rdK).i && u < 31));
   // posts along the eaves: big brick piers round the bowls club, dark tapered steel posts elsewhere
   for (const e of E) {
     if (e.L < 4) continue; const n = Math.max(1, Math.round(e.L / 6));
@@ -180,7 +201,10 @@ export function buildLeisureCentre(b, ctx) {
       }
   }
   // gold-on-blue club boards on the first two bays of the long road-side face, on the eave fascia above the piers
-  { const e = eAt(7); if (e) { K.fbox(Fe(e), m.bowlsSign1, 0.7, 6.2, yHall - 1.15, yHall - 0.5, 0.42, 0.48); K.fbox(Fe(e), m.bowlsSign2, 6.8, 12.3, yHall - 1.15, yHall - 0.5, 0.42, 0.48); } }
+  { const e = eAt(rdK); if (e) { K.fbox(Fe(e), m.bowlsSign1, 0.7, 6.2, yHall - 1.15, yHall - 0.5, 0.42, 0.48); K.fbox(Fe(e), m.bowlsSign2, 6.8, 12.3, yHall - 1.15, yHall - 0.5, 0.42, 0.48); } }
+  // front of the north end (flush, square corner): club boards above and the cafe sign over the first-floor glazing, as in the plaza photos
+  { const e = squared ? eAt(5) : null; if (e && e.L > 7) { K.fbox(Fe(e), m.bowlsSign1, 0.3, e.L / 2 - 0.1, yHall - 1.15, yHall - 0.5, 0.42, 0.48); K.fbox(Fe(e), m.bowlsSign2, e.L / 2 + 0.1, e.L - 0.3, yHall - 1.15, yHall - 0.5, 0.42, 0.48);
+      K.fbox(Fe(e), m.cafeSign, e.L / 2 + 0.3, e.L - 0.6, yE + 0.35, yE + 1.6, 0.42, 0.48); } }
   // navy railings along the kerb in front of the road-side piers (found from the nearest road)
   for (const e of E.filter((q) => q.bowls && q.L > 4)) {
     const rd = ctx.nearestRoad(e.mx + e.nx * 6, e.mz + e.nz * 6, 30, (r) => r.car); if (!rd) continue;
@@ -207,7 +231,7 @@ export function buildLeisureCentre(b, ctx) {
     K.fbox(Fe(e14), m.glazed, 7.3, e14.L - 0.3, gu(e14, 9), yE - 0.8, -Wd - 0.5, -Wd - 0.44);
     for (const e of [e12, e13, e14]) K.fbox(Fe(e), m.leisureSign, 0.05, e.L - 0.05, yE - 0.62, yE - 0.02, 0.43, 0.49);
     // road side, ground floor: dark glazed bays behind the piers (porch end and the first ~30 m)
-    for (const [e, ua, ub] of [[eAt(5), 0.2, eAt(5).L - 0.2], [eAt(6), 0.2, eAt(6).L - 0.2], [eAt(7), 0.2, 30.5]]) { if (!e) continue; const ue = Math.min(ub, e.L - 0.2); glaze(e, m.glazed, ua, ue, gu(e, (ua + ue) / 2), yE - 0.15, -Wd + 0.05, 3.2); }
+    for (const [e, ua, ub] of (squared ? [[eAt(5), 0.2, eAt(5).L - 0.2], [eAt(6), 0.2, 30.5]] : [[eAt(5), 0.2, eAt(5).L - 0.2], [eAt(6), 0.2, eAt(6).L - 0.2], [eAt(7), 0.2, 30.5]])) { if (!e) continue; const ue = Math.min(ub, e.L - 0.2); glaze(e, m.glazed, ua, ue, gu(e, (ua + ue) / 2), yE - 0.15, -Wd + 0.05, 3.2); }
     // brick piers of the porch
     for (const u of [7.2, e14.L - 0.6]) { const p = at(e14, u, -0.3), g = gAt(p[0], p[1]); K.fbox(Fe(e14), m.pier, u - 0.4, u + 0.4, g - 0.3, yE, -0.75, 0.05); colliders.push({ type: 'circle', x: p[0], z: p[1], r: 0.45, y0: g - 0.3, top: yE, kind: 'pier' }); }
     for (const [e, u] of [[e11, 1.2], [e11, 10.5 - 1.2], [e14, 2.0], [e14, 6.4]]) { const p = at(e, Math.min(u, e.L - 0.3), 1.0), yb = gAt(p[0], p[1]); K.cyl(m.dark, p[0], yb, yb + 0.95, p[1], 0.055, 0.055, 6); K.cyl(m.yellow, p[0], yb + 0.8, yb + 0.95, p[1], 0.06, 0.06, 6); }
