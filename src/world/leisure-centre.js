@@ -201,7 +201,7 @@ export function buildLeisureCentre(b, ctx) {
     // the upper roof: one hipped roof over the whole building. Its eave is level all round (the same line over the porch clerestory and over the
     // two-storey end, as in the photos); on the plaza side it sits just in front of the clerestory, on the hall sides it overhangs the piers.
     // Height = eave + pitch x distance to the nearest eave edge, so the hips and ridge fall out of the footprint.
-    { const dOff = (i) => (hallE[i] ? -1.5 : Y.lowerInset - 0.4), line = (i) => ({ nx: E[i].nx, nz: E[i].nz, k: E[i].nx * E[i].a[0] + E[i].nz * E[i].a[1] - dOff(i) });
+    { const dOff = (i) => (hallE[i] ? -2.0 : Y.lowerInset - 0.4), line = (i) => ({ nx: E[i].nx, nz: E[i].nz, k: E[i].nx * E[i].a[0] + E[i].nz * E[i].a[1] - dOff(i) });
       const R0 = []; for (let v = 0; v < nOut; v++) { const i0 = (v + nOut - 1) % nOut;
         if (hallE[i0] === hallE[v]) { R0.push(hallE[v] ? insetRing(outer, -0.9)?.[v] || eaveRing[v] : ring48[v]); continue; }
         const l1 = line(i0), l2 = line(v), det = l1.nx * l2.nz - l1.nz * l2.nx;
@@ -215,7 +215,23 @@ export function buildLeisureCentre(b, ctx) {
           if (mx === dAB) { const M2 = mid(A, B); emit(A, M2, C2, depth + 1); emit(M2, B, C2, depth + 1); } else if (mx === dBC) { const M2 = mid(B, C2); emit(A, B, M2, depth + 1); emit(A, M2, C2, depth + 1); } else { const M2 = mid(C2, A); emit(A, B, M2, depth + 1); emit(M2, B, C2, depth + 1); } return; }
         const P3 = [A, B, C2].map((q) => [q[0], hAt(q), q[1]]), U = [A, B, C2].map(uvq);
         roof.triFlat(P3[0], P3[1], P3[2], U[0], U[1], U[2], rtint); roof.triFlat(P3[0], P3[2], P3[1], U[0], U[2], U[1], rtint); };
-      for (const [i0, i1, i2] of tri) emit(R0[i0], R0[i1], R0[i2], 0); }
+      for (const [i0, i1, i2] of tri) emit(R0[i0], R0[i1], R0[i2], 0);
+      // deep dark roof edge (fascia) all round and a dark soffit under the overhang on the two-storey sides
+      { const fs = acc.get(cx, cz, 'facade:timber:false:0', true), dk = [0.2, 0.19, 0.18];
+        for (let i = 0; i < nOut; i++) { const a = R0[i], c = R0[(i + 1) % nOut], L = Math.hypot(c[0] - a[0], c[1] - a[1]); if (L < 0.3) continue;
+          fs.quad([a[0], yTop - 0.45, a[1]], [c[0], yTop - 0.45, c[1]], [c[0], yTop, c[1]], [a[0], yTop, a[1]], [0, 0], [L / BAY, 0], [L / BAY, 0.3], [0, 0.3], dk); fs.quad([a[0], yTop, a[1]], [c[0], yTop, c[1]], [c[0], yTop - 0.45, c[1]], [a[0], yTop - 0.45, a[1]], [0, 0.3], [L / BAY, 0.3], [L / BAY, 0], [0, 0], dk);
+          if (hallE[i]) { const ea = eaveRing[i], ec = eaveRing[(i + 1) % nOut]; fs.quad([a[0], yTop - 0.45, a[1]], [c[0], yTop - 0.45, c[1]], [ec[0], yTop - 0.45, ec[1]], [ea[0], yTop - 0.45, ea[1]], [0, 0], [L / BAY, 0], [L / BAY, 0.6], [0, 0.6], [0.28, 0.26, 0.25]); fs.quad([ea[0], yTop - 0.45, ea[1]], [ec[0], yTop - 0.45, ec[1]], [c[0], yTop - 0.45, c[1]], [a[0], yTop - 0.45, a[1]], [0, 0.6], [L / BAY, 0.6], [L / BAY, 0], [0, 0], [0.28, 0.26, 0.25]); } } }
+      // the small gablet on the ridge at the plaza end (visible in every front photo): a short gabled roof light with a dark gable end facing the plaza
+      if (frontE) { let G = null, bestD = -Infinity, hMax = -Infinity; const gx0 = Math.min(...R0.map((q) => q[0])), gx1 = Math.max(...R0.map((q) => q[0])), gz0 = Math.min(...R0.map((q) => q[1])), gz1 = Math.max(...R0.map((q) => q[1]));
+        for (let x = gx0; x <= gx1; x += 0.5) for (let z = gz0; z <= gz1; z += 0.5) if (pointInRing(x, z, R0)) hMax = Math.max(hMax, hAt([x, z]));
+        for (let x = gx0; x <= gx1; x += 0.5) for (let z = gz0; z <= gz1; z += 0.5) if (pointInRing(x, z, R0) && hAt([x, z]) > hMax - 0.2) { const d = x * frontE.nx + z * frontE.nz; if (d > bestD) { bestD = d; G = [x, z]; } }
+        if (G) { let ax = axis.ex, az = axis.ez; if (ax * frontE.nx + az * frontE.nz < 0) { ax = -ax; az = -az; } const px = -az, pz = ax, W = 2.6, Ln = 3.4, hh = 1.5, y0 = hMax - 0.1;
+          const P = (a2, b2, y) => [G[0] + ax * a2 + px * b2, y, G[1] + az * a2 + pz * b2], uvs = [[0, 0], [1, 0], [0.5, 1]];
+          const tri2 = (acc2, A, B, C2, tn) => { acc2.triFlat(A, B, C2, uvs[0], uvs[1], uvs[2], tn); acc2.triFlat(A, C2, B, uvs[0], uvs[2], uvs[1], tn); };
+          const f1 = P(0.6, W, y0), f2 = P(0.6, -W, y0), b1 = P(-Ln, W, y0), b2 = P(-Ln, -W, y0), r1 = P(0.2, 0, y0 + hh), r2 = P(-Ln, 0, y0 + hh), fs2 = acc.get(cx, cz, 'facade:timber:false:0', true);
+          tri2(roof, f1, b1, r2, rtint); tri2(roof, f1, r2, r1, rtint); tri2(roof, f2, r1, r2, rtint); tri2(roof, f2, r2, b2, rtint);
+          tri2(fs2, f1, f2, r1, [0.16, 0.16, 0.17]); }
+      } }
   }
   // ---------- posts, piers, signs and windows (hand-placed details on the real edges)
   const meshes = [], K = makeKit(), kg = new THREE.Group(); kg.name = 'leisure-details';
