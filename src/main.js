@@ -247,6 +247,22 @@ class App {
     const m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ color: 0xe9e9e4, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, side: THREE.DoubleSide }));
     m.renderOrder = 2; m.frustumCulled = false; this.scene.add(m); this._bayMarks = m;
   }
+  /** Cars parked at a real place (world.fixedParked, e.g. the garage at 79 Undercliff Road West) are real vehicles you can take:
+   *  spawned when you come near, tidied away when you are far (unless you have driven one off). */
+  _fixedParked() {
+    const fp = this.world.fixedParked || [], f = this.fleet, fo = this.focusPos();
+    for (const v of f.vehicles.slice()) if (v.fixedKey && v.owner === 'parked' && !fp.some((p) => p.id === v.fixedKey)) f.remove(v); // its tile was unloaded
+    for (const p of fp) {
+      const d = Math.hypot(p.x - fo.x, p.z - fo.z);
+      if (!p.v && !p.gone) { const ex = f.vehicles.find((v) => v.fixedKey === p.id); if (ex) p.v = ex; }
+      if (!p.v && !p.gone && d < 110) { const v = f.spawn(p.type, p.x, p.z, p.heading, { owner: 'parked', colour: p.colour }); v.fixedKey = p.id; p.v = v; }
+      else if (p.v) {
+        if (!f.vehicles.includes(p.v)) { p.v = null; p.gone = true; }
+        else if (p.v.owner !== 'parked' || Math.abs(p.v.speed) > 0.3 || Math.hypot(p.v.pos.x - p.x, p.v.pos.z - p.z) > 1.5) { p.gone = true; p.v.ambient = true; p.v = null; } // taken: it is the traffic system's now
+        else if (d > 260) { f.remove(p.v); p.v = null; }
+      }
+    }
+  }
   _lotRng() { this._lr = ((this._lr ?? 7) * 1664525 + 1013904223) >>> 0; return this._lr / 4294967296; }
   _fillCarPark(bays, px, pz) {
     const f = this.fleet, TYPES = [['hatchback', 18], ['saloon', 12], ['family', 10], ['suv', 14], ['taxi', 3], ['sports', 4], ['van', 8]];
@@ -409,6 +425,7 @@ class App {
       for (const v of this.fleet.vehicles) v.headOn = night && (v.owner === 'traffic' || v === this.car);
       const peds = [...(this.driving ? [] : [this.player.pos]), ...(this.npcPositions?.() || [])];
       this.fleet.update(dt, ctrl, this.focusPos(), peds);
+      this._fpT = (this._fpT || 0) - dt; if (this._fpT <= 0) { this._fpT = 1; this._fixedParked(); }
       this.crowd.update(dt, this.focusPos());
       const before = this._zoneSnapshot();
       if (this.transit) this._updateTransit(dt);

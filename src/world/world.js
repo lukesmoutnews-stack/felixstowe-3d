@@ -29,7 +29,7 @@ import { isFishDish, buildFishDish } from './fish-dish.js';
 import { isBeachHouse, buildBeachHouse } from './beach-house.js';
 import { isRegal, buildRegal } from './regal.js';
 import { isTownHall, buildTownHall } from './town-hall.js';
-import { isFlatsSlab, isFlatsWing, buildFlatsSlab, buildFlatsWing } from './flats-83.js';
+import { isFlatsSlab, isFlatsWing, buildFlatsSlab, buildFlatsWing, wingLevelPlan } from './flats-83.js';
 import { isUndercliffRestaurant, buildUndercliffRestaurant, undercliffPlan } from './undercliff-restaurant.js';
 import { lookoutPlan } from './lookout.js';
 import { isTownHallGarden, gardenPlan, buildTownHallGardens } from './town-hall-gardens.js';
@@ -54,6 +54,7 @@ export class World extends EventTarget {
     this.buildingGrid = new SpatialGrid(32);  // footprints (clearance tests, interactions)
     this.areaGrid = new SpatialGrid(100);     // water / beach / walkable extras
     this.pois = new Map();
+    this.fixedParked = [];                     // cars parked at a real place (garage car park): main.js spawns them as drivable vehicles when you are near
     this.parkingLots = [];                     // car park outlines (tile key, ring) for parking bays at the start
     this.surfaces = [];                        // pier decks, interior floors, bridge decks and ramps
     this.profiles = new Map();                 // OSM way id -> bridge deck / approach ramp elevation profile (whole ways)
@@ -290,6 +291,8 @@ export class World extends EventTarget {
         pierBight = pb; this.pierBightStart = pb.start; if (pb.heightFn) pb.levelRings.forEach((rg, k) => this.terrain.addModifier('pier-bight-' + k, rg, pb.heightFn));
         f.areas = f.areas.filter((a) => a.id !== PB.lotId); f.areas.push({ id: PB.lotId, kind: 'parking', outer: pb.ring, holes: [], tags: { amenity: 'parking' } });
       } }
+    // 79-83 Undercliff Road West: level the ground under the workshop so its floor and shutters are not buried in the slope (flats-83.js)
+    { const wb = ownBuildings.find((b) => isFlatsWing(b) && !b.isPart); if (wb && !this.terrain.mods?.some((m) => m.id === 'flats-wing')) { const wp = wingLevelPlan(wb, this.terrain); this.terrain.addModifier('flats-wing', wp.ring, wp.fn); } }
     let triangle = null;
     { const tp = trianglePlan(f, this.terrain); if (tp && inTile(tp.c[0], tp.c[1])) { triangle = tp; if (tp.heightFn) this.terrain.addModifier('triangle', tp.levelRing, tp.heightFn); } }
     { const pb2 = ownBuildings.find((b) => isPierBuilding(b) && !b.isPart);
@@ -420,7 +423,7 @@ export class World extends EventTarget {
         continue;
       }
       if (isFlatsWing(b) && !b.isPart) {
-        const fw = buildFlatsWing(b, ctx); landmarkMeshes.push(fw.group); this._addCollider(tile, b, fw.collider); for (const c of fw.colliders) this._addPrimitive(tile, c); b.geom = null; b.customModel = 'flats-wing';
+        const fw = buildFlatsWing(b, ctx); landmarkMeshes.push(fw.group); if (fw.parked) fw.parked.forEach((p, i) => this.fixedParked.push({ ...p, tile: tile.key, id: 'wing-' + i + '-' + tile.key })); this._addCollider(tile, b, fw.collider); for (const c of fw.colliders) this._addPrimitive(tile, c); b.geom = null; b.customModel = 'flats-wing';
         continue;
       }
       if (isRegal(b) && !b.isPart) {
@@ -572,6 +575,7 @@ export class World extends EventTarget {
     this.clearances = this.clearances.filter((c) => c.tile !== key);
     for (const id of t.pois || []) this.pois.delete(id);
     this.parkingLots = this.parkingLots.filter((l) => l.tile !== key);
+    this.fixedParked = this.fixedParked.filter((p) => p.tile !== key);
     this.interiors = this.interiors.filter((i) => !(t.interiors || []).includes(i));
     for (const [k, m] of t.signMaterials || []) { m.map.dispose(); m.dispose(); this._signMats.delete(k); }
     this.tiles.delete(key);
