@@ -277,7 +277,7 @@ export function buildFlatsWing(b, ctx) {
     for (let x = 1.0; x < W + 2; x += 2.6) { const zE = wallZ(x) - 0.5, zS = Math.max(3.2, zE - 5.0); const y = Math.max(gAt(x, (zE + zS) / 2) - base, -1) + 0.06; const g2 = new THREE.PlaneGeometry(0.1, zE - zS); g2.rotateX(-Math.PI / 2); g2.translate(x, y, (zE + zS) / 2); out.put(M.line, g2); }
   }
   // low red-brick boundary wall behind the pavement with stepped piers and a curved west end
-  { const x0 = 3.0, x1 = W + 1.0, step = 2.4; let prev = null;
+  { const x0 = 3.0, x1 = 17.5, step = 2.4;    // the wall stops at a green post: east of it the car park is open to the road (the way in and out) let prev = null;
     for (let x = x0; x < x1; x += step) { const xa = x, xb = Math.min(x1, x + step), zc = wallZ((xa + xb) / 2); const gy = Math.max(gAt((xa + xb) / 2, zc) - base, -1); const hgt = Math.round((gy + 0.55) / 0.1) * 0.1;
       out.box(M.boundary, xa, xb + 0.05, gy - 0.6, hgt + 0.0, zc - 0.17, zc + 0.17); out.box(M.concrete, xa, xb + 0.05, hgt, hgt + 0.09, zc - 0.22, zc + 0.22);
       const pier = (x_) => { const pz = wallZ(x_), pg = Math.max(gAt(x_, pz) - base, -1); out.box(M.boundary, x_ - 0.27, x_ + 0.27, pg - 0.6, pg + 0.95, pz - 0.27, pz + 0.27); out.box(M.concrete, x_ - 0.32, x_ + 0.32, pg + 0.95, pg + 1.05, pz - 0.32, pz + 0.32); };
@@ -289,6 +289,11 @@ export function buildFlatsWing(b, ctx) {
         const L = Math.hypot(xB - xA, zB - zA), ang = Math.atan2(xB - xA, zB - zA); const g = new THREE.BoxGeometry(0.34, 0.55 + 0.6, L + 0.05); g.rotateY(ang); g.translate((xA + xB) / 2, gy - 0.02, (zA + zB) / 2); out.put(M.boundary, g);
         const g3 = new THREE.BoxGeometry(0.44, 0.09, L + 0.08); g3.rotateY(ang); g3.translate((xA + xB) / 2, gy + 0.55, (zA + zB) / 2); out.put(M.concrete, g3);
         const a = toW(xA, zA), c = toW(xB, zB); colliders.push({ type: 'segment', a, b: c, r: 0.2, y0: base - 0.5, top: base + 1.2, kind: 'wall' }); } } }
+  // the entrance: a green post ends the wall, then a dropped-kerb opening with a drain grating across it, as photographed
+  { const xp = 17.8, zp = wallZ(xp), gy = Math.max(gAt(xp, zp) - base, -1); out.cyl(M.green, xp, gy - 0.1, gy + 1.05, zp, 0.06, 0.06, 8); colliders.push({ type: 'circle', x: toW(xp, zp)[0], z: toW(xp, zp)[1], r: 0.1, y0: base - 0.5, top: base + 1.1, kind: 'bollard' });
+    const Pp = [], I = []; const xs = []; for (let x = 18.2; x <= W + 3.01; x += 1.0) xs.push(x);
+    xs.forEach((x, i) => { const z = wallZ(x) + 0.05, y = Math.max(gAt(x, z) - base, -1) + 0.07; Pp.push(x, y, z - 0.2, x, y, z + 0.2); if (i) { const a = (i - 1) * 2; I.push(a, a + 1, a + 2, a + 2, a + 1, a + 3); } });
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(Pp, 3)); g.setIndex(I); g.computeVertexNormals(); out.put(M.dark, g); }
   // blue bollards, pay-and-display machine, signs
   for (const [x, z] of [[4.2, 6.0], [5.4, 5.6], [W - 6, 6.6]]) { const y = Math.max(gAt(x, z) - base, -1); out.cyl(M.blue, x, y, y + 1.05, z, 0.07, 0.07, 8); const p = toW(x, z); colliders.push({ type: 'circle', x: p[0], z: p[1], r: 0.1, y0: base - 0.5, top: base + 1.1, kind: 'bollard' }); }
   { const x = 8.2, z = 7.4, y = Math.max(gAt(x, z) - base, -1); out.box(M.grey, x - 0.22, x + 0.22, y, y + 1.55, z - 0.17, z + 0.17); out.box(M.black, x - 0.16, x + 0.16, y + 1.0, y + 1.3, z + 0.17, z + 0.19); out.box(M.blue, x - 0.22, x + 0.22, y + 1.55, y + 1.7, z - 0.17, z + 0.17); const p = toW(x, z); colliders.push({ type: 'circle', x: p[0], z: p[1], r: 0.3, y0: base - 0.5, top: base + 1.7, kind: 'sign' }); }
