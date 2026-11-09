@@ -1,5 +1,5 @@
 // The plaza in front of Felixstowe Leisure Centre (Street View photos supplied by the user, 2018-2019): a pinkish-brown block-paved
-// forecourt with a raised octagonal platform of two brick steps (benches round it), black litter bins with gold lids, navy triple-globe
+// forecourt with a raised octagonal platform of two brick steps, black litter bins with gold lids, navy triple-globe
 // lamp posts, a group of navy cycle hoops with bikes in front of the porch, and a yellow hatched box by the doors. The platform is real
 // ground: plazaPlan() adds a terrain modifier so the player walks up its steps.
 // Positions are in the frame of the entrance edge (u along the front, w out from it). Estimates, no imagery reproduced.
@@ -38,18 +38,18 @@ function mats() {
   const cv = (w, h, draw, rep = true) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; if (rep) t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; };
   let s = 7; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
   // herringbone block paving in pinkish brown with a few darker and greyer blocks
-  const paving = cv(256, 256, (g, w, h) => { g.fillStyle = '#6f635b'; g.fillRect(0, 0, w, h); const bw = 32, bh = 16;
-    for (let y = 0; y < h; y += bh) for (let x = 0; x < w; x += bw) { const k = ((x / bw) + (y / bh)) % 2; const l = 50 + (r() - 0.5) * 12; g.fillStyle = `hsl(${14 + r() * 12},${9 + r() * 9}%,${l - 8}%)`; if (k) g.fillRect(x + 1, y + 1, bw - 2, bh - 2); else g.fillRect(x + 1, y + 1, bh - 2, bw - 2); } });
-  const stepBrick = cv(256, 128, (g, w, h) => { g.fillStyle = '#4a3a34'; g.fillRect(0, 0, w, h); const ch = h / 6, bw = w / 6;
-    for (let row = 0; row < 6; row++) for (let k = -1; k < 7; k++) { const x = k * bw + (row % 2) * bw / 2; g.fillStyle = `hsl(${8 + r() * 8},${38 + r() * 12}%,${26 + r() * 10}%)`; g.fillRect(x + 1.5, row * ch + 1.5, bw - 3, ch - 3); } });
+  const paving = cv(256, 256, (g, w, h) => { g.fillStyle = '#6b625a'; g.fillRect(0, 0, w, h); const bw = 32, bh = 16;
+    for (let y = 0; y < h; y += bh) for (let x = 0; x < w; x += bw) { const k = ((x / bw) + (y / bh)) % 2; const l = 50 + (r() - 0.5) * 12; g.fillStyle = `hsl(${22 + r() * 14},${5 + r() * 6}%,${l - 10}%)`; if (k) g.fillRect(x + 1, y + 1, bw - 2, bh - 2); else g.fillRect(x + 1, y + 1, bh - 2, bw - 2); } });
+  const stepBrick = cv(256, 128, (g, w, h) => { g.fillStyle = '#34353a'; g.fillRect(0, 0, w, h); const ch = h / 6, bw = w / 6;
+    for (let row = 0; row < 6; row++) for (let k = -1; k < 7; k++) { const x = k * bw + (row % 2) * bw / 2; g.fillStyle = `hsl(${10 + r() * 14},${10 + r() * 10}%,${24 + r() * 10}%)`; g.fillRect(x + 1.5, row * ch + 1.5, bw - 3, ch - 3); } });
   const hatch = cv(256, 256, (g, w, h) => { g.clearRect(0, 0, w, h); g.strokeStyle = '#e8c92e'; g.lineWidth = 8; g.strokeRect(6, 6, w - 12, h - 12); g.lineWidth = 7; for (let k = -h; k < w + h; k += 34) { g.beginPath(); g.moveTo(k, h); g.lineTo(k + h, 0); g.stroke(); } }, false);
   M = {
-    paving: std({ map: paving, side: THREE.DoubleSide }), stepBrick: std({ map: stepBrick, side: THREE.DoubleSide }), top: std({ map: paving, color: 0xd8c4b4, side: THREE.DoubleSide }), coping: std({ color: 0x8b8178, roughness: 0.85 }),
+    paving: std({ map: paving, side: THREE.DoubleSide }), stepBrick: std({ map: stepBrick, side: THREE.DoubleSide }), top: std({ color: 0xa89c90, roughness: 0.95, side: THREE.DoubleSide }), coping: std({ color: 0xb59c78, roughness: 0.85 }),
     hatch: new THREE.MeshStandardMaterial({ map: hatch, transparent: true, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3, depthWrite: false }),
     pave: new THREE.MeshStandardMaterial({ map: paving, roughness: 0.95, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }),
     bin: std({ color: 0x1c1d1f, roughness: 0.6 }), binLid: std({ color: 0xb8964a, roughness: 0.45, metalness: 0.5 }), navy: std({ color: 0x1f2d4d, roughness: 0.5, metalness: 0.3 }),
     iron: std({ color: 0x202226, roughness: 0.6, metalness: 0.4 }), wood: std({ color: 0x8a6a46, roughness: 0.85 }),
-    globe: new THREE.MeshStandardMaterial({ color: 0xf2f2ee, roughness: 0.3, emissive: 0x555550, emissiveIntensity: 0.4 }),
+    globe: new THREE.MeshStandardMaterial({ color: 0x8e949a, roughness: 0.35, metalness: 0.3 }),
     tyre: std({ color: 0x151515 }), bikeA: std({ color: 0x6b3a8a, metalness: 0.4, roughness: 0.4 }), bikeB: std({ color: 0xcfd3d8, metalness: 0.5, roughness: 0.4 }), bikeC: std({ color: 0x2c6e9e, metalness: 0.4, roughness: 0.4 }),
   };
   return M;
@@ -72,7 +72,7 @@ export function buildLeisurePlaza(b, ctx, front, plan) {
   { const u0 = 6.0, u1 = 9.4, w0 = 3.2, w1 = 7.0, pts = [W(u0, w0), W(u1, w0), W(u1, w1), W(u0, w1)].map(([x, z]) => [x, gnd(x, z) + 0.04, z]);
     quad(m.hatch, pts[0], pts[1], pts[2], pts[3], [[0, 0], [1, 0], [1, 1], [0, 1]]); }
 
-  // ---- the raised octagonal platform: two brick steps and a paved top, benches on the top
+  // ---- the raised octagonal platform: two brick steps and a paved top
   { const oct = (A) => octagon(f, cx, cz, A), yBot = g - 0.3;
     const ring = (A, y0, y1, mat) => { const o = oct(A); for (let k = 0; k < 8; k++) { const p = o[k], q = o[(k + 1) % 8], L = Math.hypot(q[0] - p[0], q[1] - p[1]);
       quad(mat, [p[0], y0, p[1]], [q[0], y0, q[1]], [q[0], y1, q[1]], [p[0], y1, p[1]], [[0, 0], [L / 1.6, 0], [L / 1.6, (y1 - y0) / 0.8], [0, (y1 - y0) / 0.8]]); } };
@@ -82,11 +82,6 @@ export function buildLeisurePlaza(b, ctx, front, plan) {
     // coping bands on each step edge
     for (const [A, y] of [[PL.A0, g + PL.h0], [PL.A1, g + PL.h1]]) { const o = oct(A + 0.07); for (let k = 0; k < 8; k++) { const p = o[k], q = o[(k + 1) % 8]; const L = Math.hypot(q[0] - p[0], q[1] - p[1]), an = Math.atan2(q[0] - p[0], q[1] - p[1]);
       const ge = new THREE.BoxGeometry(0.16, 0.05, L + 0.05); ge.rotateY(an); ge.translate((p[0] + q[0]) / 2, y + 0.01, (p[1] + q[1]) / 2); K.put(m.coping, ge); } }
-    // benches: four on the top, backs to the lamp, facing outwards
-    for (let k = 0; k < 4; k++) { const an = (k * 2 + 1) * Math.PI / 4 + Math.PI / 4 * 0, ax = f.ex * Math.cos(an) + f.nx * Math.sin(an), az = f.ez * Math.cos(an) + f.nz * Math.sin(an), r = PL.A1 - 0.9;
-      const px = cx + ax * r, pz = cz + az * r, th = Math.atan2(ax, az), Fb = K.face(px, pz, th), y0 = g + PL.h1;
-      K.fbox(Fb, m.wood, -0.9, 0.9, y0 + 0.42, y0 + 0.47, -0.22, 0.22); K.fbox(Fb, m.wood, -0.9, 0.9, y0 + 0.62, y0 + 0.9, -0.22, -0.18);
-      for (const u of [-0.8, 0.8]) K.fbox(Fb, m.iron, u - 0.04, u + 0.04, y0, y0 + 0.9, -0.22, 0.22); }
   }
 
   // ---- litter bins (black with gold lids) round the platform and by the porch

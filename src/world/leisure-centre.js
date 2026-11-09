@@ -70,7 +70,7 @@ function mats() {
     fasciaBrown: std({ color: 0x4a3b30, roughness: 0.7 }),
     door: std({ color: 0x2a2b2e, roughness: 0.5 }),
     bowls: std({ map: bowls, roughness: 0.3, metalness: 0.15 }),
-    pier: std({ map: brickTex(14, 26, 38, 8), roughness: 0.95 }), brickLight: std({ map: brickTex(14, 55, 50, 12), roughness: 0.95 }),
+    pier: std({ map: brickTex(18, 13, 34, 8), roughness: 0.95 }), brickLight: std({ map: brickTex(14, 55, 50, 12), roughness: 0.95 }),
     louvre: std({ map: louvreTex, roughness: 0.6 }), front: std({ map: frontTex, roughness: 0.25, metalness: 0.15 }), doors: std({ map: doorsTex, roughness: 0.5 }), glazed: std({ map: glazedTex, roughness: 0.25, metalness: 0.2 }),
     stripe: std({ map: stripeTex, roughness: 0.6, side: THREE.DoubleSide }), red: std({ color: 0x8f1f26, roughness: 0.6, side: THREE.DoubleSide }),
     leisureSign: std({ map: board('FELIXSTOWE LEISURE CENTRE', '#1f4f94', '#ffffff', false), roughness: 0.5 }),
