@@ -70,7 +70,7 @@ function mats() {
     fasciaBrown: std({ color: 0x4a3b30, roughness: 0.7 }),
     door: std({ color: 0x2a2b2e, roughness: 0.5 }),
     bowls: std({ map: bowls, roughness: 0.3, metalness: 0.15 }),
-    pier: std({ map: brickTex(18, 13, 34, 8), roughness: 0.95 }), brickLight: std({ map: brickTex(14, 55, 50, 12), roughness: 0.95 }),
+    pier: std({ map: brickTex(20, 6, 28, 7), roughness: 0.95 }), brickLight: std({ map: brickTex(12, 62, 47, 10), roughness: 0.95 }),
     louvre: std({ map: louvreTex, roughness: 0.6 }), front: std({ map: frontTex, roughness: 0.25, metalness: 0.15 }), doors: std({ map: doorsTex, roughness: 0.5 }), glazed: std({ map: glazedTex, roughness: 0.25, metalness: 0.2 }),
     stripe: std({ map: stripeTex, roughness: 0.6, side: THREE.DoubleSide }), red: std({ color: 0x8f1f26, roughness: 0.6, side: THREE.DoubleSide }),
     leisureSign: std({ map: board('FELIXSTOWE LEISURE CENTRE', '#1f4f94', '#ffffff', false), roughness: 0.5 }),
@@ -228,12 +228,13 @@ export function buildLeisureCentre(b, ctx) {
     // the glazed entrance bay: red-framed posters on e12, the canted corner e13 and the first part of e14; dark glazed doors in the porch
     for (const e of [e12, e13]) glaze(e, m.front, 0.1, e.L - 0.1, gu(e, e.L / 2), yE - 0.5, -Wd + 0.05);
     glaze(e14, m.front, 0.1, 7.1, gu(e14, 3), yE - 0.5, -Wd + 0.05);
-    K.fbox(Fe(e14), m.glazed, 7.3, e14.L - 0.3, gu(e14, 9), yE - 0.8, -Wd - 0.5, -Wd - 0.44);
+    K.fbox(Fe(e14), m.glazed, 7.5, e14.L - 1.0, gu(e14, 9), yE - 0.8, -Wd + 0.02, -Wd + 0.1); // the doors, set back behind the piers (in front of the brick wall line)
     for (const e of [e12, e13, e14]) K.fbox(Fe(e), m.leisureSign, 0.05, e.L - 0.05, yE - 0.62, yE - 0.02, 0.43, 0.49);
     // road side, ground floor: dark glazed bays behind the piers (porch end and the first ~30 m)
     for (const [e, ua, ub] of (squared ? [[eAt(5), 0.2, eAt(5).L - 0.2], [eAt(6), 0.2, 30.5]] : [[eAt(5), 0.2, eAt(5).L - 0.2], [eAt(6), 0.2, eAt(6).L - 0.2], [eAt(7), 0.2, 30.5]])) { if (!e) continue; const ue = Math.min(ub, e.L - 0.2); glaze(e, m.glazed, ua, ue, gu(e, (ua + ue) / 2), yE - 0.15, -Wd + 0.05, 3.2); }
     // brick piers of the porch
-    for (const u of [7.2, e14.L - 0.6]) { const p = at(e14, u, -0.3), g = gAt(p[0], p[1]); K.fbox(Fe(e14), m.pier, u - 0.4, u + 0.4, g - 0.3, yE, -0.75, 0.05); colliders.push({ type: 'circle', x: p[0], z: p[1], r: 0.45, y0: g - 0.3, top: yE, kind: 'pier' }); }
+    for (const [u, mat, hw] of [[7.2, m.brickLight, 0.55], [e14.L - 0.6, m.pier, 0.5]]) { const p = at(e14, u, -0.3), g = gAt(p[0], p[1]); K.fbox(Fe(e14), mat, u - hw, u + hw, g - 0.3, yE, -0.95, 0.1); colliders.push({ type: 'circle', x: p[0], z: p[1], r: 0.55, y0: g - 0.3, top: yE, kind: 'pier' }); }
+    { const u = (7.2 + e14.L - 0.6) / 2, p = at(e14, u, -1.2), g = gAt(p[0], p[1]); K.fbox(Fe(e14), m.brickLight, u - 0.22, u + 0.22, g - 0.3, yE, -1.4, -1.0); } // slim middle pier set back
     for (const [e, u] of [[e11, 1.2], [e11, 10.5 - 1.2], [e14, 2.0], [e14, 6.4]]) { const p = at(e, Math.min(u, e.L - 0.3), 1.0), yb = gAt(p[0], p[1]); K.cyl(m.dark, p[0], yb, yb + 0.95, p[1], 0.055, 0.055, 6); K.cyl(m.yellow, p[0], yb + 0.8, yb + 0.95, p[1], 0.06, 0.06, 6); }
     // small red-and-white striped roof light on the lower roof above the porch
     { const e = e14, u0 = 5.0, u1 = Math.min(e14.L - 1.0, 10.8), d0 = 2.2, d1 = 3.7, tn = Math.tan(Y.pitch * Math.PI / 180), hh = 0.55, yR = (d) => yE + tn * (d + 0.4) + 0.08;
