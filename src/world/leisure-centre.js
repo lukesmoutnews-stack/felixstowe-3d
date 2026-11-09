@@ -166,11 +166,19 @@ export function buildLeisureCentre(b, ctx) {
   const okRings = lowInner && ring48 && lowInner.length === nOut && ring48.length === nOut && eaveRing.length === nOut && walls.length === nOut;
   if (okRings) {
     // plaza side: pent roof from the eaves up to the clerestory; hall side: a low overhanging roof straight up to the foot of the upper roof
-    ringRoof(eaveRing, lowInner, yE, yL, (i) => !hallE[i]);
-    // where pent meets hall: a brick end wall on the corner bisector
-    for (let v = 0; v < nOut; v++) { const i0 = (v + nOut - 1) % nOut; if (hallE[i0] === hallE[v]) continue; const ev = eaveRing[v], r48 = ring48[v], li = lowInner[v];
-      const P = [[ev[0], yE, ev[1]], [ev[0], yHall, ev[1]], [r48[0], yTop, r48[1]], [li[0], yL, li[1]]];
-      brick.quad(P[0], P[1], P[2], P[3], [0, 0], [0, 2], [2, 2], [2, 0], tint); brick.quad(P[3], P[2], P[1], P[0], [2, 0], [2, 2], [0, 2], [0, 0], tint); }
+    // plaza side: pent roof from the eaves up to the clerestory. Where it meets a hall (two-storey) edge its end is a hip: the top edge is pulled back
+    // along the wall and a triangle slopes down to the eave corner (as on the porch canopy in the photos)
+    const lowTop = lowInner.map((q) => q.slice()), HIP = 3.6;
+    for (let v = 0; v < nOut; v++) { const i0 = (v + nOut - 1) % nOut; if (hallE[i0] === hallE[v]) continue;
+      if (!hallE[i0]) { const e0 = E[i0]; lowTop[v] = [lowInner[v][0] - e0.ex * HIP, lowInner[v][1] - e0.ez * HIP]; } else { const e1 = E[v]; lowTop[v] = [lowInner[v][0] + e1.ex * HIP, lowInner[v][1] + e1.ez * HIP]; } }
+    ringRoof(eaveRing, lowTop, yE, yL, (i) => !hallE[i]);
+    for (let v = 0; v < nOut; v++) { const i0 = (v + nOut - 1) % nOut; if (hallE[i0] === hallE[v]) continue; const ev = eaveRing[v], lt = lowTop[v], li = lowInner[v];
+      const T = [[ev[0], yE, ev[1]], [lt[0], yL, lt[1]], [li[0], yL, li[1]]], uvq = (q) => [q[0] / 2, q[2] / 2];
+      roof.triFlat(T[0], T[1], T[2], uvq(T[0]), uvq(T[1]), uvq(T[2]), rtint); roof.triFlat(T[0], T[2], T[1], uvq(T[0]), uvq(T[2]), uvq(T[1]), rtint);
+      // the hall's side wall behind the hip (vertical, on the corner bisector)
+      const r48 = ring48[v], P = [[ev[0], yE, ev[1]], [ev[0], yHall, ev[1]], [r48[0], yTop, r48[1]], [li[0], yL, li[1]]];
+      brick.quad(P[0], P[1], P[2], P[3], [0, 0], [0, 2], [2, 2], [2, 0], tint); brick.quad(P[3], P[2], P[1], P[0], [2, 0], [2, 2], [0, 2], [0, 0], tint);
+    }
     // hall side, first floor: dark soffit, window wall between the piers, blue-grey fascia under the roof edge
     const upper = insetRing(outer, 0.45), soff = acc.get(cx, cz, 'facade:timber:false:0', true), ba = acc.get(cx, cz, 'pb:bowls');
     for (let i = 0; i < nOut; i++) { const e = E[i]; if (!hallE[i] || e.L < 1) continue; const a = walls[i], c = walls[(i + 1) % nOut];
