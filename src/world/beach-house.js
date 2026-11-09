@@ -64,8 +64,8 @@ function mats() {
 
 export function buildBeachHouse(b, ctx) {
   const m = mats(), outer = ensureCCW(b.outer);
-  // front: the long edge that faces the sea (towards the south-east), as in the photograph
-  const sea = [0.62, 0.78]; let best = null;
+  // front: the long edge that faces the Promenade (north-west, 5 m away), where the customers are: its back is to the sea
+  const sea = [-0.65, -0.75]; let best = null;
   for (let i = 0; i < outer.length; i++) {
     const a = outer[i], c = outer[(i + 1) % outer.length], L = Math.hypot(c[0] - a[0], c[1] - a[1]); if (L < 4) continue;
     const nx = -(c[1] - a[1]) / L, nz = (c[0] - a[0]) / L, score = nx * sea[0] + nz * sea[1] + L * 0.01; if (!best || score > best.score) best = { score, a, c, L, nx, nz };

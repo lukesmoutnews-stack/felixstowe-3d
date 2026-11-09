@@ -19,4 +19,5 @@ import { FEATURES as F17 } from './a18-south-scissortrix-glow-greyfriars.js';
 import { FEATURES as F18 } from './a19-south-church-postoffice-jobcentre.js';
 import { FEATURES as F19 } from './a20-bent-hill-grand-one29.js';
 import { FEATURES as F20 } from './a21-spa-pavilion.js';
-export const FEATURES = Object.assign({}, F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19, F20);
+import { FEATURES as F21 } from './a22-undercliff-shops.js';
+export const FEATURES = Object.assign({}, F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19, F20, F21);
