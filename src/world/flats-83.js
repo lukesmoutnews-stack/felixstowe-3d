@@ -119,6 +119,33 @@ function elevation(K, M, o) {
   planeOn(K, F, M.railGrey, u0 - 0.2, u1 + 0.2, top + 0.58, top + 1.5, 0.27);
 }
 
+/** The wing's front (Sept 2026 photos): seven equal bays between slim white posts that stand in front of the slabs. Only the lower
+ *  floor has balconies (glazed doors, black bar / glass railings); the upper floor is a ribbon of windows over a plain slab edge; the roof is
+ *  a terrace with a glazed railing on its own projecting slab. */
+function wingElevation(K, M, o) {
+  const { F, W, FH, y0, edges } = o, nb = edges.length - 1, top = y0 + 2 * FH;
+  K.panel(F, M.clad, 0, W, y0, top, 0.01, [1.6, 1.6]);
+  for (let k = 0; k < nb; k++) {
+    const a = edges[k], c = edges[k + 1], bw = c - a;
+    // lower floor: glazed doors onto the balcony
+    { const yf = y0; win(K, F, a + 0.25, c - 0.25, yf + 0.05, yf + 2.2, M, [0.34, 0.67], 0);
+      if (k % 3 === 1) K.fbox(F, M.white, a + 0.3, a + 0.3 + (bw - 0.6) * 0.3, yf + 0.1, yf + 2.1, 0.005, 0.015);   // a blind behind the glass
+      K.fbox(F, M.concrete, a, c, yf - 0.3, yf + 0.04, 0, 1.15);                                                    // balcony slab, thick edge
+      const kind = k % 4;
+      if (kind === 2) { planeOn(K, F, M.glassT, a + 0.05, c - 0.05, yf + 0.04, yf + 1.05, 1.1); K.fbox(F, M.grey, a, c, yf + 1.03, yf + 1.07, 1.07, 1.13); }
+      else planeOn(K, F, kind % 2 ? M.rail : M.railGrey, a + 0.05, c - 0.05, yf + 0.04, yf + 1.07, 1.1); }
+    // upper floor: ribbon windows, no balcony, a plain slab edge below
+    { const yf = y0 + FH; win(K, F, a + 0.2, c - 0.2, yf + 0.45, yf + 1.7, M, [0.5], 0);
+      K.fbox(F, M.concrete, a, c, yf - 0.2, yf + 0.02, 0, 0.4); }
+  }
+  // the roof: terrace slab with a glazed railing
+  K.fbox(F, M.concrete, 0, W, top - 0.45, top + 0.04, 0, 1.15);
+  planeOn(K, F, M.railGrey, 0.1, W - 0.1, top + 0.04, top + 1.1, 1.1);
+  K.fbox(F, M.concrete, 0, W, top + 1.08, top + 1.12, 1.07, 1.13);
+  // posts in front of the slabs, tall enough to carry the roof railing
+  for (let k = 0; k <= nb; k++) { const u = edges[k]; K.fbox(F, M.white, u - 0.12, u + 0.12, y0 - 0.35, top + 1.12, 0.98, 1.24); }
+}
+
 function pilotis(K, M, F, us, y0, y1, w) { for (const u of us) { const g = new THREE.CylinderGeometry(0.17, 0.17, y1 - y0, 12); g.translate(u, (y0 + y1) / 2, w); g.rotateY(F.th); g.translate(F.ox, 0, F.oz); K.put(M.white, g); } }
 
 function makeFrame(b, ctx, plan) {
@@ -173,24 +200,24 @@ export function wingLevelPlan(b, terrain) {
 }
 export function buildFlatsWing(b, ctx) {
   const M = mats(), P = makeFrame(b, ctx), { A, W, D, Ex, Ez, Nx, Nz, toW, gAt } = P, K = makeKit();
-  const U = 3.6, FH = 2.2, floors = 2, FOOT = 1.2, base = P.gMin;
+  const U = 4.15, FH = 2.6, floors = 2, FOOT = 1.2, base = P.gMin;
   const top = U + floors * FH, BACK = 5.0;
   const group = new THREE.Group(); group.name = 'landmark:flats-wing';
   const local = new THREE.Group(); local.position.set(A[0], base, A[1]); local.rotation.y = Math.atan2(-Ez, Ex); group.add(local);
   const F = K.face(0, 0, 0), colliders = []; const Mw = { ...M, glass: M.glassLight };
   // upper floors: a box that reaches over the undercroft to the front line
   K.box(M.clad, 0, W, U, top, -D, 0.0);
-  elevation(K, Mw, { F, W, floors, FH, y0: U, endW: 0.4, endE: 0.6, endMat: M.clad, bays: 7, edges: [0.4, 3.4, 6.8, 10.5, 14.3, 18.6, 23.4, 29.4], balconies: true, groundBalconies: true, fins: true }); // seven uneven bays, white clad to both ends (Sept 2026 photo)
+  wingElevation(K, Mw, { F, W, FH, y0: U, edges: [0.4, 4.57, 8.74, 12.91, 17.08, 21.25, 25.42, 29.6] });   // seven equal bays between white posts
   // underside of the cantilevered floor and the open undercroft: slab, back wall in dark brick, pilotis
   K.box(M.concreteDark, 0, W, U - 0.35, U, -BACK, 1.15);
   // the closed rear of the building, except the east end: a concrete driveway runs back under the flats to two green garage shutters
   // (Sept 2026 photo from 81 Undercliff Road West), open at the front and rising with the ground
-  const DW = 23.4;
+  const DW = 25.7;
   K.box(M.brown, 0, DW, -FOOT, U - 0.35, -D, -BACK);
   K.box(M.brown, DW - 0.3, DW, -FOOT, U - 0.35, -BACK, 1.0);                 // west side wall of the driveway, up to the reception
   K.box(M.brown, DW, W, -FOOT, U - 0.35, -D, -D + 0.3);                      // rear wall
   K.box(M.concreteDark, DW, W, U - 0.35, U, -D, -BACK);                      // ceiling over the driveway
-  { const FD = K.face(0, -D + 0.3, 0); for (const [a, c] of [[DW + 1.0, DW + 3.0], [DW + 3.4, DW + 5.4]]) { K.fbox(FD, M.green, a, c, 0.0, 2.2, 0.02, 0.08); for (let y = 0.15; y < 2.2; y += 0.16) K.fbox(FD, M.greenDark, a, c, y, y + 0.025, 0.08, 0.1); } }
+  { const FD = K.face(0, -D + 0.3, 0); for (const [a, c] of [[DW + 0.8, DW + 2.4], [DW + 2.7, DW + 3.8]]) { K.fbox(FD, M.green, a, c, 0.0, 2.3, 0.02, 0.08); for (let y = 0.15; y < 2.3; y += 0.16) K.fbox(FD, M.greenDark, a, c, y, y + 0.025, 0.08, 0.1); } }
   { const Pp = [], I = [], n = 16, ys = (u, v) => Math.max(gAt(u, v) - base, 0.05) + 0.1;       // the sloping concrete drive
     for (let i = 0; i <= n; i++) { const v = -BACK + 1.2 - (D - BACK + 0.0) * i / n; for (const u of [DW, W]) Pp.push(u, ys(u, v), v); }
     for (let i = 0; i < n; i++) { const a = i * 2; I.push(a, a + 1, a + 2, a + 2, a + 1, a + 3); }
@@ -202,24 +229,32 @@ export function buildFlatsWing(b, ctx) {
   // "MOTs" panel, two bright green roller shutters, an open workshop bay with a lift, then a glazed RECEPTION office with its own flat roof;
   // a continuous bright green fascia carries a lettered board over each: Tyres & Alignment Centre, M.O.T. Centre, Clutch Centre,
   // Brakes Batteries Exhausts (All Servicing & Repairs) and Reception.
-  { const FB = K.face(0, -BACK, 0), zb = -BACK;
-    K.fbox(FB, M.green, 1.7, 22.0, U - 1.35, U - 0.35, 0.02, 0.14);                       // bright green fascia band
-    K.fbox(FB, M.dark, 1.8, 2.9, 0.1, U - 1.35, 0.02, 0.08);                               // dark grille door at the west end
-    for (let y = 0.3; y < U - 1.35; y += 0.14) K.fbox(FB, M.concreteDark, 1.8, 2.9, y, y + 0.02, 0.08, 0.1);
-    for (const [a, c] of [[4.5, 7.1], [7.3, 10.0]]) { K.fbox(FB, M.green, a, c, 0.1, U - 1.35, 0.02, 0.08); for (let y = 0.25; y < U - 1.35; y += 0.16) K.fbox(FB, M.greenDark, a, c, y, y + 0.025, 0.08, 0.1); } // green roller shutters
-    K.fbox(FB, M.dark, 10.2, 17.4, 0.05, U - 1.35, 0.02, 0.06);                            // the open workshop bay
-    K.fbox(FB, M.grey, 11.3, 11.6, 0.05, 2.4, 0.2, 0.5); K.fbox(FB, M.grey, 12.6, 12.9, 0.05, 2.4, 0.2, 0.5); K.fbox(FB, M.grey, 11.3, 12.9, 1.0, 1.1, 0.2, 0.5); // a vehicle lift
-    for (const u of [14.6, 15.2]) K.fbox(FB, M.black, u, u + 0.55, 0.05, 0.75, 0.3, 0.85);  // tyre stacks
-    K.fbox(FB, M.greenDark, 10.2, 17.4, U - 1.5, U - 1.35, 0.02, 0.2);
-    K.fbox(FB, M.green, 17.5, 22.0, U - 1.55, U - 1.2, 0.02, 0.9);                         // reception roof, projecting
-    K.fbox(FB, M.glass, 17.9, 21.6, 0.1, U - 1.6, 0.02, 0.06); for (const u of [17.5, 17.9, 19.0, 20.3, 21.6, 22.0]) K.fbox(FB, M.green, u - 0.05, u + 0.05, 0.0, U - 1.55, 0.02, 0.1); K.fbox(FB, M.green, 17.5, 22.0, 0.0, 0.1, 0.02, 0.1);
-    K.fbox(FB, M.white, 2.95, 4.15, 0.45, U - 1.4, 0.02, 0.09);                              // the white MOTs panel
-    const label = (txt, sub, u0, u1, y0, y1, bg, fg) => { const w = u1 - u0, h = y1 - y0, t = cv(512, Math.round(512 * h / w), (g, W_, H_) => { g.fillStyle = bg; g.fillRect(0, 0, W_, H_); g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `italic 800 ${sub ? H_ * 0.4 : H_ * 0.58}px "Arial Narrow", Arial, sans-serif`; g.fillText(txt, W_ / 2, sub ? H_ * 0.32 : H_ / 2 + 2, W_ - 24); if (sub) { g.font = `italic 700 ${H_ * 0.3}px "Arial Narrow", Arial, sans-serif`; g.fillText(sub, W_ / 2, H_ * 0.72, W_ - 24); } g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 3; g.strokeRect(5, 5, W_ - 10, H_ - 10); }, false);
+  { const FB = K.face(0, -BACK, 0), zb = -BACK, OH = U - 1.55;                              // OH: top of the openings, under the fascia
+    K.fbox(FB, M.green, 0.8, 25.6, OH, OH + 0.45, 0.02, 0.14);                               // bright green fascia band the whole way along
+    K.fbox(FB, M.green, 5.15, 21.15, OH, U - 0.35, 0.02, 0.14);                              // taller where the four lettered boards hang
+    K.fbox(FB, M.green, 25.0, 25.6, 0.05, OH, 0.02, 0.1);
+    K.fbox(FB, M.dark, 0.9, 2.8, 0.1, OH, 0.02, 0.08);                                       // dark grille door at the west end
+    for (let y = 0.3; y < OH; y += 0.14) K.fbox(FB, M.concreteDark, 0.9, 2.8, y, y + 0.02, 0.08, 0.1);
+    for (const [a, c] of [[5.0, 8.9], [9.0, 12.9]]) { K.fbox(FB, M.green, a, c, 0.1, OH, 0.02, 0.08); for (let y = 0.25; y < OH; y += 0.16) K.fbox(FB, M.greenDark, a, c, y, y + 0.025, 0.08, 0.1); } // green roller shutters
+    K.fbox(FB, M.dark, 13.1, 21.1, 0.05, OH, 0.02, 0.06);                                    // the open workshop bay
+    K.fbox(FB, M.white, 18.0, 20.6, 0.5, OH - 0.2, 0.062, 0.07);                              // the bright back wall of the bay
+    K.fbox(FB, M.grey, 16.0, 16.3, 0.05, 2.4, 0.2, 0.5); K.fbox(FB, M.grey, 17.6, 17.9, 0.05, 2.4, 0.2, 0.5); K.fbox(FB, M.grey, 16.0, 17.9, 1.0, 1.1, 0.2, 0.5); // a vehicle lift
+    for (const u of [13.9, 14.5]) K.fbox(FB, M.black, u, u + 0.55, 0.05, 0.75, 0.3, 0.85);  // tyre stacks
+    K.fbox(FB, M.greenDark, 13.1, 21.1, OH - 0.1, OH, 0.02, 0.2);
+    // reception: green-framed glazed office with its door at the east end, a RECEPTION band above
+    K.fbox(FB, M.concrete, 21.4, 25.3, 0.0, OH - 0.1, 0.004, 0.012);                         // pale interior behind the glass
+    K.fbox(FB, M.glassLight, 21.5, 25.2, 0.12, OH - 0.1, 0.02, 0.06);
+    for (const u of [21.4, 22.6, 23.8, 24.35, 25.15, 25.3]) K.fbox(FB, M.green, u - 0.04, u + 0.04, 0.0, OH, 0.02, 0.1);
+    K.fbox(FB, M.green, 21.4, 25.3, 0.0, 0.14, 0.02, 0.1); K.fbox(FB, M.green, 21.4, 25.3, OH - 0.45, OH - 0.38, 0.02, 0.1); K.fbox(FB, M.green, 21.4, 25.3, 1.0, 1.05, 0.02, 0.1);
+    K.fbox(FB, M.green, 24.35, 25.15, 0.9, 1.08, 0.04, 0.12);                                // the door's push plate / handle bar
+    const label = (txt, sub, u0, u1, y0, y1, bg, fg) => { const w = u1 - u0, h = y1 - y0, t = cv(512, Math.round(512 * h / w), (g, W_, H_) => { g.fillStyle = bg; g.fillRect(0, 0, W_, H_); g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `italic 800 ${sub ? H_ * 0.4 : H_ * 0.58}px "Arial Narrow", Arial, sans-serif`; g.fillText(txt, W_ / 2, sub ? H_ * 0.34 : H_ / 2, W_ * 0.94); if (sub) { g.font = `700 ${H_ * 0.2}px Arial, sans-serif`; g.fillText(sub, W_ / 2, H_ * 0.74, W_ * 0.9); } });
       const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: t, roughness: 0.5 })); m.position.set((u0 + u1) / 2, (y0 + y1) / 2, zb + 0.16); local.add(m); };
-    const y0 = U - 1.3, y1 = U - 0.42;
-    label('TYRES & ALIGNMENT CENTRE', null, 4.55, 7.05, y0, y1, '#1f7a2a', '#ffffff'); label('M.O.T. CENTRE', null, 7.35, 9.95, y0, y1, '#1f7a2a', '#ffffff'); label('CLUTCH CENTRE', null, 10.25, 13.55, y0, y1, '#1f7a2a', '#ffffff');
-    label('BRAKES, BATTERIES, EXHAUSTS', 'ALL SERVICING & REPAIRS', 13.85, 17.35, y0, y1, '#2d8c32', '#ffffff'); label('RECEPTION', null, 18.4, 21.1, U - 1.5, U - 1.25, '#3da53a', '#ffffff');
-    label('MOTs', null, 3.0, 4.1, 1.5, 2.0, '#ffffff', '#1d4fa8'); }
+    const y0 = U - 1.1, y1 = U - 0.38;
+    label('TYRES & ALIGNMENT CENTRE', null, 5.25, 8.95, y0, y1, '#1f7a2a', '#ffffff'); label('M.O.T. CENTRE', null, 9.25, 12.95, y0, y1, '#1f7a2a', '#ffffff'); label('CLUTCH CENTRE', null, 13.35, 17.05, y0, y1, '#1f7a2a', '#ffffff');
+    label('BRAKES, BATTERIES, EXHAUSTS', 'ALL SERVICING & REPAIRS', 17.45, 21.05, y0, y1, '#2d8c32', '#ffffff'); label('RECEPTION', null, 22.0, 24.9, OH + 0.02, OH + 0.4, '#3da53a', '#ffffff');
+    // the white MOTs notice board: blue MOTs lettering over a green panel of services and the phone number
+    { const w = 2.0, h = OH - 0.1, t = cv(256, Math.round(256 * h / w), (g, W_, H_) => { g.fillStyle = '#ffffff'; g.fillRect(0, 0, W_, H_); g.fillStyle = '#1d4fa8'; g.font = `900 ${W_ * 0.26}px Arial, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('MOTs', W_ / 2, H_ * 0.13, W_ * 0.9); g.fillStyle = '#35a43a'; g.fillRect(W_ * 0.05, H_ * 0.26, W_ * 0.9, H_ * 0.58); g.fillStyle = '#ffffff'; for (let k = 0; k < 7; k++) g.fillRect(W_ * 0.12, H_ * (0.31 + k * 0.07), W_ * (0.5 + (k % 3) * 0.12), 3); g.fillStyle = '#1d4fa8'; g.font = `800 ${W_ * 0.12}px Arial, sans-serif`; g.fillText('01394 447442', W_ / 2, H_ * 0.92, W_ * 0.9); });
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: t, roughness: 0.6 })); m.position.set(3.8, 0.1 + h / 2, zb + 0.14); local.add(m); } }
   K.box(M.dark, 0, W, 0.0, 0.0, 0, 0);
   K.flush(local, 'flats-wing');
   // the wing is open below: collider for the walls only
