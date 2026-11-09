@@ -32,16 +32,16 @@ export const FRONTAGES = {
   // 129: OSM maps the bar row and The Grand as one footprint; the street face is the two-storey bar row (photo)
   506378806: { addr: '129 (One 29, The Cork Bar, Steak & Lobster Co)', photo: '129-cork-bar.png', height: 8.0, force: true, roofShape: 'hipped', style: { facade: 'render', tint: WHITE, roof: 'slate', winStyle: 1 }, details: [{ t: 'ironBalcony', level: 1.3, deep: 2.6 }] },
   // --- west of the Town Hall (photos 83 .. 47) ---
-  1017204177: { addr: '79-83 (flats over K W Autos)', photo: '83-flats-kw-autos.png', height: 11.0, roofShape: 'flat', style: { facade: 'concrete', tint: [0.93, 0.93, 0.9], roof: 'flat', winStyle: 1 }, details: [{ t: 'slabBalconies', levels: [1, 2, 3] }] },
+  1017204177: { addr: '79-83 (flats over the M.O.T. Centre)', photo: '83-flats-kw-autos.png', height: 11.0, roofShape: 'flat', style: { facade: 'concrete', tint: [0.93, 0.93, 0.9], roof: 'flat', winStyle: 1 }, details: [{ t: 'slabBalconies', levels: [1, 2, 3] }] },
   1017204178: { addr: '77 (glazed shopfront)', photo: 'winnies.png', height: 3.8, force: true, roofShape: 'flat', style: { facade: 'render', tint: [0.92, 0.92, 0.92], roof: 'flat' }, details: [] },
   1017204176: { addr: '73 (Domino\'s)', photo: '77-dominos.png', height: 6.6, roofShape: 'flat', style: { facade: 'brick_yellow', roof: 'flat' }, details: [{ t: 'roofRail', black: true }] },
   1017204185: { addr: '67 (B.B.Q. Fish & Chips)', photo: '63-shops.png', height: 3.9, force: true, roofShape: 'flat', style: { facade: 'render', tint: WHITE, roof: 'flat' }, details: [] },
   1017204184: { addr: '65', photo: '63-shops.png', height: 3.9, force: true, roofShape: 'flat', style: { facade: 'render', tint: WHITE, roof: 'flat' }, details: [] },
-  1017204183: { addr: '63 (Sweets & Treats)', photo: '63-shops.png', height: 3.9, force: true, roofShape: 'flat', style: { facade: 'render', tint: WHITE, roof: 'flat' }, details: [] },
+  1017204183: { addr: '63 (Life\'s a Beach)', photo: '63-shops.png', height: 3.9, force: true, roofShape: 'flat', style: { facade: 'render', tint: WHITE, roof: 'flat' }, details: [] },
   1017204182: { addr: '59-61 (The Little Ice Cream Co)', photo: '63-shops.png', height: 3.9, force: true, roofShape: 'flat', style: { facade: 'render', tint: WHITE, roof: 'flat' }, details: [] },
-  1017204181: { addr: '55-57 (black sign, no name)', photo: '53-shops.png', height: 3.9, force: true, roofShape: 'flat', style: { facade: 'render', tint: [0.9, 0.9, 0.9], roof: 'flat' }, details: [] },
-  1017204180: { addr: '51-53 (Nithin Express)', photo: '53-shops.png', height: 3.9, force: true, roofShape: 'flat', style: { facade: 'render', tint: [0.94, 0.94, 0.94], roof: 'flat' }, details: [] },
-  1017204186: { addr: '49', photo: '53-shops.png', height: 3.9, force: true, roofShape: 'flat', style: { facade: 'render', tint: [0.94, 0.94, 0.94], roof: 'flat' }, details: [] },
+  1017204181: { addr: '55-57 (The Grill)', photo: '53-shops.png', height: 3.9, force: true, roofShape: 'flat', style: { facade: 'render', tint: [0.9, 0.9, 0.9], roof: 'flat' }, details: [] },
+  1017204180: { addr: '51-53 (Nithin Convenience Store, Premier)', photo: '53-shops.png', height: 3.9, force: true, roofShape: 'flat', style: { facade: 'render', tint: [0.94, 0.94, 0.94], roof: 'flat' }, details: [] },
+  1017204186: { addr: '49 (Four Three Pizza)', photo: '53-shops.png', height: 3.9, force: true, roofShape: 'flat', style: { facade: 'render', tint: [0.94, 0.94, 0.94], roof: 'flat' }, details: [] },
   // --- B1082 near Wilco (photos 31-b1082-wilco, brick-house-by-wilco) ---
   1017338053: { addr: '31 B1082 (Wilco)', photo: '31-b1082-wilco.png', height: 6.8, force: true, roofShape: 'flat', style: { facade: 'render', tint: WHITE, roof: 'flat', winStyle: 1 }, details: [] },
   1017338054: { addr: 'red-brick house beside Wilco', photo: 'brick-house-by-wilco.png', height: 9.6, roofShape: 'gabled', style: { facade: 'brick_red', roof: 'clay', winStyle: 0 }, details: [{ t: 'whiteWall', gateToward: [-405, 190], extend: 6 }] }, // gate at the Wilco end; wall also fronts the single-storey wing
@@ -86,6 +86,13 @@ export const FRONTAGE_AREAS = {
 /** Shop fascia styles as photographed (merged into the researched brand styles). */
 export const PHOTO_FASCIAS = {
   'The Little Ice Cream Co': { fascia: '#e8622c', text: '#ffffff', case: 'upper', font: 'sans', weight: 'bold' },
+  'The Grill': { fascia: '#121a3b', text: '#ffffff', text2: '#e2352f', case: 'upper', font: 'sans', weight: 'bold' },
+  'Four Three Pizza': { fascia: '#1c2d8a', text: '#ffffff', case: 'mixed', font: 'sans', weight: 'bold' },
+  'Nithin Convenience Store': { fascia: '#f2c62e', text: '#4a1a28', case: 'upper', font: 'sans', weight: 'bold' },
+  "Life's a Beach": { fascia: '#b9783c', text: '#fff1d6', case: 'mixed', font: 'serif', weight: 'bold' },
+  'Rock Around The Shop': { fascia: '#e6489c', text: '#ffffff', case: 'upper', font: 'sans', weight: 'bold' },
+  'GMG Collectables': { fascia: '#1a1313', text: '#ef8a2a', case: 'upper', font: 'serif', weight: 'bold' },
+  'M.O.T. Centre': { fascia: '#4cb02c', text: '#ffffff', case: 'upper', font: 'sans', weight: 'bold' },
   'Sweets & Treats': { fascia: '#8ec5ec', text: '#e9b12c', case: 'mixed', font: 'serif', weight: 'bold' },
   'The Turtle & The Bear': { fascia: '#8b9198', text: '#ffffff', case: 'upper', font: 'sans', weight: 'regular' },
   'B.B.Q. Fish & Chips': { fascia: '#1f63c6', text: '#ffffff', case: 'upper', font: 'sans', weight: 'bold' },
@@ -100,7 +107,8 @@ export const PHOTO_FASCIAS = {
   'Alba Chiara': { fascia: '#efe9dc', text: '#2b2b2b', case: 'mixed', font: 'serif', weight: 'regular' },
   'Wilco': { fascia: '#f3d36b', text: '#d62828', case: 'upper', font: 'sans', weight: 'bold' },
 };
-for (const v of Object.values(PHOTO_FASCIAS)) Object.assign(v, { confidence: 'photo', sources: ['User-supplied Street View capture, June 2022 (docs/research/undercliff-road-west)'] });
+const FASCIAS_2026 = new Set(['The Grill', 'Four Three Pizza', 'Nithin Convenience Store', "Life's a Beach", 'Rock Around The Shop', 'GMG Collectables', 'M.O.T. Centre']);
+for (const [k, v] of Object.entries(PHOTO_FASCIAS)) Object.assign(v, { confidence: 'photo', sources: [FASCIAS_2026.has(k) ? 'User-supplied Street View capture, Sept 2026 (docs/research/undercliff-road-west-2026)' : 'User-supplied Street View capture, June 2022 (docs/research/undercliff-road-west)'] });
 Object.assign(BRAND_STYLES, PHOTO_FASCIAS); // signs on these shops use the photographed fascia colours
 
 // ---- per-area parts (content/frontage-parts/*.js) ----

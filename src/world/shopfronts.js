@@ -162,8 +162,11 @@ function paintSign(c, x0, y0, wMetres, s) {
     const tw = c.measureText(label).width; if (tw > maxW) { size *= maxW / tw; c.font = `${s.weight === 'bold' ? '700' : '600'} ${size}px ${family}`; }
     c.beginPath(); c.rect(x0, y0, CELL_W, CELL_H); c.clip();
     c.translate(x0 + CELL_W / 2, y0 + CELL_H / 2 + 1); c.scale(sx, 1);
-    c.fillStyle = s.text; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillText(label, 0, 0);
+    c.textBaseline = 'middle';
+    if (s.text2 && label.includes(' ')) { // two-colour name: the last word in the second colour (THE | GRILL)
+      const i = label.lastIndexOf(' '), a = label.slice(0, i + 1), b = label.slice(i + 1), wa = c.measureText(a).width, wb = c.measureText(b).width;
+      c.textAlign = 'left'; c.fillStyle = s.text; c.fillText(a, -(wa + wb) / 2, 0); c.fillStyle = s.text2; c.fillText(b, -(wa + wb) / 2 + wa, 0);
+    } else { c.fillStyle = s.text; c.textAlign = 'center'; c.fillText(label, 0, 0); }
   }
   c.restore();
 }
