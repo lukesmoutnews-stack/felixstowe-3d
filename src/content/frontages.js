@@ -39,7 +39,7 @@ export const FRONTAGES = {
   1017204184: { addr: '65', photo: '63-shops.png', height: 3.9, force: true, roofShape: 'flat', style: { facade: 'render', tint: WHITE, roof: 'flat' }, details: [] },
   1017204183: { addr: '63 (Sweets & Treats)', photo: '63-shops.png', height: 3.9, force: true, roofShape: 'flat', style: { facade: 'render', tint: WHITE, roof: 'flat' }, details: [] },
   1017204182: { addr: '59-61 (The Little Ice Cream Co)', photo: '63-shops.png', height: 3.9, force: true, roofShape: 'flat', style: { facade: 'render', tint: WHITE, roof: 'flat' }, details: [] },
-  1017204181: { addr: '55-57 (The Skye Lounge)', photo: '53-shops.png', height: 3.9, force: true, roofShape: 'flat', style: { facade: 'render', tint: [0.9, 0.9, 0.9], roof: 'flat' }, details: [] },
+  1017204181: { addr: '55-57 (black sign, no name)', photo: '53-shops.png', height: 3.9, force: true, roofShape: 'flat', style: { facade: 'render', tint: [0.9, 0.9, 0.9], roof: 'flat' }, details: [] },
   1017204180: { addr: '51-53 (Nithin Express)', photo: '53-shops.png', height: 3.9, force: true, roofShape: 'flat', style: { facade: 'render', tint: [0.94, 0.94, 0.94], roof: 'flat' }, details: [] },
   1017204186: { addr: '49', photo: '53-shops.png', height: 3.9, force: true, roofShape: 'flat', style: { facade: 'render', tint: [0.94, 0.94, 0.94], roof: 'flat' }, details: [] },
   // --- B1082 near Wilco (photos 31-b1082-wilco, brick-house-by-wilco) ---
@@ -90,7 +90,6 @@ export const PHOTO_FASCIAS = {
   'The Turtle & The Bear': { fascia: '#8b9198', text: '#ffffff', case: 'upper', font: 'sans', weight: 'regular' },
   'B.B.Q. Fish & Chips': { fascia: '#1f63c6', text: '#ffffff', case: 'upper', font: 'sans', weight: 'bold' },
   'Nithin Express': { fascia: '#f2c62e', text: '#1b1b1b', case: 'upper', font: 'sans', weight: 'bold' },
-  'The Skye Lounge': { fascia: '#141414', text: '#ffffff', case: 'mixed', font: 'sans', weight: 'bold' },
   "Domino's": { fascia: '#3c4248', text: '#ffffff', case: 'mixed', font: 'sans', weight: 'bold' },
   'KW Autos': { fascia: '#2b2b2b', text: '#ffffff', case: 'upper', font: 'sans', weight: 'bold' },
   "Gulliver's Wife": { fascia: '#1e1e1e', text: '#f0c543', case: 'upper', font: 'sans', weight: 'bold' },

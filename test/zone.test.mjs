@@ -84,16 +84,18 @@ for (const c of CLOSURES) {
   ok(d < 1.5, `closure ${c.name || c.road} is ${d.toFixed(1)} m off its way`);
   { const P = densify(r.pts, 1), dEnd = Math.min(...[P[0], P.at(-1)].map((e) => Math.hypot(e[0] - c.x, e[1] - c.z))); const wayLen = P.length - 1; ok(dEnd > 7 || c.kind === 'foot' || wayLen < 16, `closure ${c.name || c.road} is ${dEnd.toFixed(1)} m from the end of its way (in a junction)`); }
 }
-// 4b. nothing leads on past the Leisure Centre: Sea Road, the Promenade and the beach beyond it, and Undercliff Road
-//     West towards Garrison Lane, are closed (no finished buildings there yet)
-{ const LC = [-357, 245]; // the Leisure Centre
-  ok(inZone(...LC), 'Leisure Centre is inside the zone');
-  for (const [label, x, z] of [['Sea Road at Manwick Road', -657, 691], ['Sea Road at Arwela Road', -624, 624], ['Sea Road mid-way', -520, 420], ['The Promenade at Breakwater Bikes', -590, 641], ['the beach below Cavendish Road', -420, 380], ['Undercliff Road West at Garrison Lane', -600, 232], ['the roundabout at Garrison Lane', -620, 248]]) ok(!inZone(x, z), `${label} (${x}, ${z}) must be outside the zone`);
-  for (const [name, near] of [['Sea Road', [-394, 259]], ['Undercliff Road West', [-419.5, 217.6]]]) ok(CLOSURES.some((c) => c.name === name && c.kind === 'road' && Math.hypot(c.x - near[0], c.z - near[1]) < 4), `${name} has its closure at the Leisure Centre`); }
+// 4b. nothing leads on past the Skye Lounge and the pier: the Leisure Centre end of Undercliff Road West, Sea Road, the
+//     Promenade and the beach beyond them, and the road to Garrison Lane, are closed (no finished buildings there yet);
+//     the Skye Lounge, the pier building and everything towards the Spa Pavilion stay open
+{ for (const [label, x, z] of [['the Skye Lounge (55-57 Undercliff Road West)', -301, 181], ['the pier building', -239, 252], ['the Pier Bight car park', -245, 215], ['Undercliff Road West beyond the pier', -150, 125]]) ok(inZone(x, z), `${label} (${x}, ${z}) must be inside the zone`);
+  for (const [label, x, z] of [['the Leisure Centre west end', -350, 235], ['Sea Road at the roundabout', -384, 242], ['Sea Road at Manwick Road', -657, 691], ['Sea Road mid-way', -520, 420], ['The Promenade at Breakwater Bikes', -590, 641], ['the beach below Cavendish Road', -420, 380], ['the promenade below the Leisure Centre', -330, 290], ['Undercliff Road West at Garrison Lane', -600, 232], ['Undercliff Road West west of the Skye Lounge', -335, 208], ['the roundabout at Garrison Lane', -620, 248]]) ok(!inZone(x, z), `${label} (${x}, ${z}) must be outside the zone`);
+  ok(CLOSURES.some((c) => c.name === 'Undercliff Road West' && c.kind === 'road' && Math.hypot(c.x + 310, c.z - 198) < 6), 'Undercliff Road West is closed at the Skye Lounge');
+  ok(CLOSURES.some((c) => c.name === 'The Promenade' && c.kind === 'foot' && Math.hypot(c.x + 273, c.z - 249) < 6), 'the Promenade is closed at the pier');
+  ok(!CLOSURES.some((c) => c.name === 'Sea Road'), 'no Sea Road closure is needed any more (it is all outside the zone)'); }
 
-// 4c. nobody can get past the closures at the Leisure Centre.
+// 4c. nobody can get past the closures at the Skye Lounge and the pier.
 //   (i) along the lawn and beach there is no road to close, so a continuous line of barriers (FENCES) runs along the zone edge:
-//       from every point of the edge between the Sea Road barrier and the end of the fence, a walker 0.35 m wide crossing the
+//       from every point of the edge between the road barrier and the end of the fence, a walker 0.35 m wide crossing the
 //       edge at any angle (from 1 m inside to 1 m outside) hits a barrier collider;
 //   (ii) the barriers themselves are solid walls (segment colliders) and the soft boundary (zone.js playable) holds beyond them:
 //       just outside the edge, and just past each closure line across its whole band, is not playable.
@@ -101,15 +103,15 @@ for (const c of CLOSURES) {
   const R = 0.3 + 0.35, hit = (a, b) => segs.some(([p, q]) => { // does the walker's path a->b (a disc of radius 0.35) touch the barrier segment (radius 0.3)?
     const dist = (x, z) => { const dx = q[0] - p[0], dz = q[1] - p[1], t = Math.max(0, Math.min(1, ((x - p[0]) * dx + (z - p[1]) * dz) / (dx * dx + dz * dz))); return Math.hypot(x - p[0] - dx * t, z - p[1] - dz * t); };
     for (let k = 0; k <= 40; k++) if (dist(a[0] + (b[0] - a[0]) * k / 40, a[1] + (b[1] - a[1]) * k / 40) < R) return true; return false; });
-  const A = [-392, 258], Dn = [0.6222, 0.7828], Nn = [0.7828, -0.6222]; let gaps = 0, tried = 0, first = null;
-  for (let t = 8; t <= 135; t += 0.25) for (const ang of [-60, -30, 0, 30, 60]) { // crossing directions, degrees off the normal
+  const A = [-317, 199.8], Dn = [0.6222, 0.7828], Nn = [0.7828, -0.6222]; let gaps = 0, tried = 0, first = null;
+  for (let t = 18; t <= 120; t += 0.25) for (const ang of [-60, -30, 0, 30, 60]) { // crossing directions, degrees off the normal
     const e = [A[0] + Dn[0] * t, A[1] + Dn[1] * t], c = Math.cos(ang * Math.PI / 180), s = Math.sin(ang * Math.PI / 180), dir = [-(Nn[0] * c + Dn[0] * s), -(Nn[1] * c + Dn[1] * s)]; // from inside (north-east) towards outside
     const a0 = [e[0] - dir[0] * 6, e[1] - dir[1] * 6], b0 = [e[0] + dir[0] * 1, e[1] + dir[1] * 1]; tried++; if (!hit(a0, b0)) { gaps++; first ||= `${e.map((v) => v.toFixed(1))} @${ang}`; } }
-  ok(tried > 2000 && gaps === 0, `the fence along the Leisure Centre edge has ${gaps} gaps, first at ${first}`);
-  ok(FENCES.length >= 10 && FENCES.every((f) => f.len > 11 && f.len < 13), 'fence runs are six 2 m sections');
+  ok(tried > 2000 && gaps === 0, `the fence along the Skye Lounge to pier edge has ${gaps} gaps, first at ${first}`);
+  ok(FENCES.length >= 9 && FENCES.every((f) => f.len > 1.5 && f.len < 13), 'fence runs are whole 2 m sections (the first is a short link to the road barrier)');
   // the soft boundary: just outside the edge (anywhere along the cut and the corridor edge nearby) is not playable
-  let softLeaks = 0; for (let t = 0; t <= 140; t += 0.5) { const e = [A[0] + Dn[0] * t, A[1] + Dn[1] * t]; if (playable(e[0] - Nn[0] * 0.6, e[1] - Nn[1] * 0.6, 0.35)) softLeaks++; }
-  ok(softLeaks === 0, `${softLeaks} points just outside the Leisure Centre edge are still playable`);
+  let softLeaks = 0; for (let t = 0; t <= 125; t += 0.5) { const e = [A[0] + Dn[0] * t, A[1] + Dn[1] * t]; if (playable(e[0] - Nn[0] * 0.6, e[1] - Nn[1] * 0.6, 0.35)) softLeaks++; }
+  ok(softLeaks === 0, `${softLeaks} points just outside the Skye Lounge to pier edge are still playable`);
   // every closure's band blocks walking round the end of its barrier (past the barrier line, within the band)
   let bandLeaks = 0; for (const c of CLOSURES) { const rx = -c.uz, rz = c.ux, half = c.kind === 'foot' ? (c.hw === 'pedestrian' ? 14 : 6) : 16; for (let l = -half + 0.5; l < half; l += 0.5) { const x = c.x + c.ux * 1 + rx * l, z = c.z + c.uz * 1 + rz * l; if (playable(x, z, 0.3)) bandLeaks++; } }
   ok(bandLeaks === 0, `${bandLeaks} points just past a closure's barrier line are still playable`); }

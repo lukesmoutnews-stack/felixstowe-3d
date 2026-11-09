@@ -30,17 +30,17 @@ const BIG = [-1e9, -1e9, 1e9, 1e9];
 const SPEC = [
   { name: 'Hamilton Road', r: 45, why: 'main shopping street, Bent Hill to the High Road roundabout' },
   { name: 'Bent Hill', r: 40, why: 'links Hamilton Road to the seafront' },
-  // Launch (9 Nov 2026): the town ends at the Leisure Centre. West of it (Undercliff Road West to Garrison Lane) and
-  // south-west of it (Sea Road, the Promenade and the beach down to Manwick Road) there are no finished buildings yet,
-  // so those roads are closed at the Leisure Centre junction (x -381 is the junction itself).
-  { name: 'Undercliff Road West', r: 45, box: [-381, -1e9, 1e9, 1e9], why: 'seafront road, the Leisure Centre junction to below the Spa Pavilion' },
+  // Launch (9 Nov 2026): the town's south-west edge is a cut line across the seafront (see CUT below): the road closes at
+  // the Skye Lounge (55-57 Undercliff Road West) and the promenade at the pier. Everything south-west of it (the Leisure
+  // Centre, Sea Road, the road to Garrison Lane, the beach) is closed: no finished buildings there yet.
+  { name: 'Undercliff Road West', r: 45, box: [-330, -1e9, 1e9, 1e9], why: 'seafront road, the Skye Lounge to below the Spa Pavilion' },
   { name: 'Hamilton Gardens', r: 40, box: [-1e9, -1e9, 430, 1e9], why: 'cliff-top road past the Spa Pavilion' },
   { name: 'Orwell Road', r: 40, box: [-300, -1e9, 1e9, 1e9], why: 'shops west of Hamilton Road (to Bellbuoy Vintage)' },
   { name: 'Victoria Street', r: 40, why: 'town-centre street (Lantern Lane Books)' },
   { name: 'Cobbold Road', r: 40, box: [60, -1e9, 320, 1e9], why: 'east of the Triangle (Seaholly Plants)' },
   { name: 'Convalescent Hill', r: 35, why: 'Town Hall to the cliff top' },
   { ids: [6149340, 357281673, 357281672, 357281670, 357281669, 357281668, 357281665, 357281666, 357281730], r: 30, why: 'station forecourt and car park off Hamilton Road' },
-  { name: 'The Promenade', r: 30, box: [-315, -1e9, 530, 1e9], why: 'promenade, from the Leisure Centre to past the Spa Pavilion' },
+  { name: 'The Promenade', r: 30, box: [-315, -1e9, 530, 1e9], why: 'promenade, from the pier to past the Spa Pavilion' },
   { ids: [1281417446, 164058647, 1228469198], r: 35, why: 'Wolsey Gardens: the way back down from Bent Hill (one-way up) to the Town Hall' },
   { name: 'Railway Approach', r: 30, why: 'the station road (the station car park has no car link to Hamilton Road in OSM)' },
   { name: 'High Road West', r: 35, box: [-10, -1e9, 1e9, 1e9], why: 'from Railway Approach to the Hamilton Road roundabout' },
@@ -65,11 +65,14 @@ function simplify(pts) { // drop points that sit on a straight line within 0.5 m
 
 // shore polygon: landward edge along Sea Road and Undercliff Road West (from the OSM centrelines), seaward edge
 // 420 m out to sea, square to the coast (which runs SW-NE here)
-const land = [[-392, 258], [-384, 242], [-343, 210], [-277, 184], [-143, 115], [63, 14], [165, -32], [279, -84], [412, -126], [522, -164]];
+const land = [[-317, 199.8], [-277, 184], [-143, 115], [63, 14], [165, -32], [279, -84], [412, -126], [522, -164]];
 const sea = [0.62, 0.78], OFF = 420;
+// the cut: a straight line from the Skye Lounge end of the road (land[0]) to the sea, square to the coast. Inside is the
+// north-east side (the pier, the Spa Pavilion, the town centre); everything south-west of it is closed.
+const CUT = (() => { const dl = Math.hypot(sea[0], sea[1]), D = [sea[0] / dl, sea[1] / dl]; return { x: land[0][0], z: land[0][1], nx: +D[1].toFixed(4), nz: +(-D[0]).toFixed(4) }; })();
 const shore = [...land, ...land.slice().reverse().map((p) => [Math.round(p[0] + sea[0] * OFF), Math.round(p[1] + sea[1] * OFF)])];
 
-write({ corridors, shore, closures: [], fences: [] });
+write({ corridors, shore, cuts: [CUT], closures: [], fences: [] });
 
 // ---- 2. closures (using the game's own inZone) ----
 const { inZone } = await import(pathToFileURL(path.join(root, 'src/world/zone.js')).href + '?v=' + Date.now());
@@ -123,13 +126,18 @@ for (const c of closures) {
 const kept = [];
 for (const c of closures) if (!kept.some((k) => k.road === c.road && Math.hypot(k.x - c.x, k.z - c.z) < 20)) kept.push(c);
 kept.sort((p, q) => p.kind.localeCompare(q.kind) || p.name.localeCompare(q.name));
-// fences: a continuous line of barriers along the zone edge where it crosses open ground that has no road to close
-// (the lawn and beach SW of the Leisure Centre), 1.2 m inside the edge, from the Sea Road closure's barrier down the
-// beach. Built from the same shore edge as above, so the two cannot drift apart.
+// fences: a continuous line of barriers along the cut where it crosses open ground that has no road to close (the lawn,
+// promenade and beach between the Skye Lounge and the pier), 1.2 m inside the cut. It starts at the sea-side end of the
+// road closure's barrier (roadworks.js: carriageway half-width + 9 m each side) so there is no way round that end.
 const fences = [];
 { const A = land[0], dl = Math.hypot(sea[0], sea[1]), D = [sea[0] / dl, sea[1] / dl], N = [D[1], -D[0]], p = (t) => [+(A[0] + D[0] * t + N[0] * 1.2).toFixed(2), +(A[1] + D[1] * t + N[1] * 1.2).toFixed(2)];
-  fences.push({ why: 'Leisure Centre: edge of the town across the lawn, promenade and beach', pts: [p(6), p(140)] }); }
-write({ corridors, shore, closures: kept, fences });
+  const rc = kept.find((c) => c.kind === 'road' && c.name === 'Undercliff Road West' && Math.hypot(c.x - A[0], c.z - A[1]) < 15);
+  const pts = [p(125)];
+  if (rc) { const rx = -rc.uz, rz = rc.ux, sgn = rx * sea[0] + rz * sea[1] > 0 ? 1 : -1, reach = (rc.width || 5) / 2 + 9, P0 = [rc.x + rx * sgn * reach, rc.z + rz * sgn * reach];
+    let bt = 0, bd = Infinity; for (let t = 0; t <= 125; t += 0.25) { const q = p(t), d = Math.hypot(q[0] - P0[0], q[1] - P0[1]); if (d < bd) { bd = d; bt = t; } } // the fence-line point nearest the barrier end
+    pts.unshift(p(bt)); if (bd > 0.3) pts.unshift([+P0[0].toFixed(2), +P0[1].toFixed(2)]); }
+  fences.push({ why: 'Skye Lounge to the pier: edge of the town across the lawn, promenade and beach', pts }); }
+write({ corridors, shore, cuts: [CUT], closures: kept, fences });
 const by = {}; for (const c of kept) by[c.kind] = (by[c.kind] || 0) + 1;
 console.log('corridors', corridors.length, 'closures', kept.length, JSON.stringify(by), 'warning signs', kept.filter((c) => c.ahead).length);
 

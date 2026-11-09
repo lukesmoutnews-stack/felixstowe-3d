@@ -41,6 +41,7 @@ export function collectBusinesses(pois, frame, inTile) {
 
 function styleOf(biz) {
   if (biz.status === 'vacant') return { fascia: '#d9d6cf', text: '#2b2b2b', font: 'sans', weight: 'bold', case: 'upper', label: 'TO LET', source: 'vacant' };
+  if (biz.status === 'blank') return { fascia: '#141414', text: '#141414', font: 'sans', label: '', source: 'blank' }; // trading under no name yet: plain black sign
   if (biz.status === 'closed') return { fascia: '#bdb8ae', text: '#bdb8ae', font: 'sans', label: '', source: 'closed' };
   const s = BRAND_STYLES[biz.brand] || BRAND_STYLES[biz.name];
   if (s) return { ...s, font: s.font === 'script' ? 'serif' : s.font, label: biz.name, source: 'researched:' + s.confidence };
@@ -136,7 +137,7 @@ export function buildSigns(businesses, buildings, ctx, tileKey) {
     acc.quad(P(p.s1, f, y0), P(p.s1, off, y0), P(p.s1, off, top), P(p.s1, f, top), sv, sv, sv, sv);
     stats.signs++;
     if (p.style.source.startsWith('researched')) stats.researched++; else if (p.style.source === 'generated') stats.generated++;
-    if (['replaced', 'closed', 'vacant'].includes(p.biz.status)) stats.corrected++;
+    if (['replaced', 'closed', 'vacant', 'blank'].includes(p.biz.status)) stats.corrected++;
     if (p.biz.status === 'added') stats.added++;
     p.info = { id: p.biz.id, name: p.biz.name, status: p.biz.status, style: p.style.source, fascia: p.style.fascia, was: p.biz.was, evidence: p.biz.evidence, nx, nz, width: +(p.s1 - p.s0).toFixed(2), x: (P(p.s0, 0, 0)[0] + P(p.s1, 0, 0)[0]) / 2, z: (P(p.s0, 0, 0)[2] + P(p.s1, 0, 0)[2]) / 2, y: top };
   }

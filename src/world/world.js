@@ -25,6 +25,7 @@ import { isPierBuilding, buildPierBuilding, pierStepsGap, pierStepsZone, pierFra
 import { TRIANGLE, trianglePlan, buildTriangle } from './triangle.js';
 import { forecourtPlan, buildForecourt, FORECOURT_ID, FORECOURT_ROAD_EDGE } from './forecourt.js';
 import { isFishDish, buildFishDish } from './fish-dish.js';
+import { isBeachHouse, buildBeachHouse } from './beach-house.js';
 import { isRegal, buildRegal } from './regal.js';
 import { isTownHall, buildTownHall } from './town-hall.js';
 import { isFlatsSlab, isFlatsWing, buildFlatsSlab, buildFlatsWing } from './flats-83.js';
@@ -426,6 +427,10 @@ export class World extends EventTarget {
       }
       if (isFishDish(b) && !b.isPart) {
         const fd = buildFishDish(b, ctx); landmarkMeshes.push(fd.group); this._addCollider(tile, b, fd.collider); b.geom = null; b.customModel = 'fish-dish';
+        continue;
+      }
+      if (isBeachHouse(b) && !b.isPart) {
+        const bh = buildBeachHouse(b, ctx); landmarkMeshes.push(bh.group); this._addCollider(tile, b, bh.collider); b.geom = null; b.customModel = 'beach-house';
         continue;
       }
       if (isLeisureCentre(b) && !b.isPart) {

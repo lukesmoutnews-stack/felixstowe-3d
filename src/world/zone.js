@@ -12,6 +12,8 @@ import { PLAYABLE_ZONE } from '../content/playable-zone.js';
 import { pointInRing } from '../geo/polygon.js';
 
 const Z = PLAYABLE_ZONE;
+/** Half-planes that close everything on one side: a point (x, z) is inside when (p - c) . n >= 0. */
+const CUTS = Z.cuts || [];
 // segment list with bounding boxes, for a quick distance test
 const SEGS = [];
 for (const c of Z.corridors) for (let i = 1; i < c.pts.length; i++) {
@@ -28,6 +30,7 @@ function segDist(x, z, a, b) {
 
 /** True inside the playable zone (town centre + seafront). */
 export function inZone(x, z) {
+  for (const c of CUTS) if ((x - c.x) * c.nx + (z - c.z) * c.nz < 0) return false; // south-west of the cut line (the Skye Lounge to the pier): closed
   if (Z.shore && pointInRing(x, z, Z.shore)) return true;
   if (x < BOX.minX || x > BOX.maxX || z < BOX.minZ || z > BOX.maxZ) return false;
   for (const s of SEGS) { if (x < s.minX || x > s.maxX || z < s.minZ || z > s.maxZ) continue; if (segDist(x, z, s.a, s.b) <= s.r) return true; }

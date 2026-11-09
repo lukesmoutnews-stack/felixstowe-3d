@@ -538,6 +538,7 @@ export const BRAND_STYLES = {
 
 /** Corrections to OSM where newer evidence exists (keyed by OSM id as n123 / w123). */
 export const OVERRIDES = {
+ n9382433179: { status: "blank", was: "The Skye Lounge", evidence: ["User instruction, 9 Nov 2026: no longer The Skye Lounge; plain black sign for now"], note: "55-57 Undercliff Road West: black fascia with no name" },
  n6859083269: { name: "Felixstowe Mini Market", kind: "convenience", status: "replaced", was: "The Oaks Tearoom", evidence: ["User-supplied Google Street View, Sept 2026 (docs/research/hamilton-road-streetview/treasure-chest-abbeygate.png)"], note: "Shown beside Treasure Chest Books in the photo; the OSM node still says The Oaks Tearoom" },
  n6865114918: { name: "China Palace", kind: "restaurant", status: "replaced", was: "Saigon", evidence: ["https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/170"], note: "Premises licence for China Palace Restaurant, 11 Hamilton Road, from 7 Apr 2026" },
  n6865114968: { name: "China China", kind: "restaurant", status: "replaced", was: "Sam Moi Oriental", evidence: ["https://licensingpa.eastsuffolk.gov.uk/1/LicensingActPremises/Search/115"], note: "Premises licence for China China Restaurant, 8 Hamilton Road, from 30 Dec 2024" },
