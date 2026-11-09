@@ -340,11 +340,11 @@ function groundTexture(kind, seed = 7) {
       P.noise(0.07, 8); P.roughness(() => 0.85); break;
     }
     case 'blockpaving': { // herringbone-ish block paving
-      P.fill('#5b4a44', 90);
+      P.fill('#6a4c3f', 90);
       const bw = 32, bh = 16;
       for (let y = 0; y < P.h; y += bh) for (let x = -bw; x < P.w; x += bw) {
         const off = ((y / bh) % 2) * bw / 2; const tone = P.rand();
-        P.wrect(x + off + 1, y + 1, bw - 2, bh - 2, tone < 0.5 ? hsl(10, 25, 38 + P.rand() * 8) : hsl(20, 10, 50 + P.rand() * 8), 150);
+        P.wrect(x + off + 1, y + 1, bw - 2, bh - 2, tone < 0.6 ? hsl(17, 38, 42 + P.rand() * 8) : hsl(25, 28, 46 + P.rand() * 8), 150);
       }
       P.noise(0.06, 6); P.roughness(() => 0.85); break;
     }

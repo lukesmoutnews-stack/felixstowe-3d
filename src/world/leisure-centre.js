@@ -166,6 +166,8 @@ export function buildLeisureCentre(b, ctx) {
   const meshes = [], K = makeKit(), kg = new THREE.Group(); kg.name = 'leisure-details';
   const colliders = [], Wd = Y.colonnade, gAt = (x, z) => ctx.ground(x, z);
   const Fe = (e) => K.face(e.a[0], e.a[1], e.th), at = (e, u, w) => [e.a[0] + e.ex * u + e.nx * w, e.a[1] + e.ez * u + e.nz * w];
+  // the first bays of the road side (round the porch end) have a full-height dark glazed ground floor behind the piers, as in the street photos
+  const glazedGround = (e, u) => !!frontE && ((e.i === eAt(5).i || e.i === eAt(6).i) || (e.i === eAt(7).i && u < 31));
   // posts along the eaves: big brick piers round the bowls club, dark tapered steel posts elsewhere
   for (const e of E) {
     if (e.L < 4) continue; const n = Math.max(1, Math.round(e.L / 6));
@@ -174,7 +176,7 @@ export function buildLeisureCentre(b, ctx) {
       else { K.fbox(Fe(e), m.post, u - 0.35, u + 0.35, g - 0.3, yE, -0.85, -0.15); colliders.push({ type: 'circle', x: p[0], z: p[1], r: 0.3, y0: g - 0.3, top: yE, kind: 'post' }); } }
     // ground floor of the bowls club: louvred panels in the brick between the piers, red-framed glazed doors under the gable
     if (hallE[e.i]) { const n2 = Math.max(1, Math.round(e.L / 6)), bw = e.L / n2;
-      for (let k = 0; k < n2; k++) { const u = k * bw + bw / 2; if (k % 2 === 0) K.fbox(Fe(e), m.louvre, u - 1.0, u + 1.0, yE - 1.5, yE - 0.15, -Wd + 0.02, -Wd + 0.08); }
+      for (let k = 0; k < n2; k++) { const u = k * bw + bw / 2; if (k % 2 === 0 && !glazedGround(e, u)) K.fbox(Fe(e), m.louvre, u - 1.0, u + 1.0, yE - 1.5, yE - 0.15, -Wd + 0.02, -Wd + 0.08); }
       }
   }
   // gold-on-blue club boards on the first two bays of the long road-side face, on the eave fascia above the piers
@@ -182,7 +184,7 @@ export function buildLeisureCentre(b, ctx) {
   // navy railings along the kerb in front of the road-side piers (found from the nearest road)
   for (const e of E.filter((q) => q.bowls && q.L > 4)) {
     const rd = ctx.nearestRoad(e.mx + e.nx * 6, e.mz + e.nz * 6, 30, (r) => r.car); if (!rd) continue;
-    const w = Math.min(16, Math.max(3.5, 2 + rd.d)), Fr = Fe(e), u0 = 0.3, u1 = Math.min(e.L - 0.3, 38), nseg = Math.max(1, Math.round((u1 - u0) / 2.4));
+    const w = Math.min(16, Math.max(3.5, 2 + rd.d)), Fr = Fe(e), u0 = 0.3, u1 = Math.min(e.L - 0.3, 70), nseg = Math.max(1, Math.round((u1 - u0) / 2.4));
     for (let k = 0; k < nseg; k++) { const a0 = u0 + (u1 - u0) * k / nseg, a1 = u0 + (u1 - u0) * (k + 1) / nseg, pa = at(e, a0, w), pb = at(e, a1, w), gy = Math.min(gAt(pa[0], pa[1]), gAt(pb[0], pb[1]));
       const gg = new THREE.PlaneGeometry(a1 - a0 - 0.08, 1.05), uv = gg.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * (a1 - a0) / 1.2, uv.getY(i));
       gg.translate((a0 + a1) / 2, gy + 0.65, w); gg.rotateY(Fr.th); gg.translate(Fr.ox, 0, Fr.oz); K.put(m.railing, gg);
@@ -204,6 +206,8 @@ export function buildLeisureCentre(b, ctx) {
     glaze(e14, m.front, 0.1, 7.1, gu(e14, 3), yE - 0.5, -Wd + 0.05);
     K.fbox(Fe(e14), m.glazed, 7.3, e14.L - 0.3, gu(e14, 9), yE - 0.8, -Wd - 0.5, -Wd - 0.44);
     for (const e of [e12, e13, e14]) K.fbox(Fe(e), m.leisureSign, 0.05, e.L - 0.05, yE - 0.62, yE - 0.02, 0.43, 0.49);
+    // road side, ground floor: dark glazed bays behind the piers (porch end and the first ~30 m)
+    for (const [e, ua, ub] of [[eAt(5), 0.2, eAt(5).L - 0.2], [eAt(6), 0.2, eAt(6).L - 0.2], [eAt(7), 0.2, 30.5]]) { if (!e) continue; const ue = Math.min(ub, e.L - 0.2); glaze(e, m.glazed, ua, ue, gu(e, (ua + ue) / 2), yE - 0.15, -Wd + 0.05, 3.2); }
     // brick piers of the porch
     for (const u of [7.2, e14.L - 0.6]) { const p = at(e14, u, -0.3), g = gAt(p[0], p[1]); K.fbox(Fe(e14), m.pier, u - 0.4, u + 0.4, g - 0.3, yE, -0.75, 0.05); colliders.push({ type: 'circle', x: p[0], z: p[1], r: 0.45, y0: g - 0.3, top: yE, kind: 'pier' }); }
     for (const [e, u] of [[e11, 1.2], [e11, 10.5 - 1.2], [e14, 2.0], [e14, 6.4]]) { const p = at(e, Math.min(u, e.L - 0.3), 1.0), yb = gAt(p[0], p[1]); K.cyl(m.dark, p[0], yb, yb + 0.95, p[1], 0.055, 0.055, 6); K.cyl(m.yellow, p[0], yb + 0.8, yb + 0.95, p[1], 0.06, 0.06, 6); }
