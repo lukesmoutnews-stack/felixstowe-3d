@@ -36,6 +36,11 @@ function mats() {
     g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(0, 0, w, 4); g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(0, h - 5, w, 5);
     if (text) { g.fillStyle = '#ffffff'; g.textBaseline = 'middle'; g.textAlign = 'left'; g.beginPath(); g.arc(w * 0.045, h / 2, h * 0.3, 0, 7); g.fill(); g.strokeStyle = '#1f66b3'; g.lineWidth = 6; for (let k = 0; k < 3; k++) { g.beginPath(); g.moveTo(w * 0.045 - h * 0.22, h / 2 - h * 0.12 + k * h * 0.12); g.quadraticCurveTo(w * 0.045, h / 2 - h * 0.22 + k * h * 0.12, w * 0.045 + h * 0.22, h / 2 - h * 0.12 + k * h * 0.12); g.stroke(); }
       g.fillStyle = '#ffffff'; g.font = `500 ${h * 0.42}px "Helvetica Neue", Arial, sans-serif`; g.textAlign = 'center'; g.fillText(text, w * 0.5, h / 2 + 2); } });
+  const cafeTex = cnv(512, 160, (g, w, h) => { const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#4a382b'); gr.addColorStop(1, '#c2915a'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 3; i++) { g.fillStyle = 'rgba(255,228,176,0.32)'; g.fillRect(i * w / 3 + 10, h * 0.22, w / 3 - 20, h * 0.74); } g.fillStyle = '#d9d6cf'; g.fillRect(0, 0, w, h * 0.17);
+    g.strokeStyle = '#26282b'; g.lineWidth = 9; for (let i = 0; i <= 3; i++) { g.beginPath(); g.moveTo(i * w / 3, 0); g.lineTo(i * w / 3, h); g.stroke(); } g.beginPath(); g.moveTo(0, h * 0.2); g.lineTo(w, h * 0.2); g.stroke(); g.strokeRect(4, 4, w - 8, h - 8); });
+  const cafeBoard = cnv(512, 256, (g, w, h) => { g.fillStyle = '#141518'; g.fillRect(0, 0, w, h); g.fillStyle = '#f3f1ec'; g.textBaseline = 'middle'; g.textAlign = 'left'; g.font = `700 ${h * 0.34}px "Arial Narrow", Arial, sans-serif`; g.fillText('CAFÉ', w * 0.06, h * 0.27); g.fillText('OLOGY', w * 0.06, h * 0.74);
+    g.fillStyle = '#e8863a'; g.font = `italic 600 ${h * 0.13}px Georgia, serif`; g.fillText('Great Coffee', w * 0.58, h * 0.22); g.fillText('Great Cause.', w * 0.58, h * 0.7); });
   const entrance = cnv(512, 160, (g, w, h) => { // red-framed glazed front with posters
     g.fillStyle = '#3a4652'; g.fillRect(0, 0, w, h); let s = 5; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
     for (let i = 0; i < 6; i++) { const x = i * (w / 6); g.fillStyle = i % 2 ? '#dfe3e6' : `hsl(${r() * 360},45%,${55 + r() * 20}%)`; g.fillRect(x + 10, h * 0.25, w / 6 - 20, h * 0.68); }
@@ -83,6 +88,7 @@ function mats() {
     fasciaBrown: std({ color: 0x4a3b30, roughness: 0.7 }),
     door: std({ color: 0x2a2b2e, roughness: 0.5 }),
     bowls: std({ map: bowls, roughness: 0.3, metalness: 0.15 }),
+    cafeFront: std({ map: cafeTex, roughness: 0.3, metalness: 0.1, side: THREE.DoubleSide }),
     paveFloor: std({ map: paveTex, roughness: 0.9, side: THREE.DoubleSide }),
     pierOrange: std({ map: smoothBrick([196, 92, 52], '#d8c3ae', 26), roughness: 0.9 }), pierCharcoal: std({ map: smoothBrick([76, 80, 90], '#8d8f93', 16), roughness: 0.9 }),
     leisureBand: std({ map: bandTex(''), roughness: 0.5 }), leisureText: std({ map: bandTex('Felixstowe Leisure Centre'), roughness: 0.5 }),
@@ -91,7 +97,7 @@ function mats() {
     louvre: std({ map: louvreTex, roughness: 0.6 }), front: std({ map: frontTex, roughness: 0.25, metalness: 0.15 }), doors: std({ map: doorsTex, roughness: 0.5 }), glazed: std({ map: glazedTex, roughness: 0.25, metalness: 0.2 }),
     stripe: std({ map: stripeTex, roughness: 0.6, side: THREE.DoubleSide }), red: std({ color: 0x8f1f26, roughness: 0.6, side: THREE.DoubleSide }),
     leisureSign: std({ map: board('FELIXSTOWE LEISURE CENTRE', '#1f4f94', '#ffffff', false), roughness: 0.5 }),
-    cafeSign: std({ map: board('CAFE  GREAT COFFEE', '#1a1a1c', '#e8a23a', true), roughness: 0.5 }), bowlsSign1: std({ map: board('FELIXSTOWE INDOOR', '#1b2f63', '#d9b250', true), roughness: 0.5 }), bowlsSign2: std({ map: board('BOWLS CLUB', '#1b2f63', '#d9b250', true), roughness: 0.5 }),
+    cafeSign: std({ map: cafeBoard, roughness: 0.5 }), bowlsSign1: std({ map: board('FELIXSTOWE INDOOR', '#1b2f63', '#d9b250', true), roughness: 0.5 }), bowlsSign2: std({ map: board('BOWLS CLUB', '#1b2f63', '#d9b250', true), roughness: 0.5 }),
     fascia: std({ color: 0x1f4f94, roughness: 0.5 }), dark: std({ color: 0x25272a, roughness: 0.7 }), soffit: std({ color: 0x6e5f4d, roughness: 0.9 }),
     yellow: std({ color: 0xe7c829, roughness: 0.6 }), mapboard: std({ color: 0x3e79a8, roughness: 0.6 }),
   };
@@ -111,9 +117,9 @@ function squareCorner(ring) {
     const d1 = [P15[0] - prev[0], P15[1] - prev[1]], d2 = [far[0] - P17[0], far[1] - P17[1]], den = d1[0] * d2[1] - d1[1] * d2[0]; if (Math.abs(den) < 1e-6) return ring;
     const t = ((P17[0] - P15[0]) * d2[1] - (P17[1] - P15[1]) * d2[0]) / den, C = [P15[0] + d1[0] * t, P15[1] + d1[1] * t];
     const out = []; for (let k = 0; k < n; k++) { const idx = (i + k) % n; if (f) { if (k === 1 || k === 2) { if (k === 1) out.push(C); continue; } out.push(ring[idx]); } else { out.push(ring[idx]); } }
-    if (f) return out; // forward order: P15, C, then the rest
+    if (f) { out.notch = [P15, ring[(i + 1) % n], P17]; return out; } // forward order: P15, C, then the rest
     // reversed order: ring runs ..., V17, V16, V15, ...; rebuild as ..., C, V15, ...
-    const o2 = []; for (let k = 0; k < n; k++) { const idx = (i + k) % n; if (k === n - 1) { o2.push(C); continue; } if (k === n - 2) continue; o2.push(ring[idx]); } return o2;
+    const o2 = []; for (let k = 0; k < n; k++) { const idx = (i + k) % n; if (k === n - 1) { o2.push(C); continue; } if (k === n - 2) continue; o2.push(ring[idx]); } o2.notch = [P15, ring[(i + n - 1) % n], P17]; return o2;
   }
   return ring;
 }
@@ -145,8 +151,8 @@ export function buildLeisureCentre(b, ctx) {
   const eaveRing = insetRing(outer, -0.4) || outer;
   const brick = acc.get(cx, cz, 'facade:brick_red:false:0', true), roof = acc.get(cx, cz, 'roof:concrete_tile', true);
   const BAY = 3.2, ST = 2.9, tint = [0.95, 0.88, 0.86], rtint = [0.5, 0.49, 0.48];
-  const wallQ = (ring, y0, y1, a2 = brick) => { for (let i = 0; i < ring.length; i++) { const a = ring[i], c = ring[(i + 1) % ring.length], L = Math.hypot(c[0] - a[0], c[1] - a[1]); if (L < 0.05) continue; a2.quad([a[0], y0, a[1]], [c[0], y0, c[1]], [c[0], y1, c[1]], [a[0], y1, a[1]], [0, 0], [L / BAY, 0], [L / BAY, (y1 - y0) / ST], [0, (y1 - y0) / ST], tint); } };
-  wallQ(walls, g0 - 0.3, yE);
+  const wallQ = (ring, y0, y1, a2 = brick, skip = null) => { for (let i = 0; i < ring.length; i++) { if (skip && skip(i)) continue; const a = ring[i], c = ring[(i + 1) % ring.length], L = Math.hypot(c[0] - a[0], c[1] - a[1]); if (L < 0.05) continue; a2.quad([a[0], y0, a[1]], [c[0], y0, c[1]], [c[0], y1, c[1]], [a[0], y1, a[1]], [0, 0], [L / BAY, 0], [L / BAY, (y1 - y0) / ST], [0, (y1 - y0) / ST], tint); } };
+  wallQ(walls, g0 - 0.3, yE, brick, (i) => !!(squared && frontE && i === eAt(5).i && outer.notch)); // the north end's front is a recessed shopfront (built below)
   // hip ring between two rings (same vertex count), roof tiles UV in metres/2; y0f / y1f give the heights per edge
   const ringRoof = (o, inn, y0, y1, only) => { for (let i = 0; i < o.length; i++) { if (only && !only(i)) continue;
     const a = o[i], c = o[(i + 1) % o.length], ia = inn[i], ic = inn[(i + 1) % o.length], ex = c[0] - a[0], ez = c[1] - a[1], el = Math.hypot(ex, ez) || 1;
@@ -187,7 +193,7 @@ export function buildLeisureCentre(b, ctx) {
     // the upper roof: one hipped roof over the whole building. Its eave is level all round (the same line over the porch clerestory and over the
     // two-storey end, as in the photos); on the plaza side it sits just in front of the clerestory, on the hall sides it overhangs the piers.
     // Height = eave + pitch x distance to the nearest eave edge, so the hips and ridge fall out of the footprint.
-    { const dOff = (i) => (hallE[i] ? -0.9 : Y.lowerInset - 0.4), line = (i) => ({ nx: E[i].nx, nz: E[i].nz, k: E[i].nx * E[i].a[0] + E[i].nz * E[i].a[1] - dOff(i) });
+    { const dOff = (i) => (hallE[i] ? -1.5 : Y.lowerInset - 0.4), line = (i) => ({ nx: E[i].nx, nz: E[i].nz, k: E[i].nx * E[i].a[0] + E[i].nz * E[i].a[1] - dOff(i) });
       const R0 = []; for (let v = 0; v < nOut; v++) { const i0 = (v + nOut - 1) % nOut;
         if (hallE[i0] === hallE[v]) { R0.push(hallE[v] ? insetRing(outer, -0.9)?.[v] || eaveRing[v] : ring48[v]); continue; }
         const l1 = line(i0), l2 = line(v), det = l1.nx * l2.nz - l1.nz * l2.nx;
@@ -213,7 +219,7 @@ export function buildLeisureCentre(b, ctx) {
   for (const e of E) {
     if (e.L < 4 || (frontE && e.i === eAt(4).i)) continue; const n = Math.max(1, Math.round(e.L / 6)); // the porch edge has its own piers
     for (let k = 0; k <= n; k++) { if (k === n && E[(e.i + 1) % nOut].L >= 4) continue; const u = e.L * k / n, p = at(e, u, -0.35), g = gAt(p[0], p[1]);
-      if (hallE[e.i]) { K.fbox(Fe(e), m.pier, u - 0.5, u + 0.5, g - 0.3, yHall, -0.7, 0.3); colliders.push({ type: 'circle', x: p[0], z: p[1], r: 0.6, y0: g - 0.3, top: yHall, kind: 'pier' }); }
+      if (hallE[e.i]) { K.fbox(Fe(e), m.pierCharcoal, u - 0.45, u + 0.45, g - 0.3, yHall, -0.8, 0.1); colliders.push({ type: 'circle', x: p[0], z: p[1], r: 0.6, y0: g - 0.3, top: yHall, kind: 'pier' }); }
       else { K.fbox(Fe(e), m.post, u - 0.35, u + 0.35, g - 0.3, yE, -0.85, -0.15); colliders.push({ type: 'circle', x: p[0], z: p[1], r: 0.3, y0: g - 0.3, top: yE, kind: 'post' }); } }
     // ground floor of the bowls club: louvred panels in the brick between the piers, red-framed glazed doors under the gable
     if (hallE[e.i]) { const n2 = Math.max(1, Math.round(e.L / 6)), bw = e.L / n2;
@@ -224,11 +230,17 @@ export function buildLeisureCentre(b, ctx) {
   for (let i = 0; i < nOut; i++) { const ext = (!hallE[i] || (squared && frontE && i === eAt(5).i)) ? 1.7 : 0, a = [outer[i][0] + E[i].nx * ext, outer[i][1] + E[i].nz * ext], c = [outer[(i + 1) % nOut][0] + E[i].nx * ext, outer[(i + 1) % nOut][1] + E[i].nz * ext], wa = walls[i], wc = walls[(i + 1) % nOut], L = E[i].L; if (L < 0.5) continue;
     const P = [a, c, wc, wa].map(([x, z]) => [x, gAt(x, z) + 0.08, z]), ge = new THREE.BufferGeometry(); ge.setAttribute('position', new THREE.Float32BufferAttribute(P.flat(), 3));
     ge.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, L / 2, 0, L / 2, 1, 0, 1], 2)); ge.setIndex([0, 1, 2, 0, 2, 3]); ge.computeVertexNormals(); K.put(m.paveFloor, ge); }
+  // the north end's ground floor: a recessed glazed cafe front under the overhanging upper floor, with its own floor and ceiling
+  if (squared && frontE && outer.notch) { const [A, B2, C3] = outer.notch, Cc = eAt(5).c, pts = [A, B2, C3, Cc], dbl = (mat, P, idx, dn) => { const ge = new THREE.BufferGeometry(); ge.setAttribute('position', new THREE.Float32BufferAttribute(P.flat(), 3)); ge.setAttribute('uv', new THREE.Float32BufferAttribute(P.map((q, k) => [q[0] / 2, q[2] / 2]).flat(), 2)); ge.setIndex(idx); ge.computeVertexNormals(); K.put(mat, ge); };
+    for (const [p0, p1] of [[A, B2], [B2, C3]]) { const L = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]); if (L < 0.5) continue; const y0 = Math.min(gAt(p0[0], p0[1]), gAt(p1[0], p1[1])) + 0.05, y1 = yE - 0.1;
+      const ge = new THREE.BufferGeometry(); ge.setAttribute('position', new THREE.Float32BufferAttribute([p0[0], y0, p0[1], p1[0], y0, p1[1], p1[0], y1, p1[1], p0[0], y1, p0[1]], 3)); ge.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, L / 3, 0, L / 3, 1, 0, 1], 2)); ge.setIndex([0, 1, 2, 0, 2, 3]); ge.computeVertexNormals(); K.put(m.cafeFront, ge); }
+    const fl = pts.map(([x, z]) => [x, gAt(x, z) + 0.08, z]), ce = pts.map(([x, z]) => [x, yE + 0.02, z]);
+    dbl(m.paveFloor, fl, [0, 1, 2, 0, 2, 3]); dbl(m.louvre, ce, [0, 2, 1, 0, 3, 2]); dbl(m.louvre, ce, [0, 1, 2, 0, 2, 3]); }
   // gold-on-blue club boards on the first two bays of the long road-side face, on the eave fascia above the piers
   { const e = eAt(rdK); if (e) { K.fbox(Fe(e), m.bowlsSign1, 0.7, 6.2, yHall - 1.15, yHall - 0.5, 0.42, 0.48); K.fbox(Fe(e), m.bowlsSign2, 6.8, 12.3, yHall - 1.15, yHall - 0.5, 0.42, 0.48); } }
   // front of the north end (flush, square corner): club boards above and the cafe sign over the first-floor glazing, as in the plaza photos
   { const e = squared ? eAt(5) : null; if (e && e.L > 7) { K.fbox(Fe(e), m.bowlsSign1, 0.3, e.L / 2 - 0.1, yHall - 1.15, yHall - 0.5, 0.42, 0.48); K.fbox(Fe(e), m.bowlsSign2, e.L / 2 + 0.1, e.L - 0.3, yHall - 1.15, yHall - 0.5, 0.42, 0.48);
-      K.fbox(Fe(e), m.cafeSign, e.L / 2 + 0.3, e.L - 0.6, yE + 0.35, yE + 1.6, 0.42, 0.48); } }
+      K.fbox(Fe(e), m.cafeSign, e.L - 4.0, e.L - 0.7, yE + 0.25, yE + 2.25, 0.42, 0.48); } }
   // navy railings along the kerb in front of the road-side piers (found from the nearest road)
   for (const e of E.filter((q) => q.bowls && q.L > 4)) {
     const rd = ctx.nearestRoad(e.mx + e.nx * 6, e.mz + e.nz * 6, 30, (r) => r.car); if (!rd) continue;
