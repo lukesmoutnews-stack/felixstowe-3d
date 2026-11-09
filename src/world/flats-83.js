@@ -161,12 +161,12 @@ export function buildFlatsSlab(b, ctx) {
 export function wingLevelPlan(b, terrain) {
   const Fm = frameOf(b), { A, W, Ex, Ez, Nx, Nz } = Fm, toW = (u, v) => [A[0] + Ex * u + Nx * v, A[1] + Ez * u + Nz * v];
   let level = Infinity; for (let u = 0; u <= W; u += 3) { const p = toW(u, 0.3); level = Math.min(level, terrain.rawHeightAt(p[0], p[1])); }
-  const V0 = -5.3, V1 = 1.0, V2 = 4.2, U0 = -0.5, U1 = W + 0.5, E = 2.5;
-  const ring = [toW(U0 - E, V0), toW(U1 + E, V0), toW(U1 + E, V2), toW(U0 - E, V2)];
+  const V0 = -5.3, VB = -10.0, V1 = 1.0, V2 = 4.2, U0 = -0.5, U1 = W + 0.5, E = 2.5;
+  const ring = [toW(U0 - E, VB), toW(U1 + E, VB), toW(U1 + E, V2), toW(U0 - E, V2)];
   const sm = (t) => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
   const fn = (x, z, h) => {
     const dx = x - A[0], dz = z - A[1], u = dx * Ex + dz * Ez, v = dx * Nx + dz * Nz;
-    const eu = Math.max(U0 - u, u - U1, 0), wu = 1 - sm(eu / E), wv = v < V1 ? 1 : 1 - sm((v - V1) / (V2 - V1));
+    const eu = Math.max(U0 - u, u - U1, 0), wu = 1 - sm(eu / E), wv = v > V1 ? 1 - sm((v - V1) / (V2 - V1)) : v < V0 ? 1 - sm((V0 - v) / (V0 - VB)) : 1; // level to the back wall, then easing back up the slope under the east driveway
     const w = wu * wv; return h + (level - h) * w;
   };
   return { ring, fn, level };
@@ -183,7 +183,18 @@ export function buildFlatsWing(b, ctx) {
   elevation(K, Mw, { F, W, floors, FH, y0: U, endW: 0.4, endE: 0.6, endMat: M.clad, bays: 7, edges: [0.4, 3.4, 6.8, 10.5, 14.3, 18.6, 23.4, 29.4], balconies: true, groundBalconies: true, fins: true }); // seven uneven bays, white clad to both ends (Sept 2026 photo)
   // underside of the cantilevered floor and the open undercroft: slab, back wall in dark brick, pilotis
   K.box(M.concreteDark, 0, W, U - 0.35, U, -BACK, 1.15);
-  K.box(M.brown, 0, W, -FOOT, U - 0.35, -D, -BACK);              // the back wall and the closed rear of the building
+  // the closed rear of the building, except the east end: a concrete driveway runs back under the flats to two green garage shutters
+  // (Sept 2026 photo from 81 Undercliff Road West), open at the front and rising with the ground
+  const DW = 23.4;
+  K.box(M.brown, 0, DW, -FOOT, U - 0.35, -D, -BACK);
+  K.box(M.brown, DW - 0.3, DW, -FOOT, U - 0.35, -BACK, 1.0);                 // west side wall of the driveway, up to the reception
+  K.box(M.brown, DW, W, -FOOT, U - 0.35, -D, -D + 0.3);                      // rear wall
+  K.box(M.concreteDark, DW, W, U - 0.35, U, -D, -BACK);                      // ceiling over the driveway
+  { const FD = K.face(0, -D + 0.3, 0); for (const [a, c] of [[DW + 1.0, DW + 3.0], [DW + 3.4, DW + 5.4]]) { K.fbox(FD, M.green, a, c, 0.0, 2.2, 0.02, 0.08); for (let y = 0.15; y < 2.2; y += 0.16) K.fbox(FD, M.greenDark, a, c, y, y + 0.025, 0.08, 0.1); } }
+  { const Pp = [], I = [], n = 16, ys = (u, v) => Math.max(gAt(u, v) - base, 0.05) + 0.1;       // the sloping concrete drive
+    for (let i = 0; i <= n; i++) { const v = -BACK + 1.2 - (D - BACK + 0.0) * i / n; for (const u of [DW, W]) Pp.push(u, ys(u, v), v); }
+    for (let i = 0; i < n; i++) { const a = i * 2; I.push(a, a + 1, a + 2, a + 2, a + 1, a + 3); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(Pp, 3)); g.setIndex(I); g.computeVertexNormals(); K.put(M.concrete, g); }
   K.box(M.concrete, 0, W, -0.2, 0.05, -BACK, 1.2);               // the car-port floor
   K.fbox(F, M.brown, W - 3.4, W, 0, 0.0, 0, 0);
   pilotis(K, M, F, [0.5, W - 0.5], 0, U - 0.35, 1.0);                          // only the two end columns reach the ground at the front
@@ -215,7 +226,7 @@ export function buildFlatsWing(b, ctx) {
   const rect = [toW(0, 0), toW(W, 0), toW(W, -D), toW(0, -D)];
   const colls = [];
   for (const u of [0.5, W - 0.5]) { const p = toW(u, 1.0); colls.push({ type: 'circle', x: p[0], z: p[1], r: 0.2, y0: base - 0.3, top: base + U, kind: 'pilotis' }); }
-  const rear = [[toW(0, -BACK), toW(W, -BACK)], [toW(0, -BACK), toW(0, 0)], [toW(W, -BACK), toW(W, 0)]];
+  const rear = [[toW(0, -BACK), toW(DW, -BACK)], [toW(0, -BACK), toW(0, 0)], [toW(DW, -BACK), toW(DW, -D)], [toW(DW, -D + 0.15), toW(W, -D + 0.15)]];
   for (const [a, c] of rear) colls.push({ type: 'segment', a, b: c, r: 0.2, y0: base - 0.3, top: base + top, kind: 'building' });
   // ---- car park in front, boundary wall and street furniture ----
   const out = makeKit(); const loc2 = new THREE.Group(); loc2.position.set(A[0], base, A[1]); loc2.rotation.y = local.rotation.y; group.add(loc2);
