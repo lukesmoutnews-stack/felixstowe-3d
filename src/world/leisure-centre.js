@@ -132,7 +132,7 @@ export function buildLeisureCentre(b, ctx) {
     // hall side, first floor: dark soffit, window wall between the piers, blue-grey fascia under the roof edge
     const upper = insetRing(outer, 0.45), soff = acc.get(cx, cz, 'facade:timber:false:0', true), ba = acc.get(cx, cz, 'pb:bowls');
     for (let i = 0; i < nOut; i++) { const e = E[i]; if (!hallE[i] || e.L < 1) continue; const a = walls[i], c = walls[(i + 1) % nOut];
-      if (upper && upper.length === nOut) { const ua = upper[i], uc = upper[(i + 1) % nOut], nb = Math.max(1, Math.round(e.L / 6));
+      if (upper && upper.length === nOut) { const ua = upper[i], uc = upper[(i + 1) % nOut], nb = 2 * Math.max(1, Math.round(e.L / 6));
         soff.quad([a[0], yE + 0.1, a[1]], [c[0], yE + 0.1, c[1]], [uc[0], yE + 0.1, uc[1]], [ua[0], yE + 0.1, ua[1]], [0, 0], [e.L / BAY, 0], [e.L / BAY, 0.5], [0, 0.5], [0.8, 0.8, 0.8]);
         ba.quad([ua[0], yE + 0.1, ua[1]], [uc[0], yE + 0.1, uc[1]], [uc[0], yHall - 0.45, uc[1]], [ua[0], yHall - 0.45, ua[1]], [0, 0], [nb, 0], [nb, 1], [0, 1]); }
       const fa = eaveRing[i], fc = eaveRing[(i + 1) % nOut]; soff.quad([fa[0], yHall - 0.5, fa[1]], [fc[0], yHall - 0.5, fc[1]], [fc[0], yHall, fc[1]], [fa[0], yHall, fa[1]], [0, 0], [e.L / BAY, 0], [e.L / BAY, 0.3], [0, 0.3], [0.55, 0.5, 0.45]); }
