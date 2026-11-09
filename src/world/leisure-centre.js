@@ -156,7 +156,7 @@ export function buildLeisureCentre(b, ctx) {
     let rect = null;
     for (let k = 0; k < 40 && !rect; k++) { const d = k * 0.75, c = [W2(u0 + d, v0 + d), W2(u1 - d, v0 + d), W2(u1 - d, v1 - d), W2(u0 + d, v1 - d)]; if (u1 - u0 - 2 * d > 4 && v1 - v0 - 2 * d > 4 && c.every((q) => inRing(q[0], q[1]))) rect = c; }
     if (rect) {
-      const tanU = Math.tan(14 * Math.PI / 180); let prev = ensureCCW(rect), y = yTop;
+      const tanU = Math.tan(19 * Math.PI / 180); let prev = ensureCCW(rect), y = yTop;
       for (let k = 0; k < 14; k++) { const inn = insetRing(prev, 1.5); if (!inn || inn.length !== prev.length) break; ringRoof(prev, inn, y, y + 1.5 * tanU); y += 1.5 * tanU; prev = inn; }
       const c0 = prev.reduce((s2, q) => [s2[0] + q[0] / prev.length, s2[1] + q[1] / prev.length], [0, 0]);
       for (let i = 0; i < prev.length; i++) { const a2 = prev[i], c2 = prev[(i + 1) % prev.length]; roof.triFlat([a2[0], y, a2[1]], [c2[0], y, c2[1]], [c0[0], y + 0.3, c0[1]], [0, 0], [1, 0], [0.5, 0.5], rtint); }
