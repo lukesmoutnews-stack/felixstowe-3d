@@ -76,7 +76,7 @@ function mats() {
     leisureSign: std({ map: board('FELIXSTOWE LEISURE CENTRE', '#1f4f94', '#ffffff', false), roughness: 0.5 }),
     bowlsSign1: std({ map: board('FELIXSTOWE INDOOR', '#1b2f63', '#d9b250', true), roughness: 0.5 }), bowlsSign2: std({ map: board('BOWLS CLUB', '#1b2f63', '#d9b250', true), roughness: 0.5 }),
     fascia: std({ color: 0x1f4f94, roughness: 0.5 }), dark: std({ color: 0x25272a, roughness: 0.7 }), soffit: std({ color: 0x6e5f4d, roughness: 0.9 }),
-    yellow: std({ color: 0xe7c829, roughness: 0.6 }),
+    yellow: std({ color: 0xe7c829, roughness: 0.6 }), mapboard: std({ color: 0x3e79a8, roughness: 0.6 }),
   };
   return M;
 }
@@ -100,6 +100,10 @@ export function buildLeisureCentre(b, ctx) {
   // hall edges (bowls club and the west end) are two storeys under a low overhanging roof; the plaza side keeps the lower pent roof
   const hallE = E.map((e) => !!e.bowls || (e.nx * -0.91 + e.nz * 0.41 > 0.8 && e.L > 4));
   for (let k = 0; k < 3; k++) E.forEach((e, i) => { if (!hallE[i] && e.L < 6 && hallE[(i + nOut - 1) % nOut] && hallE[(i + 1) % nOut]) hallE[i] = true; });
+  // the plaza-side face, south to north (from the user's photos and aerial): e10 SSE wing, e11 door wall, e12 + e13 (canted) + e14 glazed
+  // entrance bay and porch, e15 + e16 the porch's end and the first two-storey piers, e17 the long road-side face
+  const eAt = (k) => (frontE ? E[(frontE.i + k) % nOut] : null);
+  if (frontE) { hallE[eAt(4).i] = false; hallE[eAt(5).i] = true; hallE[eAt(6).i] = true; hallE[eAt(7).i] = true; }
   const YH = 7.4, yE = base + Y.eave, yHall = base + YH, yTop = base + Y.clerestoryTop;
   const walls = insetRing(outer, Y.colonnade) || insetRing(outer, 1) || outer;
   const eaveRing = insetRing(outer, -0.4) || outer;
@@ -171,12 +175,10 @@ export function buildLeisureCentre(b, ctx) {
     // ground floor of the bowls club: louvred panels in the brick between the piers, red-framed glazed doors under the gable
     if (hallE[e.i]) { const n2 = Math.max(1, Math.round(e.L / 6)), bw = e.L / n2;
       for (let k = 0; k < n2; k++) { const u = k * bw + bw / 2; if (k % 2 === 0) K.fbox(Fe(e), m.louvre, u - 1.0, u + 1.0, yE - 1.5, yE - 0.15, -Wd + 0.02, -Wd + 0.08); }
-      if (e.mz < 213 && e.nx * 0.89 + e.nz * -0.45 > 0.9) K.fbox(Fe(e), m.glazed, e.L / 2 - 1.6, e.L / 2 + 1.6, gAt(e.mx, e.mz), yE - 0.9, -Wd + 0.02, -Wd + 0.08); }
+      }
   }
-  // gold-on-blue club boards on the east gable, on the eave fascia above the piers
-  for (const e of E.filter((q) => q.bowls && q.nx * 0.89 + q.nz * -0.45 > 0.9 && q.mz < 213)) {
-    K.fbox(Fe(e), e.L > 10 ? m.bowlsSign1 : m.bowlsSign2, 0.9, e.L - 0.9, yHall - 1.15, yHall - 0.5, 0.42, 0.48);
-  }
+  // gold-on-blue club boards on the first two bays of the long road-side face, on the eave fascia above the piers
+  { const e = eAt(7); if (e) { K.fbox(Fe(e), m.bowlsSign1, 0.7, 6.2, yHall - 1.15, yHall - 0.5, 0.42, 0.48); K.fbox(Fe(e), m.bowlsSign2, 6.8, 12.3, yHall - 1.15, yHall - 0.5, 0.42, 0.48); } }
   // navy railings along the kerb in front of the road-side piers (found from the nearest road)
   for (const e of E.filter((q) => q.bowls && q.L > 4)) {
     const rd = ctx.nearestRoad(e.mx + e.nx * 6, e.mz + e.nz * 6, 30, (r) => r.car); if (!rd) continue;
@@ -191,19 +193,22 @@ export function buildLeisureCentre(b, ctx) {
   // the entrance faces the plaza and car park (east): brick wall and double doors round the corner on the south face, then the red-framed
   // glazed front with posters, a canted corner, and the open porch to the north, all under one blue fascia that wraps the corner
   if (frontE) {
-    const e0 = frontE, e1 = E[(e0.i + 1) % nOut], e2 = E[(e0.i + 2) % nOut], F0 = Fe(e0), F1 = Fe(e1), F2 = Fe(e2), g1 = (e, u) => gAt(...at(e, u, -Wd)) + 0.05;
-    // south face (SSE): double doors, louvre and the first glazed facet at the corner
-    K.fbox(F0, m.doors, e0.L - 9.5, e0.L - 7.3, g1(e0, e0.L - 8), yE - 1.2, -Wd + 0.02, -Wd + 0.08);
-    K.fbox(F0, m.louvre, e0.L - 6.7, e0.L - 5.7, yE - 2.5, yE - 1.3, -Wd + 0.02, -Wd + 0.08);
-    K.fbox(F0, m.front, e0.L - 3.4, e0.L - 0.15, g1(e0, e0.L - 2), yE - 0.5, -Wd + 0.02, -Wd + 0.08);
-    K.fbox(F0, m.leisureSign, e0.L - 10.5, e0.L - 0.1, yE - 0.62, yE - 0.02, 0.43, 0.49);
-    // east face: main glazing with posters, then the porch
-    K.fbox(F1, m.front, 0.15, e1.L - 0.4, g1(e1, 3), yE - 0.5, -Wd + 0.02, -Wd + 0.08);
-    K.fbox(F1, m.leisureSign, 0.1, e1.L - 0.2, yE - 0.62, yE - 0.02, 0.43, 0.49);
-    K.fbox(F2, m.glazed, 0.4, e2.L - 0.3, g1(e2, 2), yE - 0.8, -Wd + 0.02, -Wd + 0.08); K.fbox(F2, m.leisureSign, 0.1, e2.L - 0.1, yE - 0.62, yE - 0.02, 0.43, 0.49);
-    for (const [e, u] of [[e0, e0.L - 10.5], [e1, 1.0], [e1, 7.5]]) { const p = at(e, u, 1.0), yb = gAt(p[0], p[1]); K.cyl(m.dark, p[0], yb, yb + 0.95, p[1], 0.055, 0.055, 6); K.cyl(m.yellow, p[0], yb + 0.8, yb + 0.95, p[1], 0.06, 0.06, 6); }
+    const e11 = eAt(1), e12 = eAt(2), e13 = eAt(3), e14 = eAt(4), gu = (e, u) => gAt(...at(e, u, -Wd)) + 0.05;
+    const glaze = (e, mat, u0, u1, y0, y1, w, bay = 9.5) => { const F = Fe(e), g2 = new THREE.PlaneGeometry(u1 - u0, y1 - y0), uv = g2.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, (u0 + uv.getX(i) * (u1 - u0)) / bay, uv.getY(i));
+      g2.translate((u0 + u1) / 2, (y0 + y1) / 2, w); g2.rotateY(F.th); g2.translate(F.ox, 0, F.oz); K.put(mat, g2); };
+    // door wall (e11): double doors, louvre, defibrillator, map board
+    { const F = Fe(e11), yg = gu(e11, 5); K.fbox(F, m.doors, 3.9, 6.1, yg, yE - 1.2, -Wd + 0.02, -Wd + 0.08); K.fbox(F, m.louvre, 6.9, 7.9, yE - 2.5, yE - 1.3, -Wd + 0.02, -Wd + 0.08);
+      K.fbox(F, m.yellow, 2.2, 2.7, yg + 1.0, yg + 1.6, -Wd + 0.02, -Wd + 0.08); K.fbox(F, m.mapboard, 8.3, 9.5, yg + 0.8, yg + 2.0, -Wd + 0.02, -Wd + 0.08); }
+    // the glazed entrance bay: red-framed posters on e12, the canted corner e13 and the first part of e14; dark glazed doors in the porch
+    for (const e of [e12, e13]) glaze(e, m.front, 0.1, e.L - 0.1, gu(e, e.L / 2), yE - 0.5, -Wd + 0.05);
+    glaze(e14, m.front, 0.1, 7.1, gu(e14, 3), yE - 0.5, -Wd + 0.05);
+    K.fbox(Fe(e14), m.glazed, 7.3, e14.L - 0.3, gu(e14, 9), yE - 0.8, -Wd - 0.5, -Wd - 0.44);
+    for (const e of [e12, e13, e14]) K.fbox(Fe(e), m.leisureSign, 0.05, e.L - 0.05, yE - 0.62, yE - 0.02, 0.43, 0.49);
+    // brick piers of the porch
+    for (const u of [7.2, e14.L - 0.6]) { const p = at(e14, u, -0.3), g = gAt(p[0], p[1]); K.fbox(Fe(e14), m.pier, u - 0.4, u + 0.4, g - 0.3, yE, -0.75, 0.05); colliders.push({ type: 'circle', x: p[0], z: p[1], r: 0.45, y0: g - 0.3, top: yE, kind: 'pier' }); }
+    for (const [e, u] of [[e11, 1.2], [e11, 10.5 - 1.2], [e14, 2.0], [e14, 6.4]]) { const p = at(e, Math.min(u, e.L - 0.3), 1.0), yb = gAt(p[0], p[1]); K.cyl(m.dark, p[0], yb, yb + 0.95, p[1], 0.055, 0.055, 6); K.cyl(m.yellow, p[0], yb + 0.8, yb + 0.95, p[1], 0.06, 0.06, 6); }
     // small red-and-white striped roof light on the lower roof above the porch
-    { const e = e1, u0 = 2.6, u1 = Math.min(e1.L - 2.6, 7.2), d0 = 2.2, d1 = 3.7, tn = Math.tan(Y.pitch * Math.PI / 180), hh = 0.55, yR = (d) => yE + tn * (d + 0.4) + 0.08;
+    { const e = e14, u0 = 5.0, u1 = Math.min(e14.L - 1.0, 10.8), d0 = 2.2, d1 = 3.7, tn = Math.tan(Y.pitch * Math.PI / 180), hh = 0.55, yR = (d) => yE + tn * (d + 0.4) + 0.08;
       const A = [at(e, u0, -d0), at(e, u1, -d0), at(e, u1, -d1), at(e, u0, -d1)], R = [at(e, u0 + 0.9, -(d0 + d1) / 2), at(e, u1 - 0.9, -(d0 + d1) / 2)];
       const pt = (q, y) => [q[0], y, q[1]], tri = (mat, a, b2, c2, uv) => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute([...a, ...b2, ...c2], 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.computeVertexNormals(); K.put(mat, g); };
       tri(m.stripe, pt(A[0], yR(d0)), pt(A[1], yR(d0)), pt(R[1], yR((d0 + d1) / 2) + hh), [0, 0, 6, 0, 6, 1]); tri(m.stripe, pt(A[0], yR(d0)), pt(R[1], yR((d0 + d1) / 2) + hh), pt(R[0], yR((d0 + d1) / 2) + hh), [0, 0, 6, 1, 0, 1]);
