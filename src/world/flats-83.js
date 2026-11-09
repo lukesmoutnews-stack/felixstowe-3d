@@ -5,7 +5,7 @@
 //    cladding panels, a row of white-framed windows and a balcony on every floor, slim pale concrete fins at every
 //    bay, dark-brown brick end walls (stair and lift towers), a flat roof with a thin parapet railing and a
 //    brick lift-motor room;
-//  - the WING (OSM way 1017204177, 79-83): three floors of flats cantilevered over an open undercroft on slim white
+//  - the WING (OSM way 1017204177, 79-83): two floors of flats cantilevered over an open undercroft on slim white
 //    pilotis, brown-brick end towers, balconies with black bar or glass railings, a green-fascia workshop and
 //    reception under it (no readable names), a car park in front with white bay lines, blue bollards, a ticket
 //    machine and signs, a low red-brick boundary wall with stepped piers and a curved end next to the pavement,
@@ -157,7 +157,7 @@ export function buildFlatsSlab(b, ctx) {
 // ------------------------------------------------------------------------------------------ the wing
 export function buildFlatsWing(b, ctx) {
   const M = mats(), P = makeFrame(b, ctx), { A, W, D, Ex, Ez, Nx, Nz, toW, gAt } = P, K = makeKit();
-  const U = 2.7, FH = 2.2, floors = 3, FOOT = 1.2, base = P.gMin;
+  const U = 2.7, FH = 2.2, floors = 2, FOOT = 1.2, base = P.gMin;
   const top = U + floors * FH, BACK = 5.0;
   const group = new THREE.Group(); group.name = 'landmark:flats-wing';
   const local = new THREE.Group(); local.position.set(A[0], base, A[1]); local.rotation.y = Math.atan2(-Ez, Ex); group.add(local);

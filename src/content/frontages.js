@@ -32,7 +32,7 @@ export const FRONTAGES = {
   // 129: OSM maps the bar row and The Grand as one footprint; the street face is the two-storey bar row (photo)
   506378806: { addr: '129 (One 29, The Cork Bar, Steak & Lobster Co)', photo: '129-cork-bar.png', height: 8.0, force: true, roofShape: 'hipped', style: { facade: 'render', tint: WHITE, roof: 'slate', winStyle: 1 }, details: [{ t: 'ironBalcony', level: 1.3, deep: 2.6 }] },
   // --- west of the Town Hall (photos 83 .. 47) ---
-  1017204177: { addr: '79-83 (flats over the M.O.T. Centre)', photo: '83-flats-kw-autos.png', height: 11.0, roofShape: 'flat', style: { facade: 'concrete', tint: [0.93, 0.93, 0.9], roof: 'flat', winStyle: 1 }, details: [{ t: 'slabBalconies', levels: [1, 2, 3] }] },
+  1017204177: { addr: '79-83 (flats over the M.O.T. Centre)', photo: '83-flats-kw-autos.png', height: 7.8, roofShape: 'flat', style: { facade: 'concrete', tint: [0.93, 0.93, 0.9], roof: 'flat', winStyle: 1 }, details: [{ t: 'slabBalconies', levels: [1, 2] }] },
   1017204178: { addr: '77 (glazed shopfront)', photo: 'winnies.png', height: 3.8, force: true, roofShape: 'flat', style: { facade: 'render', tint: [0.92, 0.92, 0.92], roof: 'flat' }, details: [{ t: 'shopFront', shop: 'gmg' }] },
   1017204176: { addr: '73 (Domino\'s)', photo: '77-dominos.png', height: 6.6, roofShape: 'flat', style: { facade: 'brick_yellow', roof: 'flat' }, details: [{ t: 'shopFront', shop: 'dominos' }, { t: 'roofRail', black: true }] },
   1017204185: { addr: '67 (B.B.Q. Fish & Chips)', photo: '63-shops.png', height: 3.9, force: true, roofShape: 'flat', style: { facade: 'render', tint: [0.93, 0.9, 0.8], roof: 'flat' }, details: [{ t: 'shopFront', shop: 'bbq' }] },
