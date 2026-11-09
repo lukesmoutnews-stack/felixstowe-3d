@@ -35,6 +35,7 @@ import { lookoutPlan } from './lookout.js';
 import { isTownHallGarden, gardenPlan, buildTownHallGardens } from './town-hall-gardens.js';
 import { isSpaPavilion, buildSpaPavilion, spaFloorLevel } from './spa-pavilion.js';
 import { isLeisureCentre, buildLeisureCentre, leisureMaterial } from './leisure-centre.js';
+import { plazaPlan, buildLeisurePlaza } from './leisure-plaza.js';
 import { collectBusinesses, markShopBuildings, buildSigns } from './shopfronts.js';
 import { facadeMaterial, shopMaterial, doorMaterial, rollerMaterial, roofMaterial, groundMaterial, waterMaterial, plainMaterial, LAYER } from './materials.js';
 import { matchLandmark } from '../content/landmarks.js';
@@ -293,6 +294,8 @@ export class World extends EventTarget {
       } }
     // 79-83 Undercliff Road West: level the ground under the workshop so its floor and shutters are not buried in the slope (flats-83.js)
     { const wb = ownBuildings.find((b) => isFlatsWing(b) && !b.isPart); if (wb && !this.terrain.mods?.some((m) => m.id === 'flats-wing')) { const wp = wingLevelPlan(wb, this.terrain); this.terrain.addModifier('flats-wing', wp.ring, wp.fn); } }
+    // Leisure centre plaza: raise the octagonal platform before the ground mesh is built (leisure-plaza.js)
+    { const lb = ownBuildings.find((b) => isLeisureCentre(b) && !b.isPart); if (lb && !this.terrain.mods?.some((m) => m.id === 'leisure-plaza')) { this.plazaPlans = this.plazaPlans || new Map(); const pp = plazaPlan(lb, this.terrain); if (pp) { this.plazaPlans.set(lb.id, pp); this.terrain.addModifier('leisure-plaza', pp.ring, pp.fn); } } }
     let triangle = null;
     { const tp = trianglePlan(f, this.terrain); if (tp && inTile(tp.c[0], tp.c[1])) { triangle = tp; if (tp.heightFn) this.terrain.addModifier('triangle', tp.levelRing, tp.heightFn); } }
     { const pb2 = ownBuildings.find((b) => isPierBuilding(b) && !b.isPart);
@@ -439,8 +442,9 @@ export class World extends EventTarget {
         continue;
       }
       if (isLeisureCentre(b) && !b.isPart) {
-        const lc = buildLeisureCentre(b, ctx); landmarkMeshes.push(...lc.meshes);
+        const lc = buildLeisureCentre(b, ctx); landmarkMeshes.push(...lc.meshes); for (const c of lc.colliders) this._addPrimitive(tile, c);
         this._addCollider(tile, { ...b, outer: lc.collider.outer, holes: [] }, lc.collider); b.geom = null; b.customModel = 'leisure-centre';
+        { const pz = buildLeisurePlaza(b, ctx, lc.front, this.plazaPlans?.get(b.id)); if (pz) { landmarkMeshes.push(pz.group); for (const c of pz.colliders) this._addPrimitive(tile, c); } }
         continue;
       }
       if (b.hasParts) { this._addCollider(tile, b); continue; }
