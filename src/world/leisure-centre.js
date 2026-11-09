@@ -29,6 +29,13 @@ function mats() {
       g.strokeStyle = '#0d0e10'; g.lineWidth = 7; g.strokeRect(x + 8, h * 0.08, lw - 16, h * 0.9); g.beginPath(); g.moveTo(x + 8, h * 0.4); g.lineTo(x + lw - 8, h * 0.4); g.stroke(); }
   });
   const paveTex = cnv(128, 128, (g, w, h) => { g.fillStyle = '#8a5f4e'; g.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 16) for (let x = -32; x < w; x += 32) { const o = (y / 16) % 2 ? 16 : 0, t = ((x * 7 + y * 13) % 5) / 5; g.fillStyle = `hsl(${16 + t * 8},${30 + t * 8}%,${42 + t * 8}%)`; g.fillRect(x + o + 1, y + 1, 30, 14); } });
+  const smoothBrick = (base, mortar, vary) => cnv(128, 256, (g, w, h) => { g.fillStyle = mortar; g.fillRect(0, 0, w, h); const ch = 11, bw = 38; let seed = 7; const r = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let y = 0, row = 0; y < h; y += ch, row++) for (let x = -(row % 2) * bw / 2; x < w; x += bw) { const t = (r() - 0.5) * vary; g.fillStyle = `rgb(${Math.max(0, Math.min(255, base[0] + t))},${Math.max(0, Math.min(255, base[1] + t * 0.8))},${Math.max(0, Math.min(255, base[2] + t * 0.7))})`; g.fillRect(x + 1, y + 1, bw - 2, ch - 2); }
+    const gr = g.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, 'rgba(0,0,0,0.22)'); gr.addColorStop(0.18, 'rgba(0,0,0,0)'); gr.addColorStop(0.8, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,0.3)'); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
+  const bandTex = (text) => cnv(2048, 128, (g, w, h) => { const gr = g.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, '#2a74bd'); gr.addColorStop(1, '#1b5aa3'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(0, 0, w, 4); g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(0, h - 5, w, 5);
+    if (text) { g.fillStyle = '#ffffff'; g.textBaseline = 'middle'; g.textAlign = 'left'; g.beginPath(); g.arc(w * 0.045, h / 2, h * 0.3, 0, 7); g.fill(); g.strokeStyle = '#1f66b3'; g.lineWidth = 6; for (let k = 0; k < 3; k++) { g.beginPath(); g.moveTo(w * 0.045 - h * 0.22, h / 2 - h * 0.12 + k * h * 0.12); g.quadraticCurveTo(w * 0.045, h / 2 - h * 0.22 + k * h * 0.12, w * 0.045 + h * 0.22, h / 2 - h * 0.12 + k * h * 0.12); g.stroke(); }
+      g.fillStyle = '#ffffff'; g.font = `500 ${h * 0.42}px "Helvetica Neue", Arial, sans-serif`; g.textAlign = 'center'; g.fillText(text, w * 0.5, h / 2 + 2); } });
   const entrance = cnv(512, 160, (g, w, h) => { // red-framed glazed front with posters
     g.fillStyle = '#3a4652'; g.fillRect(0, 0, w, h); let s = 5; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
     for (let i = 0; i < 6; i++) { const x = i * (w / 6); g.fillStyle = i % 2 ? '#dfe3e6' : `hsl(${r() * 360},45%,${55 + r() * 20}%)`; g.fillRect(x + 10, h * 0.25, w / 6 - 20, h * 0.68); }
@@ -61,7 +68,7 @@ function mats() {
       if (i === 0) { g.fillStyle = '#c24a8e'; g.fillRect(x + 20, h * 0.38, bw - 40, h * 0.25); }
       if (i === 2) { g.fillStyle = '#ffffff'; g.font = `700 ${h * 0.1}px Arial`; g.textAlign = 'center'; g.fillText('BIRTHDAY', x + bw / 2, h * 0.42); g.fillText('PARTIES!', x + bw / 2, h * 0.53); g.fillStyle = '#e8b24a'; g.beginPath(); g.arc(x + bw / 2, h * 0.75, bw * 0.17, 0, 7); g.fill(); }
       if (i === 4) { g.fillStyle = '#eaf7f8'; g.fillRect(x + 30, h * 0.5, bw - 60, h * 0.07); } }
-    g.strokeStyle = '#8f1f26'; g.lineWidth = 9; for (let i = 0; i <= 5; i++) { g.beginPath(); g.moveTo(i * bw, 0); g.lineTo(i * bw, h); g.stroke(); } g.beginPath(); g.moveTo(0, h * 0.28); g.lineTo(w, h * 0.28); g.stroke(); g.strokeRect(4, 4, w - 8, h - 8);
+    g.strokeStyle = '#2a2d31'; g.lineWidth = 9; for (let i = 0; i <= 5; i++) { g.beginPath(); g.moveTo(i * bw, 0); g.lineTo(i * bw, h); g.stroke(); } g.beginPath(); g.moveTo(0, h * 0.28); g.lineTo(w, h * 0.28); g.stroke(); g.strokeRect(4, 4, w - 8, h - 8);
   });
   const doorsTex = cnv(256, 160, (g, w, h) => { g.fillStyle = '#1f2124'; g.fillRect(0, 0, w, h); g.strokeStyle = '#3d4045'; g.lineWidth = 3; g.strokeRect(6, 6, w / 2 - 9, h - 12); g.strokeRect(w / 2 + 3, 6, w / 2 - 9, h - 12); });
   const glazedTex = cnv(256, 160, (g, w, h) => { g.fillStyle = '#2a323c'; g.fillRect(0, 0, w, h); g.fillStyle = 'rgba(200,215,230,.22)'; g.fillRect(0, 0, w, h * 0.3); g.strokeStyle = '#8f1f26'; g.lineWidth = 6; for (let i = 0; i <= 4; i++) { g.beginPath(); g.moveTo(i * w / 4, 0); g.lineTo(i * w / 4, h); g.stroke(); } g.beginPath(); g.moveTo(0, h * 0.3); g.lineTo(w, h * 0.3); g.stroke(); g.strokeRect(3, 3, w - 6, h - 6); });
@@ -77,6 +84,8 @@ function mats() {
     door: std({ color: 0x2a2b2e, roughness: 0.5 }),
     bowls: std({ map: bowls, roughness: 0.3, metalness: 0.15 }),
     paveFloor: std({ map: paveTex, roughness: 0.9, side: THREE.DoubleSide }),
+    pierOrange: std({ map: smoothBrick([196, 92, 52], '#d8c3ae', 26), roughness: 0.9 }), pierCharcoal: std({ map: smoothBrick([76, 80, 90], '#8d8f93', 16), roughness: 0.9 }),
+    leisureBand: std({ map: bandTex(''), roughness: 0.5 }), leisureText: std({ map: bandTex('Felixstowe Leisure Centre'), roughness: 0.5 }),
     porchDoors: std({ map: porchTex, roughness: 0.35, metalness: 0.2 }),
     pier: std({ map: brickTex(20, 6, 28, 7), roughness: 0.95 }), brickLight: std({ map: brickTex(12, 62, 47, 10), roughness: 0.95 }),
     louvre: std({ map: louvreTex, roughness: 0.6 }), front: std({ map: frontTex, roughness: 0.25, metalness: 0.15 }), doors: std({ map: doorsTex, roughness: 0.5 }), glazed: std({ map: glazedTex, roughness: 0.25, metalness: 0.2 }),
@@ -202,7 +211,7 @@ export function buildLeisureCentre(b, ctx) {
   const glazedGround = (e, u) => !!frontE && ((e.i === eAt(5).i && rdK === 7) || (rdK === 7 && e.i === eAt(6).i) || (rdK === 6 && e.i === eAt(5).i) || (e.i === eAt(rdK).i && u < 31));
   // posts along the eaves: big brick piers round the bowls club, dark tapered steel posts elsewhere
   for (const e of E) {
-    if (e.L < 4) continue; const n = Math.max(1, Math.round(e.L / 6));
+    if (e.L < 4 || (frontE && e.i === eAt(4).i)) continue; const n = Math.max(1, Math.round(e.L / 6)); // the porch edge has its own piers
     for (let k = 0; k <= n; k++) { if (k === n && E[(e.i + 1) % nOut].L >= 4) continue; const u = e.L * k / n, p = at(e, u, -0.35), g = gAt(p[0], p[1]);
       if (hallE[e.i]) { K.fbox(Fe(e), m.pier, u - 0.5, u + 0.5, g - 0.3, yHall, -0.7, 0.3); colliders.push({ type: 'circle', x: p[0], z: p[1], r: 0.6, y0: g - 0.3, top: yHall, kind: 'pier' }); }
       else { K.fbox(Fe(e), m.post, u - 0.35, u + 0.35, g - 0.3, yE, -0.85, -0.15); colliders.push({ type: 'circle', x: p[0], z: p[1], r: 0.3, y0: g - 0.3, top: yE, kind: 'post' }); } }
@@ -244,12 +253,12 @@ export function buildLeisureCentre(b, ctx) {
     for (const e of [e12, e13]) glaze(e, m.front, 0.1, e.L - 0.1, gu(e, e.L / 2), yE - 0.5, -Wd + 0.05);
     glaze(e14, m.front, 0.1, 7.1, gu(e14, 3), yE - 0.5, -Wd + 0.05);
     K.fbox(Fe(e14), m.porchDoors, 7.5, e14.L - 1.0, gu(e14, 9), yE - 0.55, -Wd + 0.02, -Wd + 0.1); // the doors, set back behind the piers (in front of the brick wall line)
-    for (const e of [e12, e13, e14]) K.fbox(Fe(e), m.leisureSign, 0.05, e.L - 0.05, yE - 0.5, yE - 0.02, 0.43, 0.49);
+    for (const [e, mat] of [[e12, m.leisureBand], [e13, m.leisureBand], [e14, m.leisureText]]) K.fbox(Fe(e), mat, 0.05, e.L - 0.05, yE - 0.5, yE - 0.02, 0.43, 0.49);
     // road side, ground floor: dark glazed bays behind the piers (porch end and the first ~30 m)
     for (const [e, ua, ub] of (squared ? [[eAt(5), 0.2, eAt(5).L - 0.2], [eAt(6), 0.2, 30.5]] : [[eAt(5), 0.2, eAt(5).L - 0.2], [eAt(6), 0.2, eAt(6).L - 0.2], [eAt(7), 0.2, 30.5]])) { if (!e) continue; const ue = Math.min(ub, e.L - 0.2); glaze(e, m.glazed, ua, ue, gu(e, (ua + ue) / 2), yE - 0.15, -Wd + 0.05, 3.2); }
     // brick piers of the porch
-    for (const [u, mat, hw] of [[7.2, m.brickLight, 0.55], [e14.L - 0.6, m.pier, 0.5]]) { const p = at(e14, u, -0.3), g = gAt(p[0], p[1]); K.fbox(Fe(e14), mat, u - hw, u + hw, g - 0.3, yE, -0.95, 0.1); colliders.push({ type: 'circle', x: p[0], z: p[1], r: 0.55, y0: g - 0.3, top: yE, kind: 'pier' }); }
-    { const u = (7.2 + e14.L - 0.6) / 2, p = at(e14, u, -1.2), g = gAt(p[0], p[1]); K.fbox(Fe(e14), m.brickLight, u - 0.22, u + 0.22, g - 0.3, yE, -1.4, -1.0); } // slim middle pier set back
+    for (const [u, mat, hw] of [[7.2, m.pierOrange, 0.5], [e14.L - 0.6, m.pierCharcoal, 0.45]]) { const p = at(e14, u, -1.0), g = gAt(p[0], p[1]); K.fbox(Fe(e14), mat, u - hw, u + hw, g - 0.3, yE - 0.02, -1.5, -0.5); colliders.push({ type: 'circle', x: p[0], z: p[1], r: 0.6, y0: g - 0.3, top: yE, kind: 'pier' }); }
+    { const u = (7.2 + e14.L - 0.6) / 2, p = at(e14, u, -1.5), g = gAt(p[0], p[1]); K.fbox(Fe(e14), m.pierOrange, u - 0.2, u + 0.2, g - 0.3, yE - 0.02, -1.75, -1.35); } // slim middle pier set further back
     for (const [e, u] of [[e11, 1.2], [e11, 10.5 - 1.2], [e14, 2.0], [e14, 6.4]]) { const p = at(e, Math.min(u, e.L - 0.3), 1.0), yb = gAt(p[0], p[1]); K.cyl(m.dark, p[0], yb, yb + 0.95, p[1], 0.055, 0.055, 6); K.cyl(m.yellow, p[0], yb + 0.8, yb + 0.95, p[1], 0.06, 0.06, 6); }
     // small red-and-white striped roof light on the lower roof above the porch
     { const e = e14, u0 = 5.0, u1 = Math.min(e14.L - 1.0, 10.8), d0 = 2.2, d1 = 3.7, tn = Math.tan(Y.pitch * Math.PI / 180), hh = 0.55, yR = (d) => yE + tn * (d + 0.4) + 0.08;
