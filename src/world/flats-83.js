@@ -173,7 +173,7 @@ export function wingLevelPlan(b, terrain) {
 }
 export function buildFlatsWing(b, ctx) {
   const M = mats(), P = makeFrame(b, ctx), { A, W, D, Ex, Ez, Nx, Nz, toW, gAt } = P, K = makeKit();
-  const U = 2.7, FH = 2.2, floors = 2, FOOT = 1.2, base = P.gMin;
+  const U = 3.6, FH = 2.2, floors = 2, FOOT = 1.2, base = P.gMin;
   const top = U + floors * FH, BACK = 5.0;
   const group = new THREE.Group(); group.name = 'landmark:flats-wing';
   const local = new THREE.Group(); local.position.set(A[0], base, A[1]); local.rotation.y = Math.atan2(-Ez, Ex); group.add(local);
@@ -208,7 +208,7 @@ export function buildFlatsWing(b, ctx) {
     for (let y = 0.3; y < U - 1.35; y += 0.14) K.fbox(FB, M.concreteDark, 1.8, 2.9, y, y + 0.02, 0.08, 0.1);
     for (const [a, c] of [[4.5, 7.1], [7.3, 10.0]]) { K.fbox(FB, M.green, a, c, 0.1, U - 1.35, 0.02, 0.08); for (let y = 0.25; y < U - 1.35; y += 0.16) K.fbox(FB, M.greenDark, a, c, y, y + 0.025, 0.08, 0.1); } // green roller shutters
     K.fbox(FB, M.dark, 10.2, 17.4, 0.05, U - 1.35, 0.02, 0.06);                            // the open workshop bay
-    K.fbox(FB, M.grey, 11.3, 11.6, 0.05, 1.85, 0.2, 0.5); K.fbox(FB, M.grey, 12.6, 12.9, 0.05, 1.85, 0.2, 0.5); K.fbox(FB, M.grey, 11.3, 12.9, 1.0, 1.1, 0.2, 0.5); // a vehicle lift
+    K.fbox(FB, M.grey, 11.3, 11.6, 0.05, 2.4, 0.2, 0.5); K.fbox(FB, M.grey, 12.6, 12.9, 0.05, 2.4, 0.2, 0.5); K.fbox(FB, M.grey, 11.3, 12.9, 1.0, 1.1, 0.2, 0.5); // a vehicle lift
     for (const u of [14.6, 15.2]) K.fbox(FB, M.black, u, u + 0.55, 0.05, 0.75, 0.3, 0.85);  // tyre stacks
     K.fbox(FB, M.greenDark, 10.2, 17.4, U - 1.5, U - 1.35, 0.02, 0.2);
     K.fbox(FB, M.green, 17.5, 22.0, U - 1.55, U - 1.2, 0.02, 0.9);                         // reception roof, projecting
